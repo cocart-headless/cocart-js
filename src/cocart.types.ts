@@ -42,6 +42,8 @@ export interface CoCartOptions {
   responseTransformer?: (response: import('./response.js').Response) => import('./response.js').Response;
   /** Enable ETag conditional requests for reduced bandwidth (default: true) */
   etag?: boolean;
+  /** CoCart main plugin: 'basic' (default) or 'legacy' for legacy CoCart plugin */
+  mainPlugin?: 'basic' | 'legacy';
 }
 
 /**

@@ -26,6 +26,7 @@ export class Products extends Endpoint {
 
   /** Get a single product by slug. */
   async findBySlug(slug: string, params?: ProductParams): Promise<Response> {
+    this.client.requiresBasic('products()->findBySlug');
     return this.get(slug, params ? this.stringifyParams(params) : undefined);
   }
 
@@ -117,6 +118,7 @@ export class Products extends Endpoint {
 
   /** Get a specific variation. */
   async variation(productId: number, variationId: number, params?: Record<string, string>): Promise<Response> {
+    this.client.requiresBasic('products()->variation');
     return this.get(`${productId}/variations/${variationId}`, params);
   }
 
@@ -129,6 +131,7 @@ export class Products extends Endpoint {
 
   /** Get a single category. */
   async category(categoryId: number, params?: Record<string, string>): Promise<Response> {
+    this.client.requiresBasic('products()->category');
     return this.get(`categories/${categoryId}`, params);
   }
 
@@ -141,6 +144,7 @@ export class Products extends Endpoint {
 
   /** Get a single tag. */
   async tag(tagId: number, params?: Record<string, string>): Promise<Response> {
+    this.client.requiresBasic('products()->tag');
     return this.get(`tags/${tagId}`, params);
   }
 
@@ -168,16 +172,19 @@ export class Products extends Endpoint {
 
   /** Get an attribute by its slug. */
   async attributeBySlug(slug: string, params?: Record<string, string>): Promise<Response> {
+    this.client.requiresBasic('products()->attributeBySlug');
     return this.get(`attributes/${slug}`, params);
   }
 
   /** Get terms for an attribute by the attribute's slug. */
   async attributeTermsBySlug(slug: string, params?: Record<string, string>): Promise<Response> {
+    this.client.requiresBasic('products()->attributeTermsBySlug');
     return this.get(`attributes/${slug}/terms`, params);
   }
 
   /** Get a specific term by slug for an attribute by slug. */
   async attributeTermBySlug(attrSlug: string, termSlug: string, params?: Record<string, string>): Promise<Response> {
+    this.client.requiresBasic('products()->attributeTermBySlug');
     return this.get(`attributes/${attrSlug}/terms/${termSlug}`, params);
   }
 
@@ -185,16 +192,19 @@ export class Products extends Endpoint {
 
   /** Get product brands. */
   async brands(params?: Record<string, string>): Promise<Response> {
+    this.client.requiresBasic('products()->brands');
     return this.get('brands', params);
   }
 
   /** Get a single brand. */
   async brand(brandId: number, params?: Record<string, string>): Promise<Response> {
+    this.client.requiresBasic('products()->brand');
     return this.get(`brands/${brandId}`, params);
   }
 
   /** Get products by brand. */
   async byBrand(brandSlug: string, params: ProductListParams = {}): Promise<Response> {
+    this.client.requiresBasic('products()->byBrand');
     return this.all({ ...params, brand: brandSlug });
   }
 
@@ -212,6 +222,7 @@ export class Products extends Endpoint {
 
   /** Get the current authenticated user's product reviews. */
   async myReviews(params?: Record<string, string>): Promise<Response> {
+    this.client.requiresBasic('products()->myReviews');
     return this.get('reviews/mine', params);
   }
 

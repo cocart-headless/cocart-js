@@ -16,6 +16,7 @@ export { Sessions } from './endpoints/sessions.js';
 export { CoCartError } from './exceptions/cocart-error.js';
 export { AuthenticationError } from './exceptions/authentication-error.js';
 export { ValidationError } from './exceptions/validation-error.js';
+export { VersionError } from './exceptions/version-error.js';
 
 // Utilities
 export { CurrencyFormatter } from './currency-formatter.js';

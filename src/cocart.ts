@@ -2,6 +2,7 @@ import { Response } from './response.js';
 import { CoCartError } from './exceptions/cocart-error.js';
 import { AuthenticationError } from './exceptions/authentication-error.js';
 import { ValidationError } from './exceptions/validation-error.js';
+import { VersionError } from './exceptions/version-error.js';
 import { MemoryStorage } from './storage/memory-storage.js';
 import type { StorageInterface } from './storage/storage.interface.js';
 import type { CoCartOptions, AuthCredentials, CoCartEventMap, CoCartEventListener } from './cocart.types.js';
@@ -42,6 +43,7 @@ export class CoCart {
   private responseTransformer: ((response: Response) => Response) | null = null;
   private etagEnabled: boolean = true;
   private etagCache: Map<string, string> = new Map();
+  private mainPlugin: 'basic' | 'legacy' = 'basic';
 
   // Event listeners
   private listeners: { [K in keyof CoCartEventMap]?: Set<CoCartEventListener<K>> } = {};
@@ -77,6 +79,7 @@ export class CoCart {
     if (options.authHeaderName) this.authHeaderName = options.authHeaderName;
     if (options.responseTransformer) this.responseTransformer = options.responseTransformer;
     if (options.etag !== undefined) this.etagEnabled = options.etag;
+    if (options.mainPlugin) this.mainPlugin = options.mainPlugin;
   }
 
   /** Create a new instance with fluent interface. */
@@ -214,6 +217,27 @@ export class CoCart {
   clearETagCache(): this {
     this.etagCache.clear();
     return this;
+  }
+
+  /** Get the configured CoCart main plugin identifier. */
+  getMainPlugin(): 'basic' | 'legacy' {
+    return this.mainPlugin;
+  }
+
+  /** Set the CoCart main plugin identifier ('basic' or 'legacy'). */
+  setMainPlugin(plugin: 'basic' | 'legacy'): this {
+    this.mainPlugin = plugin;
+    return this;
+  }
+
+  /**
+   * Guard that throws if a method requires CoCart Basic but the SDK
+   * is configured for the legacy plugin.
+   */
+  requiresBasic(method: string): void {
+    if (this.mainPlugin === 'legacy') {
+      throw new VersionError(method);
+    }
   }
 
   /** Set a response transformer applied to every API response before returning. */
@@ -596,10 +620,19 @@ export class CoCart {
       resolvedParams['cart_key'] = this.cartKey;
     }
 
-    // Normalize 'fields' to '_fields' (WordPress REST API standard)
-    if ('fields' in resolvedParams && !('_fields' in resolvedParams)) {
-      resolvedParams['_fields'] = resolvedParams['fields'];
-      delete resolvedParams['fields'];
+    // Normalize field filtering parameter based on main plugin
+    if (this.mainPlugin === 'legacy') {
+      // Legacy plugin uses CoCart's custom 'fields' parameter
+      if ('_fields' in resolvedParams && !('fields' in resolvedParams)) {
+        resolvedParams['fields'] = resolvedParams['_fields'];
+        delete resolvedParams['_fields'];
+      }
+    } else {
+      // CoCart Basic uses WordPress standard '_fields'
+      if ('fields' in resolvedParams && !('_fields' in resolvedParams)) {
+        resolvedParams['_fields'] = resolvedParams['fields'];
+        delete resolvedParams['fields'];
+      }
     }
 
     let url = `${this.storeUrl}/${this.restPrefix}/${this.namespace}/${CoCart.API_VERSION}/${endpoint.replace(/^\/+/, '')}`;
