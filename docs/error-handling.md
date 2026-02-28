@@ -9,7 +9,8 @@ The SDK uses three error classes organized in a hierarchy. A **hierarchy** means
 ```text
 CoCartError (base)           — any API error
 ├── AuthenticationError      — login/permission problems (401, 403)
-└── ValidationError          — bad input (400)
+├── ValidationError          — bad input (400)
+└── VersionError             — method requires CoCart Basic (legacy mode)
 ```
 
 All errors extend `CoCartError`, which extends JavaScript's built-in `Error`. This means you can use `instanceof` to check what kind of error you caught.
@@ -19,12 +20,16 @@ All errors extend `CoCartError`, which extends JavaScript's built-in `Error`. Th
 In JavaScript, `try/catch` lets you attempt an operation and handle any errors gracefully instead of crashing. The `instanceof` keyword checks what type of error was thrown, so you can respond differently to different problems:
 
 ```ts
-import { CoCartError, AuthenticationError, ValidationError } from '@cocart/sdk';
+import { CoCartError, AuthenticationError, ValidationError, VersionError } from '@cocart/sdk';
 
 try {
   const response = await client.cart().addItem(999, 1);
 } catch (e) {
-  if (e instanceof ValidationError) {
+  if (e instanceof VersionError) {
+    // Method requires CoCart Basic but SDK is configured for legacy plugin
+    console.log('Upgrade Required:', e.message);
+    console.log('Error Code:', e.errorCode);    // 'cocart_version_required'
+  } else if (e instanceof ValidationError) {
     // 400 — product not found, out of stock, invalid quantity, etc.
     console.log('Validation Error:', e.message);
     console.log('Error Code:', e.errorCode);   // e.g. 'cocart_product_not_found'
@@ -231,6 +236,28 @@ try {
   }
 }
 ```
+
+### Legacy Plugin Version Guard
+
+When using the SDK with the legacy CoCart plugin (`mainPlugin: 'legacy'`), methods that require CoCart Basic throw immediately:
+
+```ts
+import { VersionError } from '@cocart/sdk';
+
+const client = new CoCart('https://your-store.com', { mainPlugin: 'legacy' });
+
+try {
+  await client.products().findBySlug('blue-hoodie');
+} catch (e) {
+  if (e instanceof VersionError) {
+    // e.message   => "products()->findBySlug() requires CoCart Basic. Please upgrade..."
+    // e.errorCode => 'cocart_version_required'
+    // e.httpCode  => 0 (no HTTP request was made)
+  }
+}
+```
+
+See [Legacy Plugin Support](installation.md#legacy-plugin-support) for the full list of Basic-only methods.
 
 ### Network / Timeout Errors
 

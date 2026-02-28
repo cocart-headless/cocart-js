@@ -12,6 +12,7 @@ Official TypeScript SDK for the [CoCart](https://cocartapi.com) REST API. Build 
 - Configurable auth header name (for proxies that strip `Authorization`)
 - Encrypted localStorage for session persistence (AES-256-GCM, Web Crypto API)
 - JWT authentication with auto-refresh
+- Legacy CoCart plugin support with version-aware endpoint guards
 - Framework adapters for Astro and Next.js
 
 ## Requirements
