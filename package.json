@@ -1,0 +1,63 @@
+{
+  "name": "@cocart/sdk",
+  "version": "1.0.0",
+  "description": "Official TypeScript SDK for the CoCart REST API",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    },
+    "./astro": {
+      "import": {
+        "types": "./dist/adapters/astro.d.ts",
+        "default": "./dist/adapters/astro.js"
+      }
+    },
+    "./nextjs": {
+      "import": {
+        "types": "./dist/adapters/nextjs.d.ts",
+        "default": "./dist/adapters/nextjs.js"
+      }
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "tsc --noEmit"
+  },
+  "keywords": [
+    "cocart",
+    "woocommerce",
+    "cart",
+    "headless",
+    "sdk",
+    "typescript",
+    "rest-api"
+  ],
+  "author": "CoCart Headless, LLC",
+  "license": "MIT",
+  "devDependencies": {
+    "tsup": "^8.0.0",
+    "typescript": "^5.5.0",
+    "vitest": "^3.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
