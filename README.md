@@ -19,14 +19,14 @@ Official TypeScript SDK for the [CoCart](https://cocartapi.com) REST API. Build 
 
 ## Requirements
 
-- **Node.js 18+** — Node.js is the JavaScript runtime that lets you run JavaScript outside a browser (e.g., on a server). Version 18 or higher is required because it includes a built-in `fetch` function for making HTTP requests. You can check your version by running `node -v` in your terminal.
+- **Node.js 20+** — Node.js is the JavaScript runtime that lets you run JavaScript outside a browser (e.g., on a server). Version 20 or higher is required because it includes a built-in `fetch` function for making HTTP requests. You can check your version by running `node -v` in your terminal.
 - **CoCart plugin** installed on your WooCommerce store — This is the WordPress plugin that provides the REST API endpoints the SDK communicates with.
 - [CoCart JWT Authentication](https://wordpress.org/plugins/cocart-jwt-authentication/) plugin for JWT features (optional) — Only needed if you want to use JSON Web Token authentication (explained in the [Authentication](docs/authentication.md) guide).
 - **TypeScript 5.0+** (recommended) — Not strictly required, but you get the best experience (autocompletion, type checking) with TypeScript.
 
 ## Features
 
-- Zero runtime dependencies — uses native `fetch` (Node 18+, all modern browsers), no extra packages to install
+- Zero runtime dependencies — uses native `fetch` (Node 20+, all modern browsers), no extra packages to install
 - ESM + CJS dual output — works with both modern `import` syntax and older `require()` syntax
 - Typed responses and parameters with generics
 - Client-side input validation (catches errors before network requests)
