@@ -24,6 +24,10 @@ Official TypeScript SDK for the [CoCart](https://cocartapi.com) REST API. Build 
 - [CoCart JWT Authentication](https://wordpress.org/plugins/cocart-jwt-authentication/) plugin for JWT features (optional) — Only needed if you want to use JSON Web Token authentication (explained in the [Authentication](docs/authentication.md) guide).
 - **TypeScript 5.0+** (recommended) — Not strictly required, but you get the best experience (autocompletion, type checking) with TypeScript.
 
+## Support Policy
+
+See [SUPPORT.md](SUPPORT.md) for our versioning policy, supported Node.js versions, and support lifecycle.
+
 ## Features
 
 - Zero runtime dependencies — uses native `fetch` (Node 20+, all modern browsers), no extra packages to install
