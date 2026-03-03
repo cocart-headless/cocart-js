@@ -1,6 +1,30 @@
 # @cocart/sdk
 
+[![Tests](https://img.shields.io/github/actions/workflow/status/cocart-headless/cocart-js/tests.yml?label=tests&style=for-the-badge&labelColor=000000)](https://github.com/cocart-headless/cocart-js/actions/workflows/tests.yml)
+[![License](https://img.shields.io/github/license/jayanratna/resend-php?color=9cf&style=for-the-badge&labelColor=000000)](https://github.com/cocart-headless/cocart-js/blob/main/LICENSE)
+
 Official TypeScript SDK for the [CoCart](https://cocartapi.com) REST API. Build **headless WooCommerce storefronts** — meaning your frontend (React, Astro, Next.js, or any framework) talks to WooCommerce through its API instead of using PHP templates.
+
+> [!IMPORTANT]
+> This SDK is still in development and not yet ready for production use. Provide feedback if you experience a bug.
+
+## TODO to complete the SDK
+
+* [ ] Add SDK docs to documentation site
+* [ ] Add support for Cart API extras
+* [ ] Add Checkout API support
+* [ ] Add Customers Account API support
+
+---
+
+## Requirements
+
+- **Node.js 18+** — Node.js is the JavaScript runtime that lets you run JavaScript outside a browser (e.g., on a server). Version 18 or higher is required because it includes a built-in `fetch` function for making HTTP requests. You can check your version by running `node -v` in your terminal.
+- **CoCart plugin** installed on your WooCommerce store — This is the WordPress plugin that provides the REST API endpoints the SDK communicates with.
+- [CoCart JWT Authentication](https://wordpress.org/plugins/cocart-jwt-authentication/) plugin for JWT features (optional) — Only needed if you want to use JSON Web Token authentication (explained in the [Authentication](docs/authentication.md) guide).
+- **TypeScript 5.0+** (recommended) — Not strictly required, but you get the best experience (autocompletion, type checking) with TypeScript.
+
+## Features
 
 - Zero runtime dependencies — uses native `fetch` (Node 18+, all modern browsers), no extra packages to install
 - ESM + CJS dual output — works with both modern `import` syntax and older `require()` syntax
@@ -14,13 +38,6 @@ Official TypeScript SDK for the [CoCart](https://cocartapi.com) REST API. Build 
 - JWT authentication with auto-refresh
 - Legacy CoCart plugin support with version-aware endpoint guards
 - Framework adapters for Astro and Next.js
-
-## Requirements
-
-- **Node.js 18+** — Node.js is the JavaScript runtime that lets you run JavaScript outside a browser (e.g., on a server). Version 18 or higher is required because it includes a built-in `fetch` function for making HTTP requests. You can check your version by running `node -v` in your terminal.
-- **CoCart plugin** installed on your WooCommerce store — This is the WordPress plugin that provides the REST API endpoints the SDK communicates with.
-- [CoCart JWT Authentication](https://wordpress.org/plugins/cocart-jwt-authentication/) plugin for JWT features (optional) — Only needed if you want to use JSON Web Token authentication (explained in the [Authentication](docs/authentication.md) guide).
-- **TypeScript 5.0+** (recommended) — Not strictly required, but you get the best experience (autocompletion, type checking) with TypeScript.
 
 ## Installation
 
@@ -217,6 +234,27 @@ import { createServerClient } from '@cocart/sdk/astro';
 
 const client = createServerClient('https://your-store.com', Astro.request);
 ```
+
+## CoCart Channels
+
+We have different channels at your disposal where you can find information about the CoCart project, discuss it and get involved:
+
+[![Twitter: cocartapi](https://img.shields.io/twitter/follow/cocartapi?style=social)](https://twitter.com/cocartapi) [![CoCart GitHub Stars](https://img.shields.io/github/stars/cocart-headless/cocart-js?style=social)](https://github.com/cocart-headless/cocart-js)
+
+<ul>
+  <li>📖 <strong>Documentation</strong>: this is the place to learn how to use CoCart API. <a href="https://cocartapi.com/docs/?utm_medium=gh&utm_source=github&utm_campaign=readme&utm_content=cocart">Get started!</a></li>
+  <li>👪 <strong>Community</strong>: use our Discord chat room to share any doubts, feedback and meet great people. This is your place too to share <a href="https://cocartapi.com/community/?utm_medium=gh&utm_source=github&utm_campaign=readme&utm_content=cocart">how are you planning to use CoCart!</a></li>
+  <li>🐞 <strong>GitHub</strong>: we use GitHub for bugs and pull requests, doubts are solved with the community.</li>
+  <li>🐦 <strong>Social media</strong>: a more informal place to interact with CoCart users, reach out to us on <a href="https://twitter.com/cocartapi">X/Twitter.</a></li>
+</ul>
+
+## Credits
+
+Website [cocartapi.com](https://cocartapi.com/?ref=github) &nbsp;&middot;&nbsp;
+GitHub [@cocart-headless](https://github.com/cocart-headless) &nbsp;&middot;&nbsp;
+X/Twitter [@cocartapi](https://twitter.com/cocartapi) &nbsp;&middot;&nbsp;
+[Facebook](https://www.facebook.com/cocartforwc/) &nbsp;&middot;&nbsp;
+[Instagram](https://www.instagram.com/cocartheadless/)
 
 ## License
 
