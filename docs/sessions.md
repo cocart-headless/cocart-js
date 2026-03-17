@@ -62,11 +62,18 @@ The `SessionManager` is a helper class for frontend applications. It handles a c
 ### Basic Setup
 
 ```ts
-import { CoCart, SessionManager, EncryptedStorage } from '@cocart/sdk';
+import { CoCart, SessionManager } from '@cocart/sdk';
 
-const storage = new EncryptedStorage('my-secret-key');
-const client = new CoCart('https://your-store.com', { storage });
-const session = new SessionManager(client, storage);
+// In a browser, LocalStorage is used automatically — no extra configuration needed
+const client = new CoCart('https://your-store.com');
+const session = new SessionManager(client, client.getStorage());
+```
+
+For encrypted storage, pass an `encryptionKey` — no import required:
+
+```ts
+const client = new CoCart('https://your-store.com', { encryptionKey: 'my-secret-key' });
+const session = new SessionManager(client, client.getStorage());
 ```
 
 ### Initialize a Cart
@@ -150,7 +157,7 @@ All storage adapters implement the same `StorageInterface`, so you can swap them
 
 ### MemoryStorage
 
-Stores data in the application's memory (a JavaScript `Map`). This is the default. Data is lost when the page is refreshed (in a browser) or when the process restarts (on a server). Best for short-lived operations or testing.
+Stores data in the application's memory (a JavaScript `Map`). Data is lost when the page is refreshed (in a browser) or when the process restarts (on a server). Best for short-lived operations or testing. Used automatically in Node.js/SSR environments.
 
 ```ts
 import { MemoryStorage } from '@cocart/sdk';
@@ -160,7 +167,7 @@ const storage = new MemoryStorage();
 
 ### LocalStorage
 
-A thin wrapper around the browser's built-in `window.localStorage`. Data is stored as plain text and persists across page refreshes and browser restarts. Since the data is not encrypted, anyone with access to the browser's developer tools can read it. Use `EncryptedStorage` if you're storing sensitive data like tokens.
+A thin wrapper around the browser's built-in `window.localStorage`. Data is stored as plain text and persists across page refreshes and browser restarts. **This is used automatically in browser environments** — you don't need to configure anything. Since the data is not encrypted, anyone with access to the browser's developer tools can read it. Use `EncryptedStorage` if you're storing sensitive data like tokens.
 
 ```ts
 import { LocalStorage } from '@cocart/sdk';
@@ -220,11 +227,10 @@ The interface supports both **synchronous** (returns immediately) and **asynchro
 This is one of the most important flows in headless e-commerce. A visitor shops as a guest (no account needed), fills up their cart, then decides to log in or create an account. You want their guest cart items to carry over to their customer cart — otherwise they'd lose everything and have to start over. Here's how the full flow works:
 
 ```ts
-import { CoCart, SessionManager, EncryptedStorage } from '@cocart/sdk';
+import { CoCart, SessionManager } from '@cocart/sdk';
 
-const storage = new EncryptedStorage('my-secret-key');
-const client = new CoCart('https://your-store.com', { storage });
-const session = new SessionManager(client, storage);
+const client = new CoCart('https://your-store.com', { encryptionKey: 'my-secret-key' });
+const session = new SessionManager(client, client.getStorage());
 
 // 1. Initialize guest session
 await session.initializeCart();

@@ -28,11 +28,13 @@ const cart = await client.cart().get();
 
 ### Restoring a Session
 
-If using async storage (like `EncryptedStorage`), call `restoreSession()` after construction to load the cart key from storage:
+In a browser, the cart key is automatically persisted to `localStorage` — it's restored synchronously on the next page load with no extra steps needed.
+
+If using `EncryptedStorage` (async), call `restoreSession()` once after construction to load the cart key:
 
 ```ts
 const client = new CoCart('https://your-store.com', {
-  storage: new EncryptedStorage('my-secret-key'),
+  encryptionKey: 'my-secret-key',
 });
 
 // Restore cart key from encrypted localStorage
@@ -160,11 +162,10 @@ const cart = await client.cart().get();
 Pass a storage adapter to the JWT Manager for automatic persistence:
 
 ```ts
-import { CoCart, JwtManager, EncryptedStorage } from '@cocart/sdk';
+import { CoCart, JwtManager } from '@cocart/sdk';
 
-const storage = new EncryptedStorage('my-secret-key');
-const client = new CoCart('https://your-store.com', { storage });
-const jwt = new JwtManager(client, storage, { autoRefresh: true });
+const client = new CoCart('https://your-store.com', { encryptionKey: 'my-secret-key' });
+const jwt = new JwtManager(client, client.getStorage(), { autoRefresh: true });
 
 // Restore tokens from storage
 await jwt.restoreTokensFromStorage();

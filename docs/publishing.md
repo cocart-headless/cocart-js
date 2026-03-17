@@ -6,7 +6,7 @@ This guide walks you through publishing `@cocart/sdk` to a package registry — 
 
 Before publishing, make sure you have:
 
-1. **Node.js 18+** installed — Check with `node -v`
+1. **Node.js 20+** installed — Check with `node -v`
 2. **npm account** — Create one at [npmjs.com/signup](https://www.npmjs.com/signup) (for public publishing)
 3. **Organization access** — The package is scoped under `@cocart`, so you need to be a member of the `cocart` npm organization with publish permissions
 

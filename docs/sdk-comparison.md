@@ -181,7 +181,7 @@ The goal is to identify feature parity, gaps, and DX differences between the two
 | **In-memory cache** | Yes — `Cache` class with TTL, `cartCache` singleton | No |
 | **Currency formatting** | Yes — `Intl.NumberFormat`, auto-processing, preserves originals | No |
 | **Timezone conversion** | Yes — auto-detect, convert date strings, preserve originals | No |
-| **Storage adapters** | None — in-memory only | 3 adapters: `MemoryStorage`, `LocalStorage`, `EncryptedStorage` (AES-256-GCM) |
+| **Storage adapters** | None — in-memory only | 3 adapters: `MemoryStorage`, `LocalStorage`, `EncryptedStorage` (AES-256-GCM); auto-selects `LocalStorage` in browsers |
 | **Framework adapters** | 3 stubs (astro, next, remix) — just re-export the SDK | 2 real adapters (Astro, Next.js) — browser/server clients, fetch wrapper, cart key header injection |
 | **Fluent/chainable API** | Partial — `on()`/`off()` return `this` | Yes — all config methods return `this`, static `create()` factory |
 | **Dot-notation response access** | No | Yes — `response.get('totals.subtotal')` |

@@ -4,6 +4,8 @@ import { AuthenticationError } from './exceptions/authentication-error.js';
 import { ValidationError } from './exceptions/validation-error.js';
 import { VersionError } from './exceptions/version-error.js';
 import { MemoryStorage } from './storage/memory-storage.js';
+import { LocalStorage } from './storage/local-storage.js';
+import { EncryptedStorage } from './storage/encrypted-storage.js';
 import type { StorageInterface } from './storage/storage.interface.js';
 import type { CoCartOptions, AuthCredentials, CoCartEventMap, CoCartEventListener } from './cocart.types.js';
 import { Cart } from './endpoints/cart.js';
@@ -19,6 +21,13 @@ import { JwtManager } from './jwt-manager.js';
  * Supports both guest customers (via cart_key) and authenticated users
  * (via Basic Auth or JWT).
  */
+function detectDefaultStorage(): StorageInterface {
+  if (typeof globalThis !== 'undefined' && typeof (globalThis as typeof globalThis & { localStorage?: unknown }).localStorage !== 'undefined') {
+    return new LocalStorage();
+  }
+  return new MemoryStorage();
+}
+
 export class CoCart {
   static readonly VERSION = '1.0.0';
   static readonly API_VERSION = 'v2';
@@ -57,7 +66,13 @@ export class CoCart {
 
   constructor(storeUrl: string, options: CoCartOptions = {}) {
     this.storeUrl = storeUrl.replace(/\/+$/, '');
-    this.storage = options.storage ?? new MemoryStorage();
+    if (options.storage) {
+      this.storage = options.storage;
+    } else if (options.encryptionKey) {
+      this.storage = new EncryptedStorage(options.encryptionKey);
+    } else {
+      this.storage = detectDefaultStorage();
+    }
 
     if (options.cartKey) this.cartKey = options.cartKey;
     if (options.username && options.password) {

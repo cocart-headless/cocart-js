@@ -38,12 +38,13 @@ const client = new CoCart('https://your-store.com', {
   // Retry transient failures (429, 503, timeouts)
   maxRetries: 2,
 
-  // Storage adapter (default: MemoryStorage)
+  // Storage adapter — auto-detected: LocalStorage in browsers, MemoryStorage in Node.js/SSR
+  // Pass a custom adapter to override, or use encryptionKey to switch to EncryptedStorage
   // See Sessions & Storage docs for options
-  storage: new MemoryStorage(),
+  storage: new LocalStorage(),
   storageKey: 'cocart_cart_key',
 
-  // Encryption key for EncryptedStorage
+  // Encryption key — automatically uses EncryptedStorage in the browser when set
   encryptionKey: 'your-secret-key',
 
   // Custom auth header name (default: 'Authorization')

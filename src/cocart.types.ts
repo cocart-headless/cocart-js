@@ -26,13 +26,17 @@ export interface CoCartOptions {
   namespace?: string;
   /** Custom headers to send with every request */
   headers?: Record<string, string>;
-  /** Storage adapter for persisting cart key and tokens */
+  /**
+   * Storage adapter for persisting cart key and tokens.
+   * Defaults to LocalStorage in browser environments and MemoryStorage in Node.js/SSR.
+   * Pass a custom adapter to override.
+   */
   storage?: StorageInterface;
   /** Storage key name for the cart key (default: 'cocart_cart_key') */
   storageKey?: string;
   /** Maximum number of retries for transient failures (default: 0) */
   maxRetries?: number;
-  /** Encryption key for EncryptedStorage */
+  /** Encryption key — when provided (and no explicit `storage` is set), automatically uses EncryptedStorage in the browser */
   encryptionKey?: string;
   /** Enable debug logging to console (default: false) */
   debug?: boolean;
