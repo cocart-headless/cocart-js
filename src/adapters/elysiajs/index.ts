@@ -1,43 +1,47 @@
-import { CoCart, MemoryStorage, EncryptedStorage } from '@cocart/sdk';
+import { CoCart, MemoryStorage } from '@cocart/sdk';
 import type { CoCartOptions } from '@cocart/sdk';
 
 /**
- * Create a browser-side CoCart client for Next.js.
+ * Create a browser-side CoCart client for Elysia.js.
  *
- * Uses EncryptedStorage with localStorage for persisting cart key and tokens.
- * Call `client.restoreSession()` after creation to load from storage.
+ * Pass `encryptionKey` to persist the cart key in encrypted localStorage
+ * (AES-256-GCM). Without it, the SDK defaults to plain localStorage in
+ * browsers. Call `client.restoreSession()` after creation when using
+ * an async storage (e.g. EncryptedStorage).
  */
 export function createBrowserClient(
   storeUrl: string,
-  options: CoCartOptions & { encryptionKey: string } = {} as CoCartOptions & { encryptionKey: string },
+  options: CoCartOptions = {},
 ): CoCart {
-  return new CoCart(storeUrl, {
-    storage: new EncryptedStorage(options.encryptionKey, { prefix: 'cocart_enc_' }),
-    ...options,
-  });
+  return new CoCart(storeUrl, options);
 }
 
 /**
- * Create a server-side CoCart client for Next.js (App Router, RSC, API routes).
+ * Create a server-side CoCart client for Elysia.js route handlers.
  *
  * Uses MemoryStorage (per-request). Reads the cart key from the
- * provided request headers — no cookies needed.
+ * incoming request's `X-Cart-Key` header — no cookies needed.
  *
- * Usage in a Server Component or Route Handler:
+ * Usage in an Elysia route handler:
  * ```ts
- * import { headers } from 'next/headers';
- * import { createServerClient } from '@cocart/sdk/nextjs';
+ * import Elysia from 'elysia';
+ * import { createServerClient } from '@cocart/sdk/elysiajs';
  *
- * const headersList = await headers();
- * const client = createServerClient('https://store.example.com', headersList);
+ * new Elysia()
+ *   .get('/cart', async ({ request }) => {
+ *     const client = createServerClient('https://store.example.com', request);
+ *     const cart = await client.cart().get();
+ *     return cart.toObject();
+ *   })
+ *   .listen(3000);
  * ```
  */
 export function createServerClient(
   storeUrl: string,
-  headers: Headers,
+  request: Request,
   options: CoCartOptions = {},
 ): CoCart {
-  const cartKey = headers.get('X-Cart-Key') ?? undefined;
+  const cartKey = request.headers.get('X-Cart-Key') ?? undefined;
 
   return new CoCart(storeUrl, {
     storage: new MemoryStorage(),
@@ -50,7 +54,7 @@ export function createServerClient(
  * Client-side helper: wraps the global fetch to attach the `X-Cart-Key`
  * header on same-origin requests.
  *
- * Call this once on the client:
+ * Call this once on the client after creating the CoCart instance:
  * ```ts
  * const client = createBrowserClient('https://store.example.com', { encryptionKey: '...' });
  * await client.restoreSession();

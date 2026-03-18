@@ -1,27 +1,37 @@
-import { CoCart, MemoryStorage, EncryptedStorage } from '@cocart/sdk';
+import { CoCart, MemoryStorage } from '@cocart/sdk';
 import type { CoCartOptions } from '@cocart/sdk';
 
 /**
- * Create a browser-side CoCart client for Astro.
+ * Create a browser-side CoCart client for Remix.
  *
- * Uses EncryptedStorage with localStorage for persisting cart key and tokens.
+ * Pass `encryptionKey` to persist the cart key in encrypted localStorage
+ * (AES-256-GCM). Without it, the SDK defaults to plain localStorage in
+ * browsers. Call `client.restoreSession()` after creation when using
+ * an async storage (e.g. EncryptedStorage).
  */
 export function createBrowserClient(
   storeUrl: string,
-  options: CoCartOptions & { encryptionKey: string } = {} as CoCartOptions & { encryptionKey: string },
+  options: CoCartOptions = {},
 ): CoCart {
-  const client = new CoCart(storeUrl, {
-    storage: new EncryptedStorage(options.encryptionKey, { prefix: 'cocart_enc_' }),
-    ...options,
-  });
-  return client;
+  return new CoCart(storeUrl, options);
 }
 
 /**
- * Create a server-side CoCart client for Astro SSR.
+ * Create a server-side CoCart client for Remix (loaders, actions, resource routes).
  *
  * Uses MemoryStorage (per-request). Reads the cart key from the
  * incoming request's `X-Cart-Key` header — no cookies needed.
+ *
+ * Usage in a Remix loader:
+ * ```ts
+ * import { createServerClient } from '@cocart/sdk/remix';
+ *
+ * export async function loader({ request }: LoaderFunctionArgs) {
+ *   const client = createServerClient('https://store.example.com', request);
+ *   const cart = await client.cart().get();
+ *   return Response.json(cart.toObject());
+ * }
+ * ```
  */
 export function createServerClient(
   storeUrl: string,
@@ -41,16 +51,12 @@ export function createServerClient(
  * Client-side helper: wraps the global fetch to attach the `X-Cart-Key`
  * header on same-origin requests.
  *
- * Call this once on the client after creating the CoCart instance:
- *
+ * Call this once on the client (e.g. in root.tsx or a client-side module):
  * ```ts
  * const client = createBrowserClient('https://store.example.com', { encryptionKey: '...' });
  * await client.restoreSession();
  * attachCartKeyHeader(client);
  * ```
- *
- * Every subsequent `fetch()` to the same origin will include the header
- * so Astro SSR can read it.
  */
 export function attachCartKeyHeader(client: CoCart): void {
   const originalFetch = globalThis.fetch;
@@ -61,7 +67,6 @@ export function attachCartKeyHeader(client: CoCart): void {
     if (cartKey) {
       const url = typeof input === 'string' ? input : input instanceof URL ? input.href : (input as Request).url;
 
-      // Only attach to same-origin requests
       try {
         const requestUrl = new URL(url, globalThis.location?.origin);
         if (requestUrl.origin === globalThis.location?.origin) {

@@ -14,7 +14,7 @@ npm install @cocart/sdk
 
 Here's the flow of data between the browser and server:
 
-1. **Browser**: The client stores the cart key in encrypted `localStorage` using the [Web Crypto API](../sessions.md#encryptedstorage) — a browser-native encryption API that secures the data without any extra libraries.
+1. **Browser**: The client stores the cart key in encrypted `localStorage` using the [Web Crypto API](https://developer.mozilla.org/en-US/docs/Web/API/Web_Crypto_API) — a browser-native encryption API that secures the data without any extra libraries.
 2. **Navigation**: When the user navigates or makes a request, `attachCartKeyHeader()` automatically adds an `X-Cart-Key` header. This is done by wrapping the browser's built-in `fetch()` function — your code doesn't need to change.
 3. **Server**: Server Components and Route Handlers read the `X-Cart-Key` header from the incoming request to identify which cart belongs to this visitor.
 
@@ -103,7 +103,26 @@ export default async function CartPage() {
 }
 ```
 
-### With Authentication
+### Basic Auth
+
+For registered customers, pass their `username` and `password`:
+
+```ts
+import { headers } from 'next/headers';
+import { createServerClient } from '@cocart/sdk/nextjs';
+
+const headersList = await headers();
+const client = createServerClient(process.env.COCART_STORE_URL!, headersList, {
+  username: 'customer@example.com',
+  password: 'their-password',
+});
+
+const cart = await client.cart().get();
+```
+
+### Admin Operations (Consumer Keys)
+
+Consumer keys are WooCommerce admin credentials. Use them only for admin-level APIs such as the Sessions API:
 
 ```ts
 import { headers } from 'next/headers';

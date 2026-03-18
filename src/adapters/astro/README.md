@@ -14,7 +14,7 @@ npm install @cocart/sdk
 
 Here's the flow of data between the browser and server:
 
-1. **Browser**: The client stores the cart key in encrypted `localStorage` using the [Web Crypto API](../sessions.md#encryptedstorage) — a browser-native encryption API that secures the data without any extra libraries.
+1. **Browser**: The client stores the cart key in encrypted `localStorage` using the [Web Crypto API](https://developer.mozilla.org/en-US/docs/Web/API/Web_Crypto_API) — a browser-native encryption API that secures the data without any extra libraries.
 2. **Navigation**: When the user navigates to a new page, `attachCartKeyHeader()` automatically adds an `X-Cart-Key` header to the request. This is done by wrapping the browser's built-in `fetch()` function — your code doesn't need to change.
 3. **Server**: Astro SSR reads the `X-Cart-Key` header from the incoming request to identify which cart belongs to this visitor.
 
@@ -42,7 +42,7 @@ attachCartKeyHeader(client);
 
 ### Options
 
-`createBrowserClient()` accepts all standard [CoCart options](../installation.md) plus a required `encryptionKey`:
+`createBrowserClient()` accepts all standard [CoCart options](../../../docs/installation.md) plus an optional `encryptionKey`:
 
 ```ts
 const client = createBrowserClient('https://your-store.com', {
@@ -76,17 +76,34 @@ const items = cart.getItems();
 </ul>
 ```
 
-### With Authentication
+### Basic Auth
 
-Pass consumer keys or other options for authenticated server-side requests:
+For registered customers, pass their `username` and `password`:
 
 ```ts
 ---
 import { createServerClient } from '@cocart/sdk/astro';
 
 const client = createServerClient('https://your-store.com', Astro.request, {
-  consumerKey: 'ck_xxxxx',
-  consumerSecret: 'cs_xxxxx',
+  username: 'customer@example.com',
+  password: 'their-password',
+});
+
+const cart = await client.cart().get();
+---
+```
+
+### Admin Operations (Consumer Keys)
+
+Consumer keys are WooCommerce admin credentials. Use them only for admin-level APIs such as the Sessions API:
+
+```ts
+---
+import { createServerClient } from '@cocart/sdk/astro';
+
+const client = createServerClient('https://your-store.com', Astro.request, {
+  consumerKey: process.env.COCART_CONSUMER_KEY,
+  consumerSecret: process.env.COCART_CONSUMER_SECRET,
 });
 
 const sessions = await client.sessions().all();

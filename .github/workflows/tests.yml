@@ -39,3 +39,38 @@ jobs:
 
       - name: Build
         run: npm run build
+
+  deno:
+    runs-on: ubuntu-latest
+
+    name: Deno
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Deno
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Check Deno compatibility (npm: specifier)
+        run: |
+          cat > /tmp/deno-check.mjs << 'EOF'
+          import { CoCart, MemoryStorage } from "npm:@cocart/sdk";
+          const client = new CoCart("https://example.com", { storage: new MemoryStorage() });
+          console.log("CoCart instantiated successfully:", typeof client);
+          EOF
+          deno run --allow-import /tmp/deno-check.mjs

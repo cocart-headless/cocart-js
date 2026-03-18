@@ -1,0 +1,10 @@
+{
+  "name": "@cocart/sdk",
+  "version": "1.0.0",
+  "exports": {
+    ".": "./src/index.ts",
+    "./deno": "./src/adapters/deno.ts",
+    "./astro": "./src/adapters/astro.ts",
+    "./nextjs": "./src/adapters/nextjs.ts"
+  }
+}

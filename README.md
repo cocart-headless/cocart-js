@@ -41,7 +41,7 @@ See [SUPPORT.md](SUPPORT.md) for our versioning policy, supported Node.js versio
 - Encrypted localStorage for session persistence (AES-256-GCM, Web Crypto API)
 - JWT authentication with auto-refresh
 - Legacy CoCart plugin support with version-aware endpoint guards
-- Framework adapters for Astro and Next.js
+- Framework adapters for Astro, Next.js, Nuxt, Remix, SvelteKit, Vite, Elysia.js, Fastify, Hono, and Deno
 
 ## Installation
 
@@ -130,8 +130,16 @@ console.log(cart.get('totals.total')); // Reach into nested data with dot notati
 
 | Guide | Description |
 |-------|-------------|
-| [Astro](docs/frameworks/astro.md) | Browser + SSR setup, API routes, examples |
-| [Next.js](docs/frameworks/nextjs.md) | Client + Server Components, Route Handlers, middleware |
+| [Astro](src/adapters/astro/README.md) | Browser + SSR setup, API routes, examples |
+| [Next.js](src/adapters/nextjs/README.md) | Client + Server Components, Route Handlers, middleware |
+| [Nuxt](src/adapters/nuxt/README.md) | Browser plugin, server routes, `defineEventHandler` |
+| [Remix](src/adapters/remix/README.md) | Loaders, actions, resource routes |
+| [SvelteKit](src/adapters/svelte/README.md) | `load` functions, server routes, hooks |
+| [Vite](src/adapters/vite/README.md) | Browser-only SPA; pair with a backend adapter for the API layer |
+| [Elysia.js](src/adapters/elysiajs/README.md) | Bun-first route handlers |
+| [Fastify](src/adapters/fastify/README.md) | Node.js route handlers (server-only) |
+| [Hono](src/adapters/hono/README.md) | Multi-runtime (Node, Bun, Cloudflare Workers, Deno) |
+| [Deno](src/adapters/deno/README.md) | `Deno.serve()`, Fresh islands |
 
 ## Features
 
@@ -221,7 +229,7 @@ const result = await client.jwt().withAutoRefresh(async (c) => {
 
 ### Framework Adapters (No Cookies)
 
-Pre-built adapters for Astro and Next.js handle the browser/server split automatically. Cart state is passed via HTTP headers instead of cookies — avoiding GDPR consent issues and CORS restrictions:
+Pre-built adapters for Astro, Next.js, Nuxt, Remix, SvelteKit, Elysia.js, Fastify, Hono, and Deno handle the browser/server split automatically. Cart state is passed via HTTP headers instead of cookies — avoiding GDPR consent issues and CORS restrictions:
 
 ```ts
 // Astro / Next.js — browser

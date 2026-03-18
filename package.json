@@ -28,6 +28,54 @@
         "types": "./dist/adapters/nextjs.d.ts",
         "default": "./dist/adapters/nextjs.js"
       }
+    },
+    "./deno": {
+      "import": {
+        "types": "./dist/adapters/deno.d.ts",
+        "default": "./dist/adapters/deno.js"
+      }
+    },
+    "./nuxt": {
+      "import": {
+        "types": "./dist/adapters/nuxt.d.ts",
+        "default": "./dist/adapters/nuxt.js"
+      }
+    },
+    "./remix": {
+      "import": {
+        "types": "./dist/adapters/remix.d.ts",
+        "default": "./dist/adapters/remix.js"
+      }
+    },
+    "./svelte": {
+      "import": {
+        "types": "./dist/adapters/svelte.d.ts",
+        "default": "./dist/adapters/svelte.js"
+      }
+    },
+    "./elysiajs": {
+      "import": {
+        "types": "./dist/adapters/elysiajs.d.ts",
+        "default": "./dist/adapters/elysiajs.js"
+      }
+    },
+    "./fastify": {
+      "import": {
+        "types": "./dist/adapters/fastify.d.ts",
+        "default": "./dist/adapters/fastify.js"
+      }
+    },
+    "./hono": {
+      "import": {
+        "types": "./dist/adapters/hono.d.ts",
+        "default": "./dist/adapters/hono.js"
+      }
+    },
+    "./vite": {
+      "import": {
+        "types": "./dist/adapters/vite.d.ts",
+        "default": "./dist/adapters/vite.js"
+      }
     }
   },
   "files": [
