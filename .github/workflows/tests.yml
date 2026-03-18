@@ -66,11 +66,11 @@ jobs:
       - name: Build
         run: npm run build
 
-      - name: Check Deno compatibility (npm: specifier)
+      - name: Check Deno compatibility (core SDK)
         run: |
-          cat > /tmp/deno-check.mjs << 'EOF'
-          import { CoCart, MemoryStorage } from "npm:@cocart/sdk";
-          const client = new CoCart("https://example.com", { storage: new MemoryStorage() });
-          console.log("CoCart instantiated successfully:", typeof client);
-          EOF
-          deno run --allow-import /tmp/deno-check.mjs
+          deno eval "import { CoCart, MemoryStorage } from './dist/index.js'; const c = new CoCart('https://example.com', { storage: new MemoryStorage() }); console.log('core OK:', typeof c);"
+
+      - name: Check Deno compatibility (deno adapter)
+        run: |
+          echo '{"imports":{"@cocart/sdk":"./dist/index.js"}}' > /tmp/deno-import-map.json
+          deno eval --import-map=/tmp/deno-import-map.json "import { createClient } from './dist/adapters/deno.js'; const c = createClient('https://example.com'); console.log('deno adapter OK:', typeof c);"
