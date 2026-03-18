@@ -31,14 +31,14 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Build
+        run: npm run build
+
       - name: Type check
         run: npm run typecheck
 
       - name: Run tests
         run: npm test
-
-      - name: Build
-        run: npm run build
 
   deno:
     runs-on: ubuntu-latest
@@ -72,5 +72,5 @@ jobs:
 
       - name: Check Deno compatibility (deno adapter)
         run: |
-          echo '{"imports":{"@cocart/sdk":"./dist/index.js"}}' > /tmp/deno-import-map.json
-          deno eval --import-map=/tmp/deno-import-map.json "import { createClient } from './dist/adapters/deno.js'; const c = createClient('https://example.com'); console.log('deno adapter OK:', typeof c);"
+          echo "{\"imports\":{\"@cocart/sdk\":\"$GITHUB_WORKSPACE/dist/index.js\"}}" > /tmp/deno-import-map.json
+          deno eval --import-map=/tmp/deno-import-map.json "import { createClient } from '$GITHUB_WORKSPACE/dist/adapters/deno.js'; const c = createClient('https://example.com'); console.log('deno adapter OK:', typeof c);"
