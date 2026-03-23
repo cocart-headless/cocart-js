@@ -3,6 +3,7 @@ import type { Response } from './response.js';
 import type { StorageInterface } from './storage/storage.interface.js';
 import type { JwtOptions } from './cocart.types.js';
 import { AuthenticationError } from './exceptions/authentication-error.js';
+import { t } from './i18n/i18n.js';
 
 /**
  * JWT Manager
@@ -70,7 +71,7 @@ export class JwtManager {
       await this.persistTokens();
     } else {
       throw new AuthenticationError(
-        'JWT token not found in login response. Is the CoCart JWT Authentication plugin installed?',
+        t('jwt.tokenMissing', undefined, this.client.getLocale()),
         0,
         'cocart_jwt_missing',
       );
@@ -87,7 +88,7 @@ export class JwtManager {
 
     if (!token) {
       throw new AuthenticationError(
-        'No refresh token available. Please login first.',
+        t('jwt.noRefreshToken', undefined, this.client.getLocale()),
         0,
         'cocart_jwt_no_refresh_token',
       );

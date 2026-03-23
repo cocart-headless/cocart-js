@@ -1,13 +1,14 @@
 import { CoCartError } from './cocart-error.js';
+import { t } from '../i18n/i18n.js';
 
 /**
  * Thrown when a method requires CoCart Basic but the SDK
  * is configured for the legacy CoCart plugin.
  */
 export class VersionError extends CoCartError {
-  constructor(method: string) {
+  constructor(method: string, locale?: string) {
     super(
-      `${method}() requires CoCart Basic. Please upgrade from the legacy CoCart plugin to use this feature.`,
+      t('version.requiresBasic', { method }, locale),
       0,
       'cocart_version_required',
     );

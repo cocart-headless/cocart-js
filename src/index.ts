@@ -23,6 +23,10 @@ export { CurrencyFormatter } from './currency-formatter.js';
 export { TimezoneHelper } from './timezone.js';
 export { validateProductId, validateQuantity, validateEmail } from './validation.js';
 
+// i18n
+export { registerLocale, setLocale, getLocale, t } from './i18n/i18n.js';
+export type { MessageKey, MessageParams, MessageCatalog } from './i18n/i18n.js';
+
 // Storage
 export type { StorageInterface } from './storage/storage.interface.js';
 export { MemoryStorage } from './storage/memory-storage.js';
