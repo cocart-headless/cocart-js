@@ -13,7 +13,7 @@ No authentication is needed for guest cart operations. A "guest" is someone shop
 3. **Subsequent requests** — The stored cart key is sent with every request so the server knows which cart to look up.
 
 ```ts
-import { CoCart } from '@cocart/sdk';
+import { CoCart } from '@cocartheadless/sdk';
 
 const client = new CoCart('https://your-store.com');
 
@@ -84,7 +84,7 @@ If the [CoCart JWT Authentication](https://wordpress.org/plugins/cocart-jwt-auth
 ### Login
 
 ```ts
-import { CoCart } from '@cocart/sdk';
+import { CoCart } from '@cocartheadless/sdk';
 
 const client = new CoCart('https://your-store.com');
 
@@ -162,7 +162,7 @@ const cart = await client.cart().get();
 Pass a storage adapter to the JWT Manager for automatic persistence:
 
 ```ts
-import { CoCart, JwtManager } from '@cocart/sdk';
+import { CoCart, JwtManager } from '@cocartheadless/sdk';
 
 const client = new CoCart('https://your-store.com', { encryptionKey: 'my-secret-key' });
 const jwt = new JwtManager(client, client.getStorage(), { autoRefresh: true });

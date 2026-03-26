@@ -1,4 +1,4 @@
-# @cocart/sdk
+# @cocartheadless/sdk
 
 [![Tests](https://img.shields.io/github/actions/workflow/status/cocart-headless/cocart-js/tests.yml?label=tests&style=for-the-badge&labelColor=000000)](https://github.com/cocart-headless/cocart-js/actions/workflows/tests.yml)
 [![License](https://img.shields.io/github/license/jayanratna/resend-php?color=9cf&style=for-the-badge&labelColor=000000)](https://github.com/cocart-headless/cocart-js/blob/main/LICENSE)
@@ -50,7 +50,7 @@ See [SUPPORT.md](SUPPORT.md) for our versioning policy, supported Node.js versio
 [npm](https://www.npmjs.com/) is the default package manager that comes with Node.js. Run this in your project's root folder:
 
 ```bash
-npm install @cocart/sdk
+npm install @cocartheadless/sdk
 ```
 
 ### Via yarn
@@ -58,7 +58,7 @@ npm install @cocart/sdk
 [Yarn](https://yarnpkg.com/) is an alternative package manager. If you use Yarn in your project:
 
 ```bash
-yarn add @cocart/sdk
+yarn add @cocartheadless/sdk
 ```
 
 ### Via pnpm
@@ -66,7 +66,7 @@ yarn add @cocart/sdk
 [pnpm](https://pnpm.io/) is a fast, disk-efficient package manager. If you use pnpm:
 
 ```bash
-pnpm add @cocart/sdk
+pnpm add @cocartheadless/sdk
 ```
 
 ### Via Bun
@@ -74,7 +74,7 @@ pnpm add @cocart/sdk
 [Bun](https://bun.sh/) is a fast JavaScript runtime with a built-in package manager. If you use Bun:
 
 ```bash
-bun add @cocart/sdk
+bun add @cocartheadless/sdk
 ```
 
 **Zero runtime dependencies** — the SDK does not install any additional packages, keeping your project lightweight.
@@ -86,7 +86,7 @@ An **SDK** (Software Development Kit) is a library that provides ready-made func
 The `import` statement loads the SDK into your code. The `await` keyword is used before operations that talk to the server, because network requests take time and JavaScript needs to wait for the response before continuing.
 
 ```ts
-import { CoCart } from '@cocart/sdk';
+import { CoCart } from '@cocartheadless/sdk';
 
 // Create a client pointing to your WooCommerce store
 const client = new CoCart('https://your-store.com');
@@ -180,7 +180,7 @@ data.currency; // compile error — not requested  ✓
 ### Currency Formatting
 
 ```ts
-import { CurrencyFormatter } from '@cocart/sdk';
+import { CurrencyFormatter } from '@cocartheadless/sdk';
 
 const fmt = new CurrencyFormatter();
 const currency = response.getCurrency();
@@ -211,7 +211,7 @@ client.on('error', (e) => console.error(e.error));
 Cart keys and tokens are stored in the browser's `localStorage` encrypted with AES-256-GCM via the [Web Crypto API](https://developer.mozilla.org/en-US/docs/Web/API/Web_Crypto_API) — a browser-native encryption API that requires no extra libraries:
 
 ```ts
-import { CoCart, EncryptedStorage } from '@cocart/sdk';
+import { CoCart, EncryptedStorage } from '@cocartheadless/sdk';
 
 const storage = new EncryptedStorage('your-secret-key');
 const client = new CoCart('https://your-store.com', { storage });
@@ -233,7 +233,7 @@ Pre-built adapters for Astro, Next.js, Nuxt, Remix, SvelteKit, Elysia.js, Fastif
 
 ```ts
 // Astro / Next.js — browser
-import { createBrowserClient, attachCartKeyHeader } from '@cocart/sdk/astro';
+import { createBrowserClient, attachCartKeyHeader } from '@cocartheadless/sdk/astro';
 
 const client = createBrowserClient('https://your-store.com', {
   encryptionKey: 'your-key',
@@ -242,7 +242,7 @@ await client.restoreSession();
 attachCartKeyHeader(client);
 
 // Astro / Next.js — server
-import { createServerClient } from '@cocart/sdk/astro';
+import { createServerClient } from '@cocartheadless/sdk/astro';
 
 const client = createServerClient('https://your-store.com', Astro.request);
 ```

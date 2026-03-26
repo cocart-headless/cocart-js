@@ -5,7 +5,7 @@
 ## Installation
 
 ```bash
-npm install @cocart/sdk
+npm install @cocartheadless/sdk
 ```
 
 ## How It Works
@@ -24,7 +24,7 @@ Pass the Fastify `request` object to `createServerClient()`. Fastify header name
 
 ```ts
 import Fastify from 'fastify';
-import { createServerClient } from '@cocart/sdk/fastify';
+import { createServerClient } from '@cocartheadless/sdk/fastify';
 
 const app = Fastify();
 
@@ -75,7 +75,7 @@ app.get('/admin/sessions', async (request, reply) => {
 
 ```ts
 import Fastify from 'fastify';
-import { createServerClient } from '@cocart/sdk/fastify';
+import { createServerClient } from '@cocartheadless/sdk/fastify';
 
 const app = Fastify({ logger: true });
 const STORE_URL = process.env.COCART_STORE_URL!;
@@ -137,7 +137,7 @@ For larger applications, register CoCart as a Fastify plugin to share configurat
 // plugins/cocart.ts
 import fp from 'fastify-plugin';
 import type { FastifyPluginAsync } from 'fastify';
-import { createServerClient } from '@cocart/sdk/fastify';
+import { createServerClient } from '@cocartheadless/sdk/fastify';
 
 const cocartPlugin: FastifyPluginAsync = fp(async (fastify) => {
   fastify.decorateRequest('cocart', null);
@@ -189,4 +189,4 @@ Node.js (and therefore Fastify) normalises all incoming HTTP header names to **l
 |--------|-------------|
 | `createServerClient(storeUrl, request, options?)` | Server client — reads cart key from `x-cart-key` header in `FastifyRequest`, uses `MemoryStorage` |
 
-> This adapter is server-only. There is no `createBrowserClient` or `attachCartKeyHeader` — use the core `@cocart/sdk` directly in browser code.
+> This adapter is server-only. There is no `createBrowserClient` or `attachCartKeyHeader` — use the core `@cocartheadless/sdk` directly in browser code.

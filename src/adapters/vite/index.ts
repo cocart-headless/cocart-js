@@ -1,5 +1,5 @@
-import { CoCart } from '@cocart/sdk';
-import type { CoCartOptions } from '@cocart/sdk';
+import { CoCart } from '@cocartheadless/sdk';
+import type { CoCartOptions } from '@cocartheadless/sdk';
 
 /**
  * Create a browser-side CoCart client for Vite applications.
@@ -11,8 +11,8 @@ import type { CoCartOptions } from '@cocart/sdk';
  *
  * Usage:
  * ```ts
- * import { createBrowserClient, attachCartKeyHeader } from '@cocart/sdk/vite';
- * import { SessionManager } from '@cocart/sdk';
+ * import { createBrowserClient, attachCartKeyHeader } from '@cocartheadless/sdk/vite';
+ * import { SessionManager } from '@cocartheadless/sdk';
  *
  * const client = createBrowserClient('https://store.example.com', {
  *   encryptionKey: import.meta.env.VITE_COCART_ENCRYPTION_KEY,

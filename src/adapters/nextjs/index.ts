@@ -1,5 +1,5 @@
-import { CoCart, MemoryStorage } from '@cocart/sdk';
-import type { CoCartOptions } from '@cocart/sdk';
+import { CoCart, MemoryStorage } from '@cocartheadless/sdk';
+import type { CoCartOptions } from '@cocartheadless/sdk';
 
 /**
  * Create a browser-side CoCart client for Next.js.
@@ -25,7 +25,7 @@ export function createBrowserClient(
  * Usage in a Server Component or Route Handler:
  * ```ts
  * import { headers } from 'next/headers';
- * import { createServerClient } from '@cocart/sdk/nextjs';
+ * import { createServerClient } from '@cocartheadless/sdk/nextjs';
  *
  * const headersList = await headers();
  * const client = createServerClient('https://store.example.com', headersList);

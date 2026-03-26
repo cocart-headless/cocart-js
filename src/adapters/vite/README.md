@@ -7,7 +7,7 @@ The Vite adapter provides `createBrowserClient` and `attachCartKeyHeader` for cl
 ## Installation
 
 ```bash
-npm install @cocart/sdk
+npm install @cocartheadless/sdk
 ```
 
 ## How It Works
@@ -26,8 +26,8 @@ Initialise the client once in a shared module. Call `attachCartKeyHeader()` to p
 
 ```ts
 // src/lib/cocart.ts
-import { createBrowserClient, attachCartKeyHeader } from '@cocart/sdk/vite';
-import { SessionManager } from '@cocart/sdk';
+import { createBrowserClient, attachCartKeyHeader } from '@cocartheadless/sdk/vite';
+import { SessionManager } from '@cocartheadless/sdk';
 
 const client = createBrowserClient(import.meta.env.VITE_COCART_STORE_URL, {
   encryptionKey: import.meta.env.VITE_COCART_ENCRYPTION_KEY,
@@ -107,17 +107,17 @@ The Vite adapter handles only the browser side. Your backend needs its own CoCar
 
 | Backend | Import |
 |---------|--------|
-| Fastify | `@cocart/sdk/fastify` |
-| Hono | `@cocart/sdk/hono` |
-| Elysia.js (Bun) | `@cocart/sdk/elysiajs` |
-| Deno | `@cocart/sdk/deno` |
+| Fastify | `@cocartheadless/sdk/fastify` |
+| Hono | `@cocartheadless/sdk/hono` |
+| Elysia.js (Bun) | `@cocartheadless/sdk/elysiajs` |
+| Deno | `@cocartheadless/sdk/deno` |
 
 ### Example: Vite Frontend + Fastify Backend
 
 ```ts
 // server/index.ts (Fastify)
 import Fastify from 'fastify';
-import { createServerClient } from '@cocart/sdk/fastify';
+import { createServerClient } from '@cocartheadless/sdk/fastify';
 
 const app = Fastify();
 const STORE_URL = process.env.COCART_STORE_URL!;
@@ -143,7 +143,7 @@ app.listen({ port: 3001 });
 ```ts
 // server/index.ts (Hono)
 import { Hono } from 'hono';
-import { createServerClient } from '@cocart/sdk/hono';
+import { createServerClient } from '@cocartheadless/sdk/hono';
 
 const app = new Hono();
 const STORE_URL = process.env.COCART_STORE_URL!;
@@ -179,7 +179,7 @@ export default defineConfig({
 For registered customers, pass `username` and `password` when creating the client. The credentials are sent with every API request:
 
 ```ts
-import { createBrowserClient, attachCartKeyHeader } from '@cocart/sdk/vite';
+import { createBrowserClient, attachCartKeyHeader } from '@cocartheadless/sdk/vite';
 
 const client = createBrowserClient(import.meta.env.VITE_COCART_STORE_URL, {
   username: 'customer@example.com',

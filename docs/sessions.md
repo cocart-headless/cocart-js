@@ -10,7 +10,7 @@ A **session** represents a single shopping cart — either a guest visitor's car
 The Sessions endpoint is for administrators to manage cart sessions server-side. It requires WooCommerce REST API credentials (see [Consumer Keys](authentication.md#consumer-keys-admin)).
 
 ```ts
-import { CoCart } from '@cocart/sdk';
+import { CoCart } from '@cocartheadless/sdk';
 
 const client = new CoCart('https://your-store.com', {
   consumerKey: 'ck_xxxxx',
@@ -62,7 +62,7 @@ The `SessionManager` is a helper class for frontend applications. It handles a c
 ### Basic Setup
 
 ```ts
-import { CoCart, SessionManager } from '@cocart/sdk';
+import { CoCart, SessionManager } from '@cocartheadless/sdk';
 
 // In a browser, LocalStorage is used automatically — no extra configuration needed
 const client = new CoCart('https://your-store.com');
@@ -160,7 +160,7 @@ All storage adapters implement the same `StorageInterface`, so you can swap them
 Stores data in the application's memory (a JavaScript `Map`). Data is lost when the page is refreshed (in a browser) or when the process restarts (on a server). Best for short-lived operations or testing. Used automatically in Node.js/SSR environments.
 
 ```ts
-import { MemoryStorage } from '@cocart/sdk';
+import { MemoryStorage } from '@cocartheadless/sdk';
 
 const storage = new MemoryStorage();
 ```
@@ -170,7 +170,7 @@ const storage = new MemoryStorage();
 A thin wrapper around the browser's built-in `window.localStorage`. Data is stored as plain text and persists across page refreshes and browser restarts. **This is used automatically in browser environments** — you don't need to configure anything. Since the data is not encrypted, anyone with access to the browser's developer tools can read it. Use `EncryptedStorage` if you're storing sensitive data like tokens.
 
 ```ts
-import { LocalStorage } from '@cocart/sdk';
+import { LocalStorage } from '@cocartheadless/sdk';
 
 const storage = new LocalStorage('cocart_'); // optional prefix
 ```
@@ -182,7 +182,7 @@ Like `LocalStorage`, but all data is encrypted before saving. This uses the **We
 **What is the Web Crypto API?** It's a browser-native API (available via `window.crypto.subtle`) that provides secure encryption, hashing, and key generation. The SDK uses it to encrypt your cart keys and tokens with **AES-256-GCM** — a widely trusted encryption standard used by banks and governments. You don't need to understand the cryptography; just provide a secret key and the SDK handles the rest.
 
 ```ts
-import { EncryptedStorage } from '@cocart/sdk';
+import { EncryptedStorage } from '@cocartheadless/sdk';
 
 const storage = new EncryptedStorage('your-secret-encryption-key', {
   prefix: 'cocart_enc_', // optional, default: 'cocart_enc_'
@@ -201,7 +201,7 @@ const storage = new EncryptedStorage('your-secret-encryption-key', {
 If the built-in adapters don't fit your needs, you can create your own. Just implement the `StorageInterface` — a TypeScript **interface** that defines three methods: `get`, `set`, and `delete`. For example, you could store data in IndexedDB, a database, or a cookie:
 
 ```ts
-import type { StorageInterface } from '@cocart/sdk';
+import type { StorageInterface } from '@cocartheadless/sdk';
 
 class IndexedDbStorage implements StorageInterface {
   async get(key: string): Promise<string | null> {
@@ -227,7 +227,7 @@ The interface supports both **synchronous** (returns immediately) and **asynchro
 This is one of the most important flows in headless e-commerce. A visitor shops as a guest (no account needed), fills up their cart, then decides to log in or create an account. You want their guest cart items to carry over to their customer cart — otherwise they'd lose everything and have to start over. Here's how the full flow works:
 
 ```ts
-import { CoCart, SessionManager } from '@cocart/sdk';
+import { CoCart, SessionManager } from '@cocartheadless/sdk';
 
 const client = new CoCart('https://your-store.com', { encryptionKey: 'my-secret-key' });
 const session = new SessionManager(client, client.getStorage());

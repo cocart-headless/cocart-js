@@ -72,5 +72,5 @@ jobs:
 
       - name: Check Deno compatibility (deno adapter)
         run: |
-          echo "{\"imports\":{\"@cocart/sdk\":\"$GITHUB_WORKSPACE/dist/index.js\"}}" > /tmp/deno-import-map.json
+          echo "{\"imports\":{\"@cocartheadless/sdk\":\"$GITHUB_WORKSPACE/dist/index.js\"}}" > /tmp/deno-import-map.json
           deno eval --import-map=/tmp/deno-import-map.json "import { createClient } from '$GITHUB_WORKSPACE/dist/adapters/deno.js'; const c = createClient('https://example.com'); console.log('deno adapter OK:', typeof c);"

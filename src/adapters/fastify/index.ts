@@ -1,5 +1,5 @@
-import { CoCart, MemoryStorage } from '@cocart/sdk';
-import type { CoCartOptions } from '@cocart/sdk';
+import { CoCart, MemoryStorage } from '@cocartheadless/sdk';
+import type { CoCartOptions } from '@cocartheadless/sdk';
 
 /** Minimal duck-type for a Fastify FastifyRequest — avoids a hard dependency on `fastify`. */
 interface FastifyRequest {
@@ -15,7 +15,7 @@ interface FastifyRequest {
  * Usage in a Fastify route handler:
  * ```ts
  * import Fastify from 'fastify';
- * import { createServerClient } from '@cocart/sdk/fastify';
+ * import { createServerClient } from '@cocartheadless/sdk/fastify';
  *
  * const app = Fastify();
  *

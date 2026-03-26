@@ -140,7 +140,7 @@ client.setMainPlugin('legacy');
 **Basic-only methods throw immediately.** Methods that require CoCart Basic will throw a `VersionError` before making any HTTP request, with a clear message indicating which method requires an upgrade:
 
 ```ts
-import { CoCart, VersionError } from '@cocart/sdk';
+import { CoCart, VersionError } from '@cocartheadless/sdk';
 
 const client = new CoCart('https://your-store.com', { mainPlugin: 'legacy' });
 

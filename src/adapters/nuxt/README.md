@@ -7,7 +7,7 @@ The Nuxt adapter solves this by passing the cart key from browser to server via 
 ## Installation
 
 ```bash
-npm install @cocart/sdk
+npm install @cocartheadless/sdk
 ```
 
 ## How It Works
@@ -26,8 +26,8 @@ Use `createBrowserClient()` inside a Nuxt plugin or composable. Plugins register
 
 ```ts
 // plugins/cocart.client.ts
-import { createBrowserClient, attachCartKeyHeader } from '@cocart/sdk/nuxt';
-import { SessionManager } from '@cocart/sdk';
+import { createBrowserClient, attachCartKeyHeader } from '@cocartheadless/sdk/nuxt';
+import { SessionManager } from '@cocartheadless/sdk';
 
 export default defineNuxtPlugin(async () => {
   const config = useRuntimeConfig();
@@ -61,7 +61,7 @@ Use `createServerClient()` in Nuxt server routes and API handlers. The cart key 
 
 ```ts
 // server/api/cart/index.get.ts
-import { createServerClient } from '@cocart/sdk/nuxt';
+import { createServerClient } from '@cocartheadless/sdk/nuxt';
 
 export default defineEventHandler(async (event) => {
   const client = createServerClient(
@@ -80,7 +80,7 @@ For registered customers, pass their `username` and `password`:
 
 ```ts
 // server/api/cart/index.get.ts
-import { createServerClient } from '@cocart/sdk/nuxt';
+import { createServerClient } from '@cocartheadless/sdk/nuxt';
 
 export default defineEventHandler(async (event) => {
   const client = createServerClient(
@@ -103,7 +103,7 @@ Consumer keys are WooCommerce admin credentials. Use them only for admin-level A
 
 ```ts
 // server/api/sessions/index.get.ts
-import { createServerClient } from '@cocart/sdk/nuxt';
+import { createServerClient } from '@cocartheadless/sdk/nuxt';
 
 export default defineEventHandler(async (event) => {
   const client = createServerClient(
@@ -126,7 +126,7 @@ export default defineEventHandler(async (event) => {
 
 ```ts
 // server/api/cart/add.post.ts
-import { createServerClient } from '@cocart/sdk/nuxt';
+import { createServerClient } from '@cocartheadless/sdk/nuxt';
 
 export default defineEventHandler(async (event) => {
   const client = createServerClient(process.env.COCART_STORE_URL!, event);
@@ -146,7 +146,7 @@ export default defineEventHandler(async (event) => {
 
 ```ts
 // server/api/cart/[itemKey].delete.ts
-import { createServerClient } from '@cocart/sdk/nuxt';
+import { createServerClient } from '@cocartheadless/sdk/nuxt';
 
 export default defineEventHandler(async (event) => {
   const client = createServerClient(process.env.COCART_STORE_URL!, event);
@@ -211,8 +211,8 @@ const { removeItem } = useCart();
 
 ```ts
 // server/api/auth/login.post.ts
-import { createServerClient } from '@cocart/sdk/nuxt';
-import { SessionManager } from '@cocart/sdk';
+import { createServerClient } from '@cocartheadless/sdk/nuxt';
+import { SessionManager } from '@cocartheadless/sdk';
 
 export default defineEventHandler(async (event) => {
   const client = createServerClient(process.env.COCART_STORE_URL!, event);

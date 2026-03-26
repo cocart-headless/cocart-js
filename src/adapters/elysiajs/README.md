@@ -5,7 +5,7 @@
 ## Installation
 
 ```bash
-bun add @cocart/sdk
+bun add @cocartheadless/sdk
 ```
 
 ## How It Works
@@ -24,7 +24,7 @@ Destructure `request` from the Elysia handler context and pass it to `createServ
 
 ```ts
 import { Elysia } from 'elysia';
-import { createServerClient } from '@cocart/sdk/elysiajs';
+import { createServerClient } from '@cocartheadless/sdk/elysiajs';
 
 const app = new Elysia()
   .get('/cart', async ({ request }) => {
@@ -48,7 +48,7 @@ For registered customers, pass their `username` and `password`:
 
 ```ts
 import { Elysia } from 'elysia';
-import { createServerClient } from '@cocart/sdk/elysiajs';
+import { createServerClient } from '@cocartheadless/sdk/elysiajs';
 
 new Elysia()
   .get('/cart', async ({ request }) => {
@@ -69,7 +69,7 @@ Consumer keys are WooCommerce admin credentials. Use them only for admin-level A
 
 ```ts
 import { Elysia } from 'elysia';
-import { createServerClient } from '@cocart/sdk/elysiajs';
+import { createServerClient } from '@cocartheadless/sdk/elysiajs';
 
 new Elysia()
   .get('/admin/sessions', async ({ request }) => {
@@ -91,8 +91,8 @@ new Elysia()
 For browser-side code (e.g. an Elysia app serving a frontend), use `createBrowserClient()`:
 
 ```ts
-import { createBrowserClient, attachCartKeyHeader } from '@cocart/sdk/elysiajs';
-import { SessionManager } from '@cocart/sdk';
+import { createBrowserClient, attachCartKeyHeader } from '@cocartheadless/sdk/elysiajs';
+import { SessionManager } from '@cocartheadless/sdk';
 
 const client = createBrowserClient('https://your-store.com', {
   encryptionKey: 'your-secret-encryption-key',
@@ -116,7 +116,7 @@ export { client, session };
 
 ```ts
 import { Elysia, t } from 'elysia';
-import { createServerClient } from '@cocart/sdk/elysiajs';
+import { createServerClient } from '@cocartheadless/sdk/elysiajs';
 
 const STORE_URL = process.env.COCART_STORE_URL!;
 

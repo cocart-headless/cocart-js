@@ -7,7 +7,7 @@ The SvelteKit adapter solves this by passing the cart key from browser to server
 ## Installation
 
 ```bash
-npm install @cocart/sdk
+npm install @cocartheadless/sdk
 ```
 
 ## How It Works
@@ -26,8 +26,8 @@ Initialise the browser client in a shared module that runs on the client. A good
 
 ```ts
 // src/lib/cocart.ts
-import { createBrowserClient, attachCartKeyHeader } from '@cocart/sdk/svelte';
-import { SessionManager } from '@cocart/sdk';
+import { createBrowserClient, attachCartKeyHeader } from '@cocartheadless/sdk/svelte';
+import { SessionManager } from '@cocartheadless/sdk';
 import { PUBLIC_COCART_STORE_URL, PUBLIC_COCART_ENCRYPTION_KEY } from '$env/static/public';
 
 const client = createBrowserClient(PUBLIC_COCART_STORE_URL, {
@@ -55,7 +55,7 @@ Use `createServerClient()` in server `load` functions and server routes. The `ev
 ```ts
 // src/routes/cart/+page.server.ts
 import type { PageServerLoadEvent } from './$types';
-import { createServerClient } from '@cocart/sdk/svelte';
+import { createServerClient } from '@cocartheadless/sdk/svelte';
 import { COCART_STORE_URL } from '$env/static/private';
 
 export async function load(event: PageServerLoadEvent) {
@@ -93,7 +93,7 @@ For registered customers, pass their `username` and `password`:
 
 ```ts
 import type { PageServerLoadEvent } from './$types';
-import { createServerClient } from '@cocart/sdk/svelte';
+import { createServerClient } from '@cocartheadless/sdk/svelte';
 import { COCART_STORE_URL } from '$env/static/private';
 
 export async function load(event: PageServerLoadEvent) {
@@ -113,7 +113,7 @@ Consumer keys are WooCommerce admin credentials. Use them only for admin-level A
 
 ```ts
 import type { PageServerLoadEvent } from './$types';
-import { createServerClient } from '@cocart/sdk/svelte';
+import { createServerClient } from '@cocartheadless/sdk/svelte';
 import { COCART_STORE_URL, COCART_CONSUMER_KEY, COCART_CONSUMER_SECRET } from '$env/static/private';
 
 export async function load(event: PageServerLoadEvent) {
@@ -135,7 +135,7 @@ export async function load(event: PageServerLoadEvent) {
 // src/routes/api/cart/+server.ts
 import type { RequestEvent } from '@sveltejs/kit';
 import { json } from '@sveltejs/kit';
-import { createServerClient } from '@cocart/sdk/svelte';
+import { createServerClient } from '@cocartheadless/sdk/svelte';
 import { COCART_STORE_URL } from '$env/static/private';
 
 export async function GET(event: RequestEvent) {
@@ -149,7 +149,7 @@ export async function GET(event: RequestEvent) {
 // src/routes/api/cart/add/+server.ts
 import type { RequestEvent } from '@sveltejs/kit';
 import { json } from '@sveltejs/kit';
-import { createServerClient } from '@cocart/sdk/svelte';
+import { createServerClient } from '@cocartheadless/sdk/svelte';
 import { COCART_STORE_URL } from '$env/static/private';
 
 export async function POST(event: RequestEvent) {
