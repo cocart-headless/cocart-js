@@ -1,12 +1,16 @@
 # @cocartheadless/sdk
 
+[![TypeScript](https://img.shields.io/badge/TypeScript-Ready-blue?style=for-the-badge&labelColor=000000)](https://www.typescriptlang.org/)
+[![npm version](https://img.shields.io/npm/v/@cocartheadless/sdk?style=for-the-badge&labelColor=000000)](https://www.npmjs.com/package/@cocartheadless/sdk)
+[![jsDelivr hits](https://img.shields.io/jsdelivr/npm/hm/@cocartheadless/sdk?style=for-the-badge&labelColor=000000)](https://www.jsdelivr.com/package/npm/@cocartheadless/sdk)
+[![Zero Dependencies](https://img.shields.io/badge/dependencies-0-brightgreen?style=for-the-badge&labelColor=000000)](https://www.npmjs.com/package/@cocartheadless/sdk)
 [![Tests](https://img.shields.io/github/actions/workflow/status/cocart-headless/cocart-js/tests.yml?label=tests&style=for-the-badge&labelColor=000000)](https://github.com/cocart-headless/cocart-js/actions/workflows/tests.yml)
 [![License](https://img.shields.io/github/license/jayanratna/resend-php?color=9cf&style=for-the-badge&labelColor=000000)](https://github.com/cocart-headless/cocart-js/blob/main/LICENSE)
 
 Official TypeScript SDK for the [CoCart](https://cocartapi.com) REST API. Build **headless WooCommerce storefronts** — meaning your frontend (React, Astro, Next.js, or any framework) talks to WooCommerce through its API instead of using PHP templates.
 
 > [!IMPORTANT]
-> This SDK is still in development and not yet ready for production use. Provide feedback if you experience a bug.
+> This SDK is looking for feedback, if you experience a bug please report it.
 
 ## TODO to complete the SDK
 
@@ -79,6 +83,25 @@ bun add @cocartheadless/sdk
 
 **Zero runtime dependencies** — the SDK does not install any additional packages, keeping your project lightweight.
 
+### Via CDN (Framer, Webflow, plain HTML)
+
+For platforms like **Framer**, **Webflow**, or any environment where you just need a `<script>` tag — no npm required:
+
+```html
+<script src="https://cdn.jsdelivr.net/npm/@cocartheadless/sdk/dist/index.global.js"></script>
+<script>
+  const client = new CoCart('https://your-store.com');
+</script>
+```
+
+This loads a single minified file that exposes all SDK exports under the `CoCart` global. See the dedicated guides for [Framer](docs/framer.md) and [Webflow](docs/webflow.md).
+
+You can also pin a specific version:
+
+```html
+<script src="https://cdn.jsdelivr.net/npm/@cocartheadless/sdk@1.0.0/dist/index.global.js"></script>
+```
+
 ## Quick Start
 
 An **SDK** (Software Development Kit) is a library that provides ready-made functions for talking to a specific service — in this case, the CoCart REST API on your WooCommerce store. Instead of writing raw HTTP requests yourself, you call simple methods like `client.cart().addItem(123, 2)` and the SDK handles the details for you.
@@ -140,6 +163,8 @@ console.log(cart.get('totals.total')); // Reach into nested data with dot notati
 | [Fastify](src/adapters/fastify/README.md) | Node.js route handlers (server-only) |
 | [Hono](src/adapters/hono/README.md) | Multi-runtime (Node, Bun, Cloudflare Workers, Deno) |
 | [Deno](src/adapters/deno/README.md) | `Deno.serve()`, Fresh islands |
+| [Framer](docs/framer.md) | CDN script, Code Overrides, product display |
+| [Webflow](docs/webflow.md) | CDN script, custom code, dynamic elements |
 
 ## Features
 

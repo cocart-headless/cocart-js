@@ -6,6 +6,8 @@
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
+  "unpkg": "./dist/index.global.js",
+  "jsdelivr": "./dist/index.global.js",
   "exports": {
     ".": {
       "import": {
@@ -82,7 +84,7 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsup --config tsup.config.ts && tsup --config tsup.adapters.ts",
+    "build": "tsup --config tsup.config.ts && tsup --config tsup.adapters.ts && tsup --config tsup.cdn.ts",
     "dev": "tsup --watch",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
