@@ -87,8 +87,21 @@ bun add @cocartheadless/sdk
 
 For platforms like **Framer**, **Webflow**, or any environment where you just need a `<script>` tag — no npm required:
 
+**jsDelivr:**
+
 ```html
 <script src="https://cdn.jsdelivr.net/npm/@cocartheadless/sdk/dist/index.global.js"></script>
+```
+
+**unpkg:**
+
+```html
+<script src="https://unpkg.com/@cocartheadless/sdk/dist/index.global.js"></script>
+```
+
+Then use it:
+
+```html
 <script>
   const client = new CoCart('https://your-store.com');
 </script>
@@ -99,7 +112,11 @@ This loads a single minified file that exposes all SDK exports under the `CoCart
 You can also pin a specific version:
 
 ```html
-<script src="https://cdn.jsdelivr.net/npm/@cocartheadless/sdk@1.0.0/dist/index.global.js"></script>
+<!-- jsDelivr -->
+<script src="https://cdn.jsdelivr.net/npm/@cocartheadless/sdk@1.1.0/dist/index.global.js"></script>
+
+<!-- unpkg -->
+<script src="https://unpkg.com/@cocartheadless/sdk@1.1.0/dist/index.global.js"></script>
 ```
 
 ## Quick Start

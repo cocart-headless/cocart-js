@@ -12,12 +12,22 @@ In your Webflow project, go to **Project Settings > Custom Code** and paste the 
 <script src="https://cdn.jsdelivr.net/npm/@cocartheadless/sdk/dist/index.global.js"></script>
 ```
 
+Or use unpkg:
+
+```html
+<script src="https://unpkg.com/@cocartheadless/sdk/dist/index.global.js"></script>
+```
+
 This loads the SDK globally as `window.CoCart`, making it available to all custom code on every page.
 
 > **Tip:** Pin a specific version to avoid unexpected changes:
 >
 > ```html
-> <script src="https://cdn.jsdelivr.net/npm/@cocartheadless/sdk@1.0.0/dist/index.global.js"></script>
+> <!-- jsDelivr -->
+> <script src="https://cdn.jsdelivr.net/npm/@cocartheadless/sdk@1.1.0/dist/index.global.js"></script>
+>
+> <!-- unpkg -->
+> <script src="https://unpkg.com/@cocartheadless/sdk@1.1.0/dist/index.global.js"></script>
 > ```
 
 ### 2. Initialize the SDK
