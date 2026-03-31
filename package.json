@@ -109,5 +109,8 @@
   },
   "engines": {
     "node": ">=20.0.0"
+  },
+  "overrides": {
+    "picomatch": ">=4.0.4"
   }
 }
