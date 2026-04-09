@@ -678,13 +678,14 @@ export class CoCart {
     // Cart key header
     if (this.cartKey && !this.isAuthenticated()) {
       headers['Cart-Key'] = this.cartKey;
+      headers['CoCart-API-Cart-Key'] = this.cartKey; // Fallback for older plugin versions
     }
 
     return { ...headers, ...this.customHeaders };
   }
 
   private async extractCartKeyFromHeaders(response: Response): Promise<void> {
-    const cartKey = response.getHeader('Cart-Key');
+    const cartKey = response.getHeader('Cart-Key') ? response.getHeader('Cart-Key') : response.getHeader('CoCart-API-Cart-Key');
     if (cartKey !== null) {
       this.cartKey = cartKey;
       await this.storage.set(this.storageKey, cartKey);
