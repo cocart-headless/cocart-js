@@ -1,6 +1,6 @@
 {
   "name": "@cocartheadless/sdk",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "description": "Official TypeScript SDK for the CoCart REST API",
   "type": "module",
   "main": "./dist/index.cjs",
