@@ -7,7 +7,7 @@
 [![Socket](https://img.shields.io/badge/Socket-secured-brightgreen?style=for-the-badge&labelColor=000000)](https://socket.dev/npm/package/@cocartheadless/checkout)
 [![License](https://img.shields.io/github/license/jayanratna/resend-php?color=9cf&style=for-the-badge&labelColor=000000)](https://github.com/cocart-headless/cocart-js/blob/main/LICENSE)
 
-Developer-first checkout SDK for CoCart's Checkout API.
+A checkout orchestration layer that bridges CoCart's Checkout API with your headless WooCommerce frontend — form definitions, gateway tokenization, and payment context.
 
 This package is separate from `@cocartheadless/sdk` and installs as an extension on the core CoCart client. It is designed for a more seamless checkout experience with:
 

@@ -15,6 +15,37 @@ Each factory supports two modes:
 
 ---
 
+## Environment variables
+
+Store all gateway credentials in environment variables — never hardcode them. Use your framework's `.env` file and prefix public keys so they are safe to expose in the browser.
+
+```ini
+# .env
+# Stripe
+NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_...
+
+# PayPal
+NEXT_PUBLIC_PAYPAL_CLIENT_ID=...
+
+# Authorize.Net (server-side only — never expose these in the browser)
+AUTHORIZENET_API_LOGIN_ID=...
+AUTHORIZENET_CLIENT_KEY=...
+```
+
+> [!NOTE]
+> Use `pk_test_` / sandbox credentials during development and switch to live keys in your production environment. Stripe and PayPal route to their respective sandboxes automatically based on the key you provide.
+
+**Accessing env vars by framework:**
+
+| Framework | Syntax |
+|---|---|
+| Next.js | `process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` |
+| Astro | `import.meta.env.PUBLIC_STRIPE_PUBLISHABLE_KEY` |
+| Vite / SvelteKit | `import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY` |
+| Nuxt | `useRuntimeConfig().public.stripePublishableKey` |
+
+---
+
 ## Stripe
 
 > [!IMPORTANT]
@@ -33,7 +64,7 @@ import { loadStripe } from '@stripe/stripe-js';
 import { CoCart } from '@cocartheadless/sdk';
 import { createCheckout, createStripeGateway } from '@cocartheadless/checkout';
 
-const stripe = await loadStripe('pk_live_...');
+const stripe = await loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
 
 // Initialize elements in "deferred" mode — no clientSecret needed yet.
 // Stripe will confirm the PaymentIntent when submit() is called.
@@ -78,7 +109,7 @@ import { loadStripe } from '@stripe/stripe-js';
 import { CoCart } from '@cocartheadless/sdk';
 import { createCheckout, createStripeGateway } from '@cocartheadless/checkout';
 
-const stripe = await loadStripe('pk_live_...');
+const stripe = await loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
 let elements: ReturnType<typeof stripe.elements> | undefined;
 
 const client = new CoCart('https://your-store.com').use(createCheckout({
@@ -172,7 +203,7 @@ const client = new CoCart('https://your-store.com').use(createCheckout({
 }));
 
 // Render the Buttons using the same callbacks — no duplication needed.
-const paypal = await loadScript({ clientId: 'YOUR_CLIENT_ID' });
+const paypal = await loadScript({ clientId: process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID! });
 paypal.Buttons({ createOrder, onApprove }).render('#paypal-button-container');
 ```
 
@@ -234,8 +265,8 @@ declare const Accept: any; // Accept.js global
 async function handleSubmit() {
   // Read card values now, at submit time.
   const gateway = createAuthorizeNetGateway({
-    clientKey: 'YOUR_PUBLIC_CLIENT_KEY',
-    apiLoginID: 'YOUR_API_LOGIN_ID',
+    clientKey: process.env.AUTHORIZENET_CLIENT_KEY!,
+    apiLoginID: process.env.AUTHORIZENET_API_LOGIN_ID!,
     cardData: {
       cardNumber: (document.querySelector<HTMLInputElement>('#card-number')!).value,
       month: (document.querySelector<HTMLInputElement>('#exp-month')!).value,
@@ -292,7 +323,7 @@ const client = new CoCart('https://your-store.com').use(createCheckout({
         return new Promise((resolve, reject) => {
           Accept.dispatchData(
             {
-              authData: { clientKey: 'YOUR_PUBLIC_CLIENT_KEY', apiLoginID: 'YOUR_API_LOGIN_ID' },
+              authData: { clientKey: process.env.AUTHORIZENET_CLIENT_KEY!, apiLoginID: process.env.AUTHORIZENET_API_LOGIN_ID! },
               cardData,
             },
             (response: any) => {
