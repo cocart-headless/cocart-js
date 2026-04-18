@@ -168,6 +168,7 @@ console.log(cart.get('totals.total')); // Reach into nested data with dot notati
 | [Utilities](docs/utilities.md) | Currency formatter, timezone helper, response transformer |
 | [Writing Extensions](docs/extensions.md) | Create custom extensions, subscribe to client events, publish as npm |
 | [Datafast Analytics](packages/analytics-datafast/README.md) | Auto-track cart and checkout events with Datafast |
+| [Google Tag Manager](packages/analytics-gtm/README.md) | Push GA4 ecommerce events to window.dataLayer via GTM |
 
 ### Framework Adapters
 
