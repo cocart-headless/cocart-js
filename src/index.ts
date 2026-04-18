@@ -31,7 +31,7 @@ export { EncryptedStorage } from './storage/encrypted-storage.js';
 
 // Types
 export type {
-  CoCartOptions, JwtOptions, CartItemData, AuthCredentials,
+  CoCartOptions, JwtOptions, CartItemData, AuthCredentials, CoCartExtension, CoCartExtensionRegistry,
   // Response types
   CurrencyInfo, CartItem, CartItemImage, CartTotals, CartCustomer, CustomerAddress,
   CartCoupon, CartFee, ShippingRate, ShippingPackage, CrossSellProduct, CartResponse,

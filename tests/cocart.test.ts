@@ -5,6 +5,7 @@ import { AuthenticationError } from '../src/exceptions/authentication-error.js';
 import { ValidationError } from '../src/exceptions/validation-error.js';
 import { Response as SdkResponse } from '../src/response.js';
 import { MemoryStorage } from '../src/storage/memory-storage.js';
+import type { CoCartExtension } from '../src/cocart.types.js';
 
 // Helper to mock global fetch
 function mockFetch(status: number, body: Record<string, unknown>, headers: Record<string, string> = {}) {
