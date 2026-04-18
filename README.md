@@ -167,6 +167,7 @@ console.log(cart.get('totals.total')); // Reach into nested data with dot notati
 | [Error Handling](docs/error-handling.md) | Error hierarchy, catching errors, common scenarios |
 | [Utilities](docs/utilities.md) | Currency formatter, timezone helper, response transformer |
 | [Writing Extensions](docs/extensions.md) | Create custom extensions, subscribe to client events, publish as npm |
+| [Datafast Analytics](packages/analytics-datafast/README.md) | Auto-track cart and checkout events with Datafast |
 
 ### Framework Adapters
 
