@@ -34,11 +34,20 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Build checkout package
+        run: npm run build:checkout
+
       - name: Type check
         run: npm run typecheck
 
+      - name: Type check checkout package
+        run: npm run typecheck:checkout
+
       - name: Run tests
         run: npm test
+
+      - name: Run checkout package tests
+        run: npm run test:checkout
 
   deno:
     runs-on: ubuntu-latest

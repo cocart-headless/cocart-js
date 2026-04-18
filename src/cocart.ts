@@ -174,6 +174,16 @@ export class CoCart {
     return this;
   }
 
+  getWooCommerceCredentials(): { key: string; secret: string } | null {
+    if (this.consumerKey && this.consumerSecret) {
+      return {
+        key: this.consumerKey,
+        secret: this.consumerSecret,
+      };
+    }
+    return null;
+  }
+
   // --- Configuration ---
 
   setTimeout(ms: number): this {

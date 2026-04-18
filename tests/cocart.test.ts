@@ -7,6 +7,14 @@ import { Response as SdkResponse } from '../src/response.js';
 import { MemoryStorage } from '../src/storage/memory-storage.js';
 import type { CoCartExtension } from '../src/cocart.types.js';
 
+declare module '../src/cocart.types.js' {
+  interface CoCartExtensionRegistry {
+    checkout: {
+      createOrder: () => Promise<string>;
+    };
+  }
+}
+
 // Helper to mock global fetch
 function mockFetch(status: number, body: Record<string, unknown>, headers: Record<string, string> = {}) {
   return vi.fn().mockResolvedValue({
@@ -98,6 +106,20 @@ describe('CoCart', () => {
       expect(client.getJwtToken()).toBeNull();
       expect(client.getRefreshToken()).toBeNull();
       expect(client.hasJwtToken()).toBe(false);
+    });
+
+    it('exposes WooCommerce consumer credentials when configured', () => {
+      const client = new CoCart('https://store.com');
+      client.setWooCommerceCredentials('ck_test', 'cs_test');
+      expect(client.getWooCommerceCredentials()).toEqual({
+        key: 'ck_test',
+        secret: 'cs_test',
+      });
+    });
+
+    it('getWooCommerceCredentials() returns null when no credentials are set', () => {
+      const client = new CoCart('https://store.com');
+      expect(client.getWooCommerceCredentials()).toBeNull();
     });
 
     it('isGuest() returns true when no auth is set', () => {
@@ -396,6 +418,75 @@ describe('CoCart', () => {
       const sessions = client.sessions();
       expect(sessions).toBeDefined();
       expect(client.sessions()).toBe(sessions);
+    });
+  });
+
+  describe('extensions', () => {
+    it('installs an extension and exposes it as a client property', async () => {
+      const checkoutExtension: CoCartExtension<'checkout', { createOrder: () => Promise<string> }> = {
+        name: 'checkout',
+        install: () => ({
+          createOrder: async () => 'order_123',
+        }),
+      };
+
+      const client = new CoCart('https://store.com').use(checkoutExtension);
+
+      expect(client.hasExtension('checkout')).toBe(true);
+      await expect(client.checkout.createOrder()).resolves.toBe('order_123');
+      await expect(client.extension('checkout').createOrder()).resolves.toBe('order_123');
+    });
+
+    it('supports installing extensions from constructor options', async () => {
+      const checkoutExtension: CoCartExtension<'checkout', { createOrder: () => Promise<string> }> = {
+        name: 'checkout',
+        install: () => ({
+          createOrder: async () => 'order_456',
+        }),
+      };
+
+      const client = new CoCart('https://store.com', {
+        extensions: [checkoutExtension],
+      });
+
+      await expect(client.extension('checkout').createOrder()).resolves.toBe('order_456');
+    });
+
+    it('does not reinstall the same extension twice', () => {
+      const install = vi.fn(() => ({ createOrder: async () => 'order_789' }));
+      const checkoutExtension: CoCartExtension<'checkout', { createOrder: () => Promise<string> }> = {
+        name: 'checkout',
+        install,
+      };
+
+      const client = new CoCart('https://store.com');
+      client.use(checkoutExtension);
+      client.use(checkoutExtension);
+
+      expect(install).toHaveBeenCalledTimes(1);
+    });
+
+    it('throws when an extension name conflicts with an existing client property', () => {
+      const conflictingExtension: CoCartExtension<'cart', { broken: true }> = {
+        name: 'cart',
+        install: () => ({ broken: true }),
+      };
+
+      const client = new CoCart('https://store.com');
+
+      let error: unknown;
+      try { client.use(conflictingExtension); } catch (e) { error = e; }
+      expect(error).toBeInstanceOf(CoCartError);
+      expect((error as CoCartError).errorCode).toBe('extension_name_conflict');
+    });
+
+    it('throws when retrieving an extension that is not installed', () => {
+      const client = new CoCart('https://store.com');
+
+      let error: unknown;
+      try { client.extension('checkout'); } catch (e) { error = e; }
+      expect(error).toBeInstanceOf(CoCartError);
+      expect((error as CoCartError).errorCode).toBe('extension_not_installed');
     });
   });
 

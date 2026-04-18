@@ -162,6 +162,7 @@ console.log(cart.get('totals.total')); // Reach into nested data with dot notati
 | [Configuration & Setup](docs/installation.md) | Options, fluent config, framework adapters, white-labelling |
 | [Authentication](docs/authentication.md) | Guest, Basic Auth, JWT, consumer keys |
 | [Cart API](docs/cart.md) | Add, update, remove items, coupons, shipping, fees |
+| [Checkout SDK](packages/checkout/README.md) | Separate npm package for Checkout API, gateway helpers, and headless checkout forms |
 | [Products API](docs/products.md) | List, filter, search, categories, tags, brands |
 | [Sessions API](docs/sessions.md) | Admin sessions, SessionManager, storage adapters |
 | [Error Handling](docs/error-handling.md) | Error hierarchy, catching errors, common scenarios |
