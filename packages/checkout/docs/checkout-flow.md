@@ -104,4 +104,9 @@ const result = await client.checkout.submit({
 });
 
 const checkoutResult = result.processResponse.toObject();
+if (checkoutResult.payment_result?.redirect_url) {
+  window.location.href = checkoutResult.payment_result.redirect_url;
+}
 ```
+
+`successUrl` and `returnUrl` are set once at the extension level in `createCheckout()` and passed automatically into every gateway's `tokenize` context — you do not need to repeat them in `submit()`. The `{CHECKOUT_ID}` placeholder in `successUrl` is substituted with the checkout state ID at submission time.

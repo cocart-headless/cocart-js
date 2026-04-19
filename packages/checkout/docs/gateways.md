@@ -73,6 +73,8 @@ const paymentElement = elements.create('payment');
 paymentElement.mount('#payment-element');
 
 const client = new CoCart('https://your-store.com').use(createCheckout({
+  successUrl: 'https://your-store.com/order-complete?id={CHECKOUT_ID}',
+  returnUrl: 'https://your-store.com/checkout',
   gatewayAdapters: [
     createStripeGateway({ stripe, elements }),
   ],
@@ -115,7 +117,7 @@ let elements: ReturnType<typeof stripe.elements> | undefined;
 const client = new CoCart('https://your-store.com').use(createCheckout({
   gatewayAdapters: [
     createStripeGateway({
-      tokenize: async ({ paymentContext }) => {
+      tokenize: async ({ paymentContext, successUrl, returnUrl }) => {
         // paymentContext.client_secret comes from WooCommerce via the payment-context endpoint.
         // submit() fetches this automatically before calling tokenize.
         const clientSecret = String(paymentContext?.client_secret ?? '');
@@ -127,7 +129,8 @@ const client = new CoCart('https://your-store.com').use(createCheckout({
 
         const { error, paymentIntent } = await stripe.confirmPayment({
           elements,
-          confirmParams: { return_url: 'https://your-store.com/order-complete' },
+          // successUrl has {CHECKOUT_ID} already substituted; returnUrl is the fallback.
+          confirmParams: { return_url: successUrl ?? returnUrl ?? '' },
           redirect: 'if_required',
         });
 

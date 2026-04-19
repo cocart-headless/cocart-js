@@ -51,6 +51,8 @@ import { CoCart } from '@cocartheadless/sdk';
 import { createCheckout, createBankTransferGateway, createStripeGateway } from '@cocartheadless/checkout';
 
 const client = new CoCart('https://your-store.com').use(createCheckout({
+  successUrl: 'https://your-store.com/order-complete?id={CHECKOUT_ID}',
+  returnUrl: 'https://your-store.com/checkout',
   gatewayAdapters: [
     createStripeGateway({ stripe, elements }),
     createBankTransferGateway(), // fallback for zero-total orders

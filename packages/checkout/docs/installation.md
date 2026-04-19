@@ -20,8 +20,13 @@ npm install @cocartheadless/sdk @cocartheadless/checkout
 import { CoCart } from '@cocartheadless/sdk';
 import { createCheckout } from '@cocartheadless/checkout';
 
-const client = new CoCart('https://your-store.com').use(createCheckout());
+const client = new CoCart('https://your-store.com').use(createCheckout({
+  successUrl: 'https://your-store.com/order-complete?id={CHECKOUT_ID}',
+  returnUrl: 'https://your-store.com/checkout',
+}));
 ```
+
+`successUrl` is where the customer lands after a successful payment. Include `{CHECKOUT_ID}` as a placeholder — it is replaced with the order ID at submission time. `returnUrl` is where the customer is sent if payment fails or is cancelled.
 
 > [!TIP]
 > If you already configure credentials on the core CoCart client, the checkout package reuses them automatically for the Checkout API.
