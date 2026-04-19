@@ -10,11 +10,14 @@ import type {
 
 export function createStripeGateway(options: StripeGatewayOptions): CheckoutGatewayAdapter {
   const tokenize: CheckoutGatewayAdapter['tokenize'] = options.stripe
-    ? async ({ paymentContext }) => {
+    ? async ({ paymentContext, successUrl, returnUrl }) => {
         const clientSecret = String(paymentContext?.client_secret ?? '');
+        const confirmParams: Record<string, unknown> = {};
+        if (successUrl) confirmParams.return_url = successUrl;
+        else if (returnUrl) confirmParams.return_url = returnUrl;
         const { error, paymentIntent } = await options.stripe!.confirmPayment({
           elements: options.elements!,
-          confirmParams: { },
+          confirmParams,
           redirect: 'if_required',
         });
         if (error) throw new Error(error.message ?? 'Stripe payment failed');

@@ -132,6 +132,10 @@ export interface CheckoutGatewayRenderContext {
   gatewayId: string;
   remoteMethod?: CheckoutPaymentMethod;
   theme: CheckoutTheme;
+  /** Success URL with `{CHECKOUT_ID}` already substituted if a checkout ID is available, otherwise the raw template. */
+  successUrl?: string;
+  /** Return URL for failed or cancelled payments. */
+  returnUrl?: string;
 }
 
 export interface CheckoutGatewayTokenizeContext {
@@ -141,6 +145,10 @@ export interface CheckoutGatewayTokenizeContext {
   paymentContext?: Record<string, unknown>;
   checkoutState?: CheckoutState;
   input: CheckoutProcessInput;
+  /** Success URL with `{CHECKOUT_ID}` substituted from the current checkout state, if available. */
+  successUrl?: string;
+  /** Return URL for failed or cancelled payments. */
+  returnUrl?: string;
 }
 
 export interface CheckoutGatewayAdapter {
@@ -181,6 +189,17 @@ export interface CheckoutSDKOptions {
   collectShippingAddress?: boolean;
   shippingSameAsBilling?: boolean;
   fields?: Partial<Record<'contact' | 'billing' | 'shipping' | 'notes', CheckoutFormField[]>>;
+  /**
+   * URL to redirect the customer to after a successful payment.
+   * Include `{CHECKOUT_ID}` as a placeholder — it will be replaced with the actual checkout/order ID.
+   * Example: `'https://your-store.com/order-complete?id={CHECKOUT_ID}'`
+   */
+  successUrl?: string;
+  /**
+   * URL to redirect the customer to if payment fails or is cancelled.
+   * Example: `'https://your-store.com/checkout'`
+   */
+  returnUrl?: string;
 }
 
 export interface CheckoutSubmitInput {

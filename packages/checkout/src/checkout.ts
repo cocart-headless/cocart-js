@@ -61,6 +61,8 @@ export class CheckoutClient implements CheckoutSDK {
   private readonly fields: CheckoutSDKOptions['fields'];
   private readonly consumerKey?: string;
   private readonly consumerSecret?: string;
+  private readonly successUrl?: string;
+  private readonly returnUrl?: string;
 
   constructor(client: CoCart, options: CheckoutSDKOptions = {}) {
     this.client = client;
@@ -72,6 +74,8 @@ export class CheckoutClient implements CheckoutSDK {
     this.fields = options.fields;
     this.consumerKey = options.consumerKey;
     this.consumerSecret = options.consumerSecret;
+    this.successUrl = options.successUrl;
+    this.returnUrl = options.returnUrl;
   }
 
   registerGateway(adapter: CheckoutGatewayAdapter): this {
@@ -186,6 +190,8 @@ export class CheckoutClient implements CheckoutSDK {
             checkout: this,
             gatewayId,
             theme,
+            successUrl: this.successUrl,
+            returnUrl: this.returnUrl,
           }) ?? [
             {
               name: 'payment_data',
@@ -217,6 +223,8 @@ export class CheckoutClient implements CheckoutSDK {
     const checkoutState = input.hydratePaymentContext === false ? undefined : (await this.getCheckout()).toObject();
     const paymentContextResponse = (!skipPayment && gateway.tokenize) ? await this.createPaymentContext({ payment_method: input.gatewayId }) : undefined;
     const paymentContext = paymentContextResponse?.toObject() as Record<string, unknown> | undefined;
+    const checkoutId = String(checkoutState?.id ?? checkoutState?.cart_key ?? '');
+    const successUrl = this.successUrl?.replace('{CHECKOUT_ID}', checkoutId);
     const paymentData = (!skipPayment && gateway.tokenize)
       ? await gateway.tokenize({
           client: this.client,
@@ -225,6 +233,8 @@ export class CheckoutClient implements CheckoutSDK {
           paymentContext,
           checkoutState,
           input: input.process ?? { payment_method: input.gatewayId },
+          successUrl,
+          returnUrl: this.returnUrl,
         })
       : undefined;
 
