@@ -1,6 +1,6 @@
 {
   "name": "@cocartheadless/analytics-gtm",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "Google Tag Manager extension for the CoCart SDK — auto-tracks GA4 ecommerce events via window.dataLayer",
   "type": "module",
   "main": "./dist/index.cjs",
