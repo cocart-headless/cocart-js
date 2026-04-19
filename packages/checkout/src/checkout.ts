@@ -141,7 +141,7 @@ export class CheckoutClient implements CheckoutSDK {
    * The `payment` section is only included when a gateway is resolved (via `gatewayId`, `defaultGateway`, or the first registered adapter).
    * If no adapters are registered and no default is set, the returned form will have no payment section.
    */
-  createForm(options: { gatewayId?: string; theme?: CheckoutTheme } = {}): CheckoutFormDefinition {
+  createForm(options: { gatewayId?: string; theme?: CheckoutTheme; needsPayment?: boolean } = {}): CheckoutFormDefinition {
     const theme = options.theme ?? this.defaultTheme;
     const gatewayId = options.gatewayId ?? this.defaultGateway ?? [...this.adapters.keys()][0];
 
@@ -176,26 +176,29 @@ export class CheckoutClient implements CheckoutSDK {
       className: theme.sectionClassName,
     });
 
-    if (gatewayId && this.hasGateway(gatewayId)) {
+    if (options.needsPayment !== false && gatewayId && this.hasGateway(gatewayId)) {
       const gateway = this.getGateway(gatewayId);
-      const fields = gateway.getFields?.({
-        client: this.client,
-        checkout: this,
-        gatewayId,
-        theme,
-      }) ?? [
-        {
-          name: 'payment_data',
-          label: gateway.label,
-          type: 'gateway-element',
-          description: gateway.description,
-        },
-      ];
+      const isOffline = gateway.supports?.includes('offline') ?? false;
+      const fields = isOffline
+        ? []
+        : gateway.getFields?.({
+            client: this.client,
+            checkout: this,
+            gatewayId,
+            theme,
+          }) ?? [
+            {
+              name: 'payment_data',
+              label: gateway.label,
+              type: 'gateway-element' as const,
+              description: gateway.description,
+            },
+          ];
 
       sections.push({
         id: 'payment',
         title: 'Payment',
-        description: 'Render provider-native payment fields here.',
+        description: isOffline ? gateway.description : 'Render provider-native payment fields here.',
         fields: applyTheme(fields, theme),
         className: `${theme.sectionClassName} ${theme.paymentContainerClassName}`.trim(),
       });
@@ -210,10 +213,11 @@ export class CheckoutClient implements CheckoutSDK {
 
   async submit(input: CheckoutSubmitInput): Promise<CheckoutSubmitResult> {
     const gateway = this.getGateway(input.gatewayId);
+    const skipPayment = input.zeroTotal === true;
     const checkoutState = input.hydratePaymentContext === false ? undefined : (await this.getCheckout()).toObject();
-    const paymentContextResponse = gateway.tokenize ? await this.createPaymentContext({ payment_method: input.gatewayId }) : undefined;
+    const paymentContextResponse = (!skipPayment && gateway.tokenize) ? await this.createPaymentContext({ payment_method: input.gatewayId }) : undefined;
     const paymentContext = paymentContextResponse?.toObject() as Record<string, unknown> | undefined;
-    const paymentData = gateway.tokenize
+    const paymentData = (!skipPayment && gateway.tokenize)
       ? await gateway.tokenize({
           client: this.client,
           checkout: this,

@@ -2,7 +2,10 @@ import { describe, expect, it, vi } from 'vitest';
 import { CoCart, CoCartError } from '@cocartheadless/sdk';
 import {
   createAuthorizeNetGateway,
+  createBankTransferGateway,
+  createCashOnDeliveryGateway,
   createCheckout,
+  createCheckPaymentGateway,
   createPayPalGateway,
   createStripeGateway,
   createTailwindCheckoutTheme,
@@ -208,5 +211,94 @@ describe('@cocartheadless/checkout', () => {
       expect(error).toBeInstanceOf(CoCartError);
       expect((error as CoCartError).errorCode).toBe('checkout_gateway_not_registered');
     }
+  });
+
+  it('offline gateway factories return adapters with correct id, provider, label, and supports', () => {
+    const bacs = createBankTransferGateway();
+    const cheque = createCheckPaymentGateway();
+    const cod = createCashOnDeliveryGateway();
+
+    expect(bacs.id).toBe('bacs');
+    expect(bacs.provider).toBe('bacs');
+    expect(bacs.label).toBe('Direct Bank Transfer');
+    expect(bacs.supports).toContain('offline');
+    expect(bacs.tokenize).toBeUndefined();
+    expect(bacs.getFields).toBeUndefined();
+
+    expect(cheque.id).toBe('cheque');
+    expect(cheque.provider).toBe('cheque');
+    expect(cheque.label).toBe('Check Payment');
+
+    expect(cod.id).toBe('cod');
+    expect(cod.provider).toBe('cod');
+    expect(cod.label).toBe('Cash on Delivery');
+  });
+
+  it('offline gateway factories accept custom label and description', () => {
+    const bacs = createBankTransferGateway({ label: 'Wire Transfer', description: 'Pay via bank wire.' });
+    expect(bacs.label).toBe('Wire Transfer');
+    expect(bacs.description).toBe('Pay via bank wire.');
+  });
+
+  it('createForm omits the payment section when needsPayment is false', () => {
+    const client = new CoCart('https://store.com').use(createCheckout({
+      gatewayAdapters: [createBankTransferGateway()],
+    }));
+
+    const form = client.checkout.createForm({ gatewayId: 'bacs', needsPayment: false });
+    expect(form.sections.map((s) => s.id)).not.toContain('payment');
+  });
+
+  it('createForm includes a payment section with no fields for offline gateways', () => {
+    const client = new CoCart('https://store.com').use(createCheckout({
+      gatewayAdapters: [createCashOnDeliveryGateway({ description: 'Pay on delivery.' })],
+    }));
+
+    const form = client.checkout.createForm({ gatewayId: 'cod' });
+    const paymentSection = form.sections.find((s) => s.id === 'payment');
+    expect(paymentSection).toBeDefined();
+    expect(paymentSection!.fields).toHaveLength(0);
+    expect(paymentSection!.description).toBe('Pay on delivery.');
+  });
+
+  it('submit skips createPaymentContext and tokenize when zeroTotal is true', async () => {
+    const tokenize = vi.fn().mockResolvedValue({ payment_intent_id: 'pi_123' });
+    const client = new CoCart('https://store.com').use(createCheckout({
+      consumerKey: 'ck_test',
+      consumerSecret: 'cs_test',
+      gatewayAdapters: [createStripeGateway({ tokenize })],
+    }));
+
+    const requestRaw = vi.spyOn(client, 'requestRaw')
+      .mockResolvedValueOnce({ toObject: () => ({}) } as never)
+      .mockResolvedValueOnce({ toObject: () => ({ payment_result: { payment_status: 'processing' } }) } as never);
+
+    const result = await client.checkout.submit({ gatewayId: 'stripe', zeroTotal: true });
+
+    expect(tokenize).not.toHaveBeenCalled();
+    expect(requestRaw).toHaveBeenCalledTimes(2);
+    expect(result.paymentData).toBeUndefined();
+    expect(result.paymentContext).toBeUndefined();
+  });
+
+  it('submit with an offline gateway does not call createPaymentContext', async () => {
+    const client = new CoCart('https://store.com').use(createCheckout({
+      consumerKey: 'ck_test',
+      consumerSecret: 'cs_test',
+      gatewayAdapters: [createBankTransferGateway()],
+    }));
+
+    const requestRaw = vi.spyOn(client, 'requestRaw')
+      .mockResolvedValueOnce({ toObject: () => ({}) } as never)
+      .mockResolvedValueOnce({ toObject: () => ({ payment_result: { payment_status: 'on-hold' } }) } as never);
+
+    const result = await client.checkout.submit({ gatewayId: 'bacs' });
+
+    const paymentContextCall = requestRaw.mock.calls.find(([, route]) =>
+      typeof route === 'string' && route.includes('payment-context'),
+    );
+    expect(paymentContextCall).toBeUndefined();
+    expect(result.paymentData).toBeUndefined();
+    expect(requestRaw).toHaveBeenCalledTimes(2);
   });
 });

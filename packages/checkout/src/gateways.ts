@@ -1,6 +1,9 @@
 import type {
   AuthorizeNetGatewayOptions,
+  BankTransferGatewayOptions,
+  CashOnDeliveryGatewayOptions,
   CheckoutGatewayAdapter,
+  CheckPaymentGatewayOptions,
   PayPalGatewayOptions,
   StripeGatewayOptions,
 } from './types.js';
@@ -99,5 +102,35 @@ export function createAuthorizeNetGateway(options: AuthorizeNetGatewayOptions): 
       },
     ],
     tokenize,
+  };
+}
+
+export function createBankTransferGateway(options: BankTransferGatewayOptions = {}): CheckoutGatewayAdapter {
+  return {
+    id: 'bacs',
+    provider: 'bacs',
+    label: options.label ?? 'Direct Bank Transfer',
+    description: options.description,
+    supports: ['offline'],
+  };
+}
+
+export function createCheckPaymentGateway(options: CheckPaymentGatewayOptions = {}): CheckoutGatewayAdapter {
+  return {
+    id: 'cheque',
+    provider: 'cheque',
+    label: options.label ?? 'Check Payment',
+    description: options.description,
+    supports: ['offline'],
+  };
+}
+
+export function createCashOnDeliveryGateway(options: CashOnDeliveryGatewayOptions = {}): CheckoutGatewayAdapter {
+  return {
+    id: 'cod',
+    provider: 'cod',
+    label: options.label ?? 'Cash on Delivery',
+    description: options.description,
+    supports: ['offline'],
   };
 }

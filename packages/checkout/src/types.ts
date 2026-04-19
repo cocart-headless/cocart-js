@@ -188,6 +188,7 @@ export interface CheckoutSubmitInput {
   update?: CheckoutUpdateInput;
   process?: CheckoutProcessInput;
   hydratePaymentContext?: boolean;
+  zeroTotal?: boolean;
 }
 
 export interface CheckoutSubmitResult {
@@ -208,7 +209,7 @@ export interface CheckoutSDK {
   processCheckout(data: CheckoutProcessInput): Promise<Response<CheckoutState>>;
   getPaymentMethods(): Promise<Response<CheckoutPaymentMethodsResponse>>;
   createPaymentContext(request: CheckoutPaymentContextRequest): Promise<Response<Record<string, unknown>>>;
-  createForm(options?: { gatewayId?: string; theme?: CheckoutTheme }): CheckoutFormDefinition;
+  createForm(options?: { gatewayId?: string; theme?: CheckoutTheme; needsPayment?: boolean }): CheckoutFormDefinition;
   submit(input: CheckoutSubmitInput): Promise<CheckoutSubmitResult>;
 }
 
@@ -323,4 +324,13 @@ export type AuthorizeNetGatewayOptions =
         data_value?: string;
         [key: string]: unknown;
       }>;
+    };
+
+export interface OfflineGatewayOptions {
+  label?: string;
+  description?: string;
 }
+
+export type BankTransferGatewayOptions = OfflineGatewayOptions;
+export type CheckPaymentGatewayOptions = OfflineGatewayOptions;
+export type CashOnDeliveryGatewayOptions = OfflineGatewayOptions;

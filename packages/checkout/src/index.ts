@@ -1,10 +1,21 @@
 export { CheckoutClient } from './checkout.js';
 export { createCheckout, createGatewayAdapter } from './extension.js';
-export { createAuthorizeNetGateway, createPayPalGateway, createStripeGateway } from './gateways.js';
+export {
+  createAuthorizeNetGateway,
+  createBankTransferGateway,
+  createCashOnDeliveryGateway,
+  createCheckPaymentGateway,
+  createPayPalGateway,
+  createStripeGateway,
+} from './gateways.js';
 export { bareCheckoutTheme, createTailwindCheckoutTheme, shadcnCheckoutTheme } from './presets.js';
 
 export type {
   AuthorizeNetGatewayOptions,
+  BankTransferGatewayOptions,
+  CashOnDeliveryGatewayOptions,
+  CheckPaymentGatewayOptions,
+  OfflineGatewayOptions,
   StripeInstance,
   StripeElementsInstance,
   CheckoutAddressInput,

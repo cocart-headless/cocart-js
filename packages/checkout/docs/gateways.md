@@ -357,6 +357,82 @@ if (result.payment_result?.redirect_url) {
 
 ---
 
+## Offline Payments
+
+Offline gateways require no card input, no payment context, and no tokenization. The customer selects a payment method and WooCommerce marks the order accordingly. Payment happens outside the platform — via bank transfer, check, or cash on delivery.
+
+These factories return adapters with `supports: ['offline']` and no `tokenize` function. When used with `submit()`, no payment-context API call is made.
+
+---
+
+### Direct Bank Transfer (BACS)
+
+The customer places an order committing to pay via bank transfer. Your bank details are shown on the Thank You page.
+
+```ts
+import { CoCart } from '@cocartheadless/sdk';
+import { createCheckout, createBankTransferGateway } from '@cocartheadless/checkout';
+
+const client = new CoCart('https://your-store.com').use(createCheckout({
+  gatewayAdapters: [
+    createBankTransferGateway({
+      description: 'Make your payment directly into our bank account. Please use your order number as the payment reference.',
+    }),
+  ],
+}));
+
+const { processResponse } = await client.checkout.submit({ gatewayId: 'bacs' });
+const result = processResponse.toObject();
+if (result.payment_result?.redirect_url) {
+  window.location.href = result.payment_result.redirect_url; // → Thank You page with bank details
+}
+```
+
+---
+
+### Check Payment
+
+The customer places an order and mails a physical check. Your mailing address is shown on the Thank You page.
+
+```ts
+import { createCheckPaymentGateway } from '@cocartheadless/checkout';
+
+createCheckPaymentGateway({
+  description: 'Please make checks payable to "Your Store Name" and mail to: 123 Main Street, Anytown, USA.',
+})
+```
+
+---
+
+### Cash on Delivery
+
+The customer pays in cash when the order is delivered. Suitable for local delivery within the same region.
+
+```ts
+import { createCashOnDeliveryGateway } from '@cocartheadless/checkout';
+
+createCashOnDeliveryGateway({
+  description: 'Pay with cash when your order is delivered.',
+})
+```
+
+---
+
+### Payment section for offline gateways
+
+When an offline gateway is registered, `createForm()` includes a `payment` section with `fields: []` — no input elements. The section's `description` carries the gateway's instructions. Use it to display payment information to the customer:
+
+```ts
+const form = client.checkout.createForm({ gatewayId: 'bacs' });
+const paymentSection = form.sections.find(s => s.id === 'payment');
+// paymentSection.fields       → []
+// paymentSection.description  → your gateway description (e.g. bank account details)
+```
+
+To skip the payment section entirely (e.g. for zero-total orders), pass `needsPayment: false`. See [Zero-Total Checkout](./zero-total.md).
+
+---
+
 ## Multiple gateways
 
 ```ts

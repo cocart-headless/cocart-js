@@ -15,6 +15,9 @@ This package is separate from `@cocartheadless/sdk` and installs as an extension
 - Stripe
 - PayPal
 - Authorize.Net
+- Direct Bank Transfer (BACS)
+- Check Payment
+- Cash on Delivery
 
 **Extras**
 - Headless UI Rendering
@@ -92,7 +95,8 @@ const paymentMethods = await client.checkout.getPaymentMethods();
 |-------|-------------|
 | [Installation](docs/installation.md) | Package install, requirements, setup, and API coverage |
 | [Checkout Flow](docs/checkout-flow.md) | `getCheckout()`, `updateCheckout()`, `createPaymentContext()`, `processCheckout()`, and `submit()` |
-| [Gateways](docs/gateways.md) | Stripe, PayPal, Authorize.Net, and multi-gateway setup |
+| [Gateways](docs/gateways.md) | Stripe, PayPal, Authorize.Net, offline gateways, and multi-gateway setup |
+| [Zero-Total Checkout](docs/zero-total.md) | Free orders, coupon-discounted totals, and skipping tokenization |
 | [Frameworks](docs/frameworks.md) | Next.js, Astro, and framework integration patterns |
 | [Themes](docs/themes.md) | Tailwind CSS 4, shadcn-style presets, and headless form rendering |
 
