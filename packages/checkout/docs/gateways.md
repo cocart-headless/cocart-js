@@ -2,16 +2,21 @@
 
 The package ships focused helper factories for:
 
-- Stripe
-- PayPal
-- Authorize.Net
+- [Stripe](#stripe)
+- [PayPal](#paypal)
+- [Authorize.Net](#authorizenet)
+- [Direct Bank Transfer (BACS)](#direct-bank-transfer-bacs)
+- [Check Payment](#check-payment)
+- [Cash on Delivery](#cash-on-delivery)
 
-These helpers do not replace the provider SDK. They give you the correct CoCart-facing adapter shape so your app can keep provider logic and CoCart logic cleanly separated.
-
-Each factory supports two modes:
+**Online gateways** (Stripe, PayPal, Authorize.Net) handle card/wallet tokenization and require provider SDKs. Each supports two modes:
 
 - **Pre-wired** — pass provider-specific options and `tokenize` is handled for you
 - **Manual** — supply your own `tokenize` callback for full control
+
+**Offline gateways** (Direct Bank Transfer, Check Payment, Cash on Delivery) require no card input, no tokenization, and no provider SDK. The customer commits to pay outside the platform.
+
+These helpers do not replace the provider SDK. They give you the correct CoCart-facing adapter shape so your app can keep provider logic and CoCart logic cleanly separated.
 
 ---
 
