@@ -281,6 +281,84 @@ describe('@cocartheadless/checkout', () => {
     expect(result.paymentContext).toBeUndefined();
   });
 
+  it('applyCoupon delegates to the core cart endpoint', async () => {
+    const client = new CoCart('https://store.com').use(createCheckout());
+    const spy = vi.fn().mockResolvedValue({ toObject: () => ({}) } as never);
+    vi.spyOn(client, 'cart').mockReturnValue({ applyCoupon: spy } as never);
+
+    await client.checkout.applyCoupon('SAVE10');
+    expect(spy).toHaveBeenCalledWith('SAVE10');
+  });
+
+  it('removeCoupon delegates to the core cart endpoint', async () => {
+    const client = new CoCart('https://store.com').use(createCheckout());
+    const spy = vi.fn().mockResolvedValue({ toObject: () => ({}) } as never);
+    vi.spyOn(client, 'cart').mockReturnValue({ removeCoupon: spy } as never);
+
+    await client.checkout.removeCoupon('SAVE10');
+    expect(spy).toHaveBeenCalledWith('SAVE10');
+  });
+
+  it('getOrderSummary maps cart items, coupons, and totals from checkout state', async () => {
+    const client = new CoCart('https://store.com').use(createCheckout());
+
+    vi.spyOn(client, 'requestRaw').mockResolvedValue({
+      toObject: () => ({
+        cart: {
+          abc123: {
+            item_key: 'abc123',
+            name: 'Test Product',
+            price: '10.00',
+            quantity: { value: 2 },
+            totals: { subtotal: '20.00' },
+          },
+        },
+        coupons: [
+          { coupon: 'SAVE10', label: 'Save 10%', saving: '2.00', saving_html: '<del>2.00</del>' },
+        ],
+        totals: {
+          subtotal: '20.00',
+          discount_total: '2.00',
+          shipping_total: '5.00',
+          fee_total: '0.00',
+          total_tax: '1.80',
+          total: '24.80',
+        },
+      }),
+    } as never);
+
+    const summary = await client.checkout.getOrderSummary();
+
+    expect(summary.items).toHaveLength(1);
+    expect(summary.items[0]).toEqual({ key: 'abc123', name: 'Test Product', price: '10.00', quantity: 2, subtotal: '20.00' });
+    expect(summary.coupons).toHaveLength(1);
+    expect(summary.coupons[0]).toEqual({ code: 'SAVE10', label: 'Save 10%', saving: '2.00' });
+    expect(summary.totals).toEqual({
+      subtotal: '20.00',
+      discount_total: '2.00',
+      shipping_total: '5.00',
+      fee_total: '0.00',
+      tax_total: '1.80',
+      total: '24.80',
+    });
+  });
+
+  it('createForm with includeSummary: true appends an order-summary section', () => {
+    const client = new CoCart('https://store.com').use(createCheckout());
+    const form = client.checkout.createForm({ includeSummary: true });
+    const summarySection = form.sections.find((s) => s.id === 'order-summary');
+
+    expect(summarySection).toBeDefined();
+    expect(summarySection!.fields).toHaveLength(0);
+    expect(summarySection!.className).toBe(form.theme.orderSummaryClassName);
+  });
+
+  it('createForm without includeSummary does not include an order-summary section', () => {
+    const client = new CoCart('https://store.com').use(createCheckout());
+    const form = client.checkout.createForm();
+    expect(form.sections.map((s) => s.id)).not.toContain('order-summary');
+  });
+
   it('submit with an offline gateway does not call createPaymentContext', async () => {
     const client = new CoCart('https://store.com').use(createCheckout({
       consumerKey: 'ck_test',

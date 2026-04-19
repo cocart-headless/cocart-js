@@ -72,6 +72,35 @@ export interface CheckoutState {
   [key: string]: unknown;
 }
 
+export interface CheckoutSummaryItem {
+  key: string;
+  name: string;
+  quantity: number;
+  price: string;
+  subtotal: string;
+}
+
+export interface CheckoutSummaryTotals {
+  subtotal: string;
+  discount_total: string;
+  shipping_total: string;
+  fee_total: string;
+  tax_total: string;
+  total: string;
+}
+
+export interface CheckoutSummaryCoupon {
+  code: string;
+  label: string;
+  saving: string;
+}
+
+export interface CheckoutOrderSummary {
+  items: CheckoutSummaryItem[];
+  coupons: CheckoutSummaryCoupon[];
+  totals: CheckoutSummaryTotals;
+}
+
 export interface CheckoutPaymentContextRequest {
   payment_method: string;
   [key: string]: unknown;
@@ -228,8 +257,11 @@ export interface CheckoutSDK {
   processCheckout(data: CheckoutProcessInput): Promise<Response<CheckoutState>>;
   getPaymentMethods(): Promise<Response<CheckoutPaymentMethodsResponse>>;
   createPaymentContext(request: CheckoutPaymentContextRequest): Promise<Response<Record<string, unknown>>>;
-  createForm(options?: { gatewayId?: string; theme?: CheckoutTheme; needsPayment?: boolean }): CheckoutFormDefinition;
+  createForm(options?: { gatewayId?: string; theme?: CheckoutTheme; needsPayment?: boolean; includeSummary?: boolean }): CheckoutFormDefinition;
   submit(input: CheckoutSubmitInput): Promise<CheckoutSubmitResult>;
+  applyCoupon(code: string): Promise<Response>;
+  removeCoupon(code: string): Promise<Response>;
+  getOrderSummary(): Promise<CheckoutOrderSummary>;
 }
 
 export interface CheckoutOptions extends CheckoutSDKOptions {

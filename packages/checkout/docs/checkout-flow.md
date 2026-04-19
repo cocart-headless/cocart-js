@@ -110,3 +110,49 @@ if (checkoutResult.payment_result?.redirect_url) {
 ```
 
 `successUrl` and `returnUrl` are set once at the extension level in `createCheckout()` and passed automatically into every gateway's `tokenize` context — you do not need to repeat them in `submit()`. The `{CHECKOUT_ID}` placeholder in `successUrl` is substituted with the checkout state ID at submission time.
+
+---
+
+## Coupons
+
+Apply or remove a coupon before submitting. After applying, re-check `needs_payment` because a coupon may reduce the total to zero.
+
+```ts
+await client.checkout.applyCoupon('SAVE10');
+
+const state = (await client.checkout.getCheckout()).toObject();
+const needsPayment = state.needs_payment !== false;
+```
+
+To remove a coupon:
+
+```ts
+await client.checkout.removeCoupon('SAVE10');
+```
+
+See [Coupons](coupons.md) for the full recommended pattern including order summary and zero-total handling.
+
+---
+
+## Order Summary
+
+`getOrderSummary()` fetches the current checkout state and returns a typed `CheckoutOrderSummary` with items, applied coupons, and totals:
+
+```ts
+const summary = await client.checkout.getOrderSummary();
+
+// summary.items    — CheckoutSummaryItem[]
+// summary.coupons  — CheckoutSummaryCoupon[]
+// summary.totals   — CheckoutSummaryTotals
+
+console.log(summary.totals.total);           // e.g. '24.80'
+console.log(summary.totals.discount_total);  // e.g. '2.00'
+```
+
+To include a structural placeholder section in your form definition, pass `includeSummary: true` to `createForm()`:
+
+```ts
+const form = client.checkout.createForm({ includeSummary: true });
+// Adds { id: 'order-summary', fields: [], className: theme.orderSummaryClassName }
+// Populate it by calling getOrderSummary() and rendering the returned data.
+```

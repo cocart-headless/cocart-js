@@ -7,6 +7,7 @@ import type {
   CheckoutFormSection,
   CheckoutGatewayAdapter,
   CheckoutGatewayPresentation,
+  CheckoutOrderSummary,
   CheckoutPaymentContextRequest,
   CheckoutPaymentMethodsResponse,
   CheckoutProcessInput,
@@ -140,12 +141,67 @@ export class CheckoutClient implements CheckoutSDK {
     return this.client.requestRaw('POST', `${this.routeBase}/payment-context`, this.withPreviewAuth(), request as Record<string, unknown>) as Promise<Response<Record<string, unknown>>>;
   }
 
+  async applyCoupon(code: string): Promise<Response> {
+    if (typeof this.client.cart !== 'function') {
+      throw new CoCartError('Cart endpoint is not available on the CoCart client.', 0, 'checkout_cart_unavailable');
+    }
+    return this.client.cart().applyCoupon(code);
+  }
+
+  async removeCoupon(code: string): Promise<Response> {
+    if (typeof this.client.cart !== 'function') {
+      throw new CoCartError('Cart endpoint is not available on the CoCart client.', 0, 'checkout_cart_unavailable');
+    }
+    return this.client.cart().removeCoupon(code);
+  }
+
+  async getOrderSummary(): Promise<CheckoutOrderSummary> {
+    const state = (await this.getCheckout()).toObject();
+    const cartData = (state.cart ?? {}) as Record<string, unknown>;
+    const totalsData = (state.totals ?? {}) as Record<string, unknown>;
+
+    const items: CheckoutOrderSummary['items'] = Object.values(cartData)
+      .filter((v): v is Record<string, unknown> => typeof v === 'object' && v !== null && 'item_key' in v)
+      .map((item) => ({
+        key: String(item['item_key'] ?? ''),
+        name: String(item['name'] ?? ''),
+        quantity: Number((item['quantity'] as Record<string, unknown> | null)?.['value'] ?? item['quantity'] ?? 0),
+        price: String(item['price'] ?? ''),
+        subtotal: String((item['totals'] as Record<string, unknown> | null)?.['subtotal'] ?? ''),
+      }));
+
+    const couponsRaw = (state['coupons'] ?? (state.cart as Record<string, unknown> | undefined)?.['coupons'] ?? []) as unknown[];
+    const coupons: CheckoutOrderSummary['coupons'] = Array.isArray(couponsRaw)
+      ? couponsRaw.map((c) => {
+          const coupon = c as Record<string, unknown>;
+          return {
+            code: String(coupon['coupon'] ?? ''),
+            label: String(coupon['label'] ?? ''),
+            saving: String(coupon['saving'] ?? ''),
+          };
+        })
+      : [];
+
+    return {
+      items,
+      coupons,
+      totals: {
+        subtotal: String(totalsData['subtotal'] ?? ''),
+        discount_total: String(totalsData['discount_total'] ?? ''),
+        shipping_total: String(totalsData['shipping_total'] ?? ''),
+        fee_total: String(totalsData['fee_total'] ?? ''),
+        tax_total: String(totalsData['total_tax'] ?? ''),
+        total: String(totalsData['total'] ?? ''),
+      },
+    };
+  }
+
   /**
    * Build a form definition for rendering a checkout UI.
    * The `payment` section is only included when a gateway is resolved (via `gatewayId`, `defaultGateway`, or the first registered adapter).
    * If no adapters are registered and no default is set, the returned form will have no payment section.
    */
-  createForm(options: { gatewayId?: string; theme?: CheckoutTheme; needsPayment?: boolean } = {}): CheckoutFormDefinition {
+  createForm(options: { gatewayId?: string; theme?: CheckoutTheme; needsPayment?: boolean; includeSummary?: boolean } = {}): CheckoutFormDefinition {
     const theme = options.theme ?? this.defaultTheme;
     const gatewayId = options.gatewayId ?? this.defaultGateway ?? [...this.adapters.keys()][0];
 
@@ -207,6 +263,15 @@ export class CheckoutClient implements CheckoutSDK {
         description: isOffline ? gateway.description : 'Render provider-native payment fields here.',
         fields: applyTheme(fields, theme),
         className: `${theme.sectionClassName} ${theme.paymentContainerClassName}`.trim(),
+      });
+    }
+
+    if (options.includeSummary) {
+      sections.push({
+        id: 'order-summary',
+        title: 'Order Summary',
+        fields: [],
+        className: theme.orderSummaryClassName,
       });
     }
 
