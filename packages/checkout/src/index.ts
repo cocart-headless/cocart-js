@@ -6,6 +6,7 @@ export {
   createCashOnDeliveryGateway,
   createCheckPaymentGateway,
   createPayPalGateway,
+  createStripeExpressGateway,
   createStripeGateway,
 } from './gateways.js';
 export { bareCheckoutTheme, createTailwindCheckoutTheme, shadcnCheckoutTheme } from './presets.js';
@@ -15,6 +16,8 @@ export type {
   BankTransferGatewayOptions,
   CashOnDeliveryGatewayOptions,
   CheckPaymentGatewayOptions,
+  CheckoutExpressBar,
+  CheckoutExpressBarGateway,
   CheckoutOrderSummary,
   CheckoutShippingPackage,
   CheckoutShippingRate,
@@ -22,6 +25,7 @@ export type {
   CheckoutSummaryItem,
   CheckoutSummaryTotals,
   OfflineGatewayOptions,
+  StripeExpressGatewayOptions,
   StripeInstance,
   StripeElementsInstance,
   CheckoutAddressInput,

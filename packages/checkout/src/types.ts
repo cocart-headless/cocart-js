@@ -164,6 +164,19 @@ export interface CheckoutTheme {
   submitButtonClassName: string;
   paymentContainerClassName: string;
   orderSummaryClassName: string;
+  expressCheckoutBarClassName: string;
+}
+
+export interface CheckoutExpressBarGateway {
+  id: string;
+  label: string;
+  fields: CheckoutFormField[];
+}
+
+export interface CheckoutExpressBar {
+  layout: 'scroll' | 'stack';
+  theme: CheckoutTheme;
+  gateways: CheckoutExpressBarGateway[];
 }
 
 export interface CheckoutFormDefinition {
@@ -203,7 +216,13 @@ export interface CheckoutGatewayAdapter {
   label: string;
   description?: string;
   supports?: string[];
+  /** Set to true to indicate this gateway can render express checkout buttons (Apple Pay, Google Pay, etc.). */
+  express?: boolean;
+  /** Lower number = higher priority in the express checkout bar. Defaults to 100. */
+  expressCheckoutPriority?: number;
   getFields?: (context: CheckoutGatewayRenderContext) => CheckoutFormField[];
+  /** Returns fields for the express checkout button bar, rendered above the main form. */
+  getExpressFields?: (context: CheckoutGatewayRenderContext) => CheckoutFormField[];
   tokenize?: (context: CheckoutGatewayTokenizeContext) => Promise<Record<string, unknown>>;
 }
 
@@ -275,6 +294,8 @@ export interface CheckoutSDK {
   getPaymentMethods(): Promise<Response<CheckoutPaymentMethodsResponse>>;
   createPaymentContext(request: CheckoutPaymentContextRequest): Promise<Response<Record<string, unknown>>>;
   createForm(options?: { gatewayId?: string; theme?: CheckoutTheme; needsPayment?: boolean; includeSummary?: boolean; shippingMethods?: CheckoutShippingRate[] }): CheckoutFormDefinition;
+  listExpressGateways(): CheckoutGatewayPresentation[];
+  createExpressCheckoutBar(options?: { layout?: 'scroll' | 'stack'; theme?: CheckoutTheme }): CheckoutExpressBar;
   submit(input: CheckoutSubmitInput): Promise<CheckoutSubmitResult>;
   applyCoupon(code: string): Promise<Response>;
   removeCoupon(code: string): Promise<Response>;
@@ -403,3 +424,13 @@ export interface OfflineGatewayOptions {
 export type BankTransferGatewayOptions = OfflineGatewayOptions;
 export type CheckPaymentGatewayOptions = OfflineGatewayOptions;
 export type CashOnDeliveryGatewayOptions = OfflineGatewayOptions;
+
+export interface StripeExpressGatewayOptions {
+  label?: string;
+  description?: string;
+  expressCheckoutPriority?: number;
+  /** The Stripe.js instance — used to render the ExpressCheckoutElement. */
+  stripe: StripeInstance;
+  /** The Stripe Elements instance configured for express checkout. */
+  elements: StripeElementsInstance;
+}

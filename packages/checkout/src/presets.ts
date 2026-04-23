@@ -11,6 +11,7 @@ export const bareCheckoutTheme: CheckoutTheme = {
   submitButtonClassName: 'cocart-checkout__submit',
   paymentContainerClassName: 'cocart-checkout__payment',
   orderSummaryClassName: 'cocart-checkout__summary',
+  expressCheckoutBarClassName: 'cocart-checkout__express-bar',
 };
 
 export function createTailwindCheckoutTheme(overrides: Partial<CheckoutTheme> = {}): CheckoutTheme {
@@ -25,6 +26,7 @@ export function createTailwindCheckoutTheme(overrides: Partial<CheckoutTheme> = 
     submitButtonClassName: 'inline-flex min-h-12 items-center justify-center rounded-2xl bg-slate-950 px-5 text-sm font-semibold text-white transition hover:bg-slate-800',
     paymentContainerClassName: 'grid gap-4 rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-4',
     orderSummaryClassName: 'rounded-3xl border border-slate-200 bg-slate-950 p-6 text-slate-50',
+    expressCheckoutBarClassName: 'flex gap-3 overflow-x-auto py-2',
     ...overrides,
   };
 }

@@ -2,6 +2,7 @@ import { CoCartError } from '@cocartheadless/sdk';
 import type { CoCart, Response } from '@cocartheadless/sdk';
 import { bareCheckoutTheme } from './presets.js';
 import type {
+  CheckoutExpressBar,
   CheckoutFormDefinition,
   CheckoutFormField,
   CheckoutFormSection,
@@ -103,6 +104,45 @@ export class CheckoutClient implements CheckoutSDK {
       throw new CoCartError(`Payment gateway "${id}" is not registered.`, 0, 'checkout_gateway_not_registered');
     }
     return adapter;
+  }
+
+  listExpressGateways(): CheckoutGatewayPresentation[] {
+    return [...this.adapters.values()]
+      .filter((adapter) => adapter.express === true)
+      .sort((a, b) => (a.expressCheckoutPriority ?? 100) - (b.expressCheckoutPriority ?? 100))
+      .map((adapter) => ({
+        id: adapter.id,
+        label: adapter.label,
+        provider: adapter.provider,
+        description: adapter.description,
+        supports: adapter.supports ?? [],
+      }));
+  }
+
+  createExpressCheckoutBar(options: { layout?: 'scroll' | 'stack'; theme?: CheckoutTheme } = {}): CheckoutExpressBar {
+    const theme = options.theme ?? this.defaultTheme;
+    const layout = options.layout ?? 'scroll';
+
+    const gateways = [...this.adapters.values()]
+      .filter((adapter) => adapter.express === true)
+      .sort((a, b) => (a.expressCheckoutPriority ?? 100) - (b.expressCheckoutPriority ?? 100))
+      .map((adapter) => ({
+        id: adapter.id,
+        label: adapter.label,
+        fields: applyTheme(
+          adapter.getExpressFields?.({
+            client: this.client,
+            checkout: this,
+            gatewayId: adapter.id,
+            theme,
+            successUrl: this.successUrl,
+            returnUrl: this.returnUrl,
+          }) ?? [],
+          theme,
+        ),
+      }));
+
+    return { layout, theme, gateways };
   }
 
   listGateways(remoteMethods?: CheckoutPaymentMethodsResponse): CheckoutGatewayPresentation[] {

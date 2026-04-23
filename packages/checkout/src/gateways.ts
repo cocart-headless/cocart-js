@@ -5,6 +5,7 @@ import type {
   CheckoutGatewayAdapter,
   CheckPaymentGatewayOptions,
   PayPalGatewayOptions,
+  StripeExpressGatewayOptions,
   StripeGatewayOptions,
 } from './types.js';
 
@@ -105,6 +106,40 @@ export function createAuthorizeNetGateway(options: AuthorizeNetGatewayOptions): 
       },
     ],
     tokenize,
+  };
+}
+
+export function createStripeExpressGateway(options: StripeExpressGatewayOptions): CheckoutGatewayAdapter {
+  return {
+    id: 'stripe-express',
+    provider: 'stripe',
+    label: options.label ?? 'Express Checkout',
+    description: options.description ?? 'Pay with Apple Pay, Google Pay, or Link.',
+    supports: ['payment_context', 'payment_intents', 'express_checkout'],
+    express: true,
+    expressCheckoutPriority: options.expressCheckoutPriority ?? 10,
+    getExpressFields: ({ theme }) => [
+      {
+        name: 'payment_data.express_element',
+        label: 'Express checkout',
+        type: 'gateway-element',
+        component: 'StripeExpressCheckoutElement',
+        className: theme.paymentContainerClassName,
+      },
+    ],
+    tokenize: async ({ paymentContext, successUrl, returnUrl }) => {
+      const clientSecret = String(paymentContext?.client_secret ?? '');
+      const confirmParams: Record<string, unknown> = {};
+      if (successUrl) confirmParams.return_url = successUrl;
+      else if (returnUrl) confirmParams.return_url = returnUrl;
+      const { error, paymentIntent } = await options.stripe.confirmPayment({
+        elements: options.elements,
+        confirmParams,
+        redirect: 'if_required',
+      });
+      if (error) throw new Error(error.message ?? 'Stripe express payment failed');
+      return { payment_intent_id: paymentIntent?.id ?? clientSecret };
+    },
   };
 }
 

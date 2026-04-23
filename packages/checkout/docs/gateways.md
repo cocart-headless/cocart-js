@@ -8,6 +8,7 @@ The package ships focused helper factories for:
 - [Direct Bank Transfer (BACS)](#direct-bank-transfer-bacs)
 - [Check Payment](#check-payment)
 - [Cash on Delivery](#cash-on-delivery)
+- [Express Checkout](#express-checkout)
 
 **Online gateways** (Stripe, PayPal, Authorize.Net) handle card/wallet tokenization and require provider SDKs. Each supports two modes:
 
@@ -438,6 +439,29 @@ const paymentSection = form.sections.find(s => s.id === 'payment');
 ```
 
 To skip the payment section entirely (e.g. for zero-total orders), pass `needsPayment: false`. See [Zero-Total Checkout](./zero-total.md).
+
+---
+
+## Express Checkout
+
+Express checkout buttons (Apple Pay, Google Pay, Link) bypass the standard form — the customer taps a button and the browser or device wallet handles authentication. These buttons are rendered above the main form via `createExpressCheckoutBar()`.
+
+See [Express Checkout](./express-checkout.md) for the full pattern including `createStripeExpressGateway()`, priority ordering, and custom adapter examples.
+
+```ts
+import { createCheckout, createStripeExpressGateway } from '@cocartheadless/checkout';
+
+const client = new CoCart('https://your-store.com').use(createCheckout({
+  successUrl: 'https://your-store.com/order-complete?id={CHECKOUT_ID}',
+  returnUrl: 'https://your-store.com/checkout',
+  gatewayAdapters: [
+    createStripeExpressGateway({ stripe, elements }),
+  ],
+}));
+
+const bar = client.checkout.createExpressCheckoutBar({ layout: 'scroll' });
+// bar.gateways[0].fields → StripeExpressCheckoutElement field
+```
 
 ---
 

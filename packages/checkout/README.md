@@ -19,6 +19,11 @@ This package is separate from `@cocartheadless/sdk` and installs as an extension
 - Check Payment
 - Cash on Delivery
 
+**Express Checkout**
+- Apple Pay, Google Pay, Link (via Stripe Express)
+- Priority-ordered express button bar
+- Scroll or stack layout
+
 **Extras**
 - Headless UI Rendering
 - Tailwind CSS 4
@@ -98,6 +103,7 @@ const paymentMethods = await client.checkout.getPaymentMethods();
 | [Installation](docs/installation.md) | Package install, requirements, setup, and API coverage |
 | [Checkout Flow](docs/checkout-flow.md) | `getCheckout()`, `updateCheckout()`, `createPaymentContext()`, `processCheckout()`, and `submit()` |
 | [Gateways](docs/gateways.md) | Stripe, PayPal, Authorize.Net, offline gateways, and multi-gateway setup |
+| [Express Checkout](docs/express-checkout.md) | Apple Pay, Google Pay, priority bar, `createExpressCheckoutBar()`, and `createStripeExpressGateway()` |
 | [Zero-Total Checkout](docs/zero-total.md) | Free orders, coupon-discounted totals, and skipping tokenization |
 | [Coupons](docs/coupons.md) | Applying coupons, removing coupons, order summary, and re-checking `needs_payment` |
 | [Shipping Methods](docs/shipping.md) | Fetching rates, rendering a selector, multi-package support |

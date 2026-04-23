@@ -7,6 +7,7 @@ import {
   createCheckout,
   createCheckPaymentGateway,
   createPayPalGateway,
+  createStripeExpressGateway,
   createStripeGateway,
   createTailwindCheckoutTheme,
   shadcnCheckoutTheme,
@@ -404,6 +405,70 @@ describe('@cocartheadless/checkout', () => {
     const client = new CoCart('https://store.com').use(createCheckout());
     const form = client.checkout.createForm();
     expect(form.sections.map((s) => s.id)).not.toContain('order-summary');
+  });
+
+  it('listExpressGateways returns only adapters with express: true', () => {
+    const mockStripe = { confirmPayment: vi.fn() };
+    const mockElements = {};
+    const client = new CoCart('https://store.com').use(createCheckout({
+      gatewayAdapters: [
+        createStripeGateway({ tokenize: async () => ({ payment_intent_id: 'pi_123' }) }),
+        createStripeExpressGateway({ stripe: mockStripe, elements: mockElements }),
+      ],
+    }));
+
+    const express = client.checkout.listExpressGateways();
+    expect(express).toHaveLength(1);
+    expect(express[0].id).toBe('stripe-express');
+  });
+
+  it('listExpressGateways sorts by expressCheckoutPriority ascending', () => {
+    const mockStripe = { confirmPayment: vi.fn() };
+    const mockElements = {};
+    const client = new CoCart('https://store.com').use(createCheckout({
+      gatewayAdapters: [
+        createStripeExpressGateway({ stripe: mockStripe, elements: mockElements, expressCheckoutPriority: 50 }),
+        { id: 'paypal-express', provider: 'paypal', label: 'PayPal Express', express: true, expressCheckoutPriority: 5 },
+      ],
+    }));
+
+    const express = client.checkout.listExpressGateways();
+    expect(express[0].id).toBe('paypal-express');
+    expect(express[1].id).toBe('stripe-express');
+  });
+
+  it('createExpressCheckoutBar returns gateways with fields from getExpressFields', () => {
+    const mockStripe = { confirmPayment: vi.fn() };
+    const mockElements = {};
+    const client = new CoCart('https://store.com').use(createCheckout({
+      gatewayAdapters: [
+        createStripeExpressGateway({ stripe: mockStripe, elements: mockElements }),
+      ],
+    }));
+
+    const bar = client.checkout.createExpressCheckoutBar({ layout: 'stack' });
+    expect(bar.layout).toBe('stack');
+    expect(bar.gateways).toHaveLength(1);
+    expect(bar.gateways[0].id).toBe('stripe-express');
+    expect(bar.gateways[0].fields).toHaveLength(1);
+    expect(bar.gateways[0].fields[0].component).toBe('StripeExpressCheckoutElement');
+  });
+
+  it('createExpressCheckoutBar defaults to scroll layout', () => {
+    const client = new CoCart('https://store.com').use(createCheckout());
+    const bar = client.checkout.createExpressCheckoutBar();
+    expect(bar.layout).toBe('scroll');
+  });
+
+  it('createStripeExpressGateway returns adapter with express: true and express_checkout support', () => {
+    const mockStripe = { confirmPayment: vi.fn() };
+    const mockElements = {};
+    const adapter = createStripeExpressGateway({ stripe: mockStripe, elements: mockElements });
+
+    expect(adapter.id).toBe('stripe-express');
+    expect(adapter.express).toBe(true);
+    expect(adapter.supports).toContain('express_checkout');
+    expect(adapter.expressCheckoutPriority).toBe(10);
   });
 
   it('submit with an offline gateway does not call createPaymentContext', async () => {
