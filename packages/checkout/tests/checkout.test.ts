@@ -281,6 +281,53 @@ describe('@cocartheadless/checkout', () => {
     expect(result.paymentContext).toBeUndefined();
   });
 
+  it('getShippingMethods proxies to the core cart endpoint and returns packages', async () => {
+    const client = new CoCart('https://store.com').use(createCheckout());
+    const mockPackages = [
+      {
+        package_name: 'Default',
+        chosen_method: 'flat_rate:1',
+        rates: {
+          'flat_rate:1': { key: 'flat_rate:1', method_id: 'flat_rate', instance_id: 1, label: 'Flat rate', cost: '5.00', tax: '0.00' },
+          'free_shipping:1': { key: 'free_shipping:1', method_id: 'free_shipping', instance_id: 1, label: 'Free shipping', cost: '0.00', tax: '0.00' },
+        },
+      },
+    ];
+
+    vi.spyOn(client, 'cart').mockReturnValue({
+      getShippingMethods: vi.fn().mockResolvedValue({ toObject: () => ({ shipping: mockPackages }) }),
+    } as never);
+
+    const packages = await client.checkout.getShippingMethods();
+    expect(packages).toHaveLength(1);
+    expect(packages[0].package_name).toBe('Default');
+    expect(packages[0].chosen_method).toBe('flat_rate:1');
+  });
+
+  it('createForm with shippingMethods renders a radio field with rate options', () => {
+    const client = new CoCart('https://store.com').use(createCheckout());
+    const rates = [
+      { key: 'flat_rate:1', method_id: 'flat_rate', instance_id: 1, label: 'Flat rate', cost: '5.00', tax: '0.00' },
+      { key: 'free_shipping:1', method_id: 'free_shipping', instance_id: 1, label: 'Free shipping', cost: '0.00', tax: '0.00' },
+    ];
+
+    const form = client.checkout.createForm({ shippingMethods: rates });
+    const section = form.sections.find((s) => s.id === 'shipping-methods');
+
+    expect(section).toBeDefined();
+    expect(section!.fields).toHaveLength(1);
+    expect(section!.fields[0].type).toBe('radio');
+    expect(section!.fields[0].options).toHaveLength(2);
+    expect(section!.fields[0].options![0].value).toBe('flat_rate:1');
+    expect(section!.fields[0].options![1].value).toBe('free_shipping:1');
+  });
+
+  it('createForm without shippingMethods omits the shipping-methods section', () => {
+    const client = new CoCart('https://store.com').use(createCheckout());
+    const form = client.checkout.createForm();
+    expect(form.sections.map((s) => s.id)).not.toContain('shipping-methods');
+  });
+
   it('applyCoupon delegates to the core cart endpoint', async () => {
     const client = new CoCart('https://store.com').use(createCheckout());
     const spy = vi.fn().mockResolvedValue({ toObject: () => ({}) } as never);

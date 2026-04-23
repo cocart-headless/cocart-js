@@ -16,6 +16,8 @@ export type {
   CashOnDeliveryGatewayOptions,
   CheckPaymentGatewayOptions,
   CheckoutOrderSummary,
+  CheckoutShippingPackage,
+  CheckoutShippingRate,
   CheckoutSummaryCoupon,
   CheckoutSummaryItem,
   CheckoutSummaryTotals,

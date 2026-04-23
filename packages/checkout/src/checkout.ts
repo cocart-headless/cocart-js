@@ -13,6 +13,8 @@ import type {
   CheckoutProcessInput,
   CheckoutSDK,
   CheckoutSDKOptions,
+  CheckoutShippingPackage,
+  CheckoutShippingRate,
   CheckoutState,
   CheckoutSubmitInput,
   CheckoutSubmitResult,
@@ -201,7 +203,16 @@ export class CheckoutClient implements CheckoutSDK {
    * The `payment` section is only included when a gateway is resolved (via `gatewayId`, `defaultGateway`, or the first registered adapter).
    * If no adapters are registered and no default is set, the returned form will have no payment section.
    */
-  createForm(options: { gatewayId?: string; theme?: CheckoutTheme; needsPayment?: boolean; includeSummary?: boolean } = {}): CheckoutFormDefinition {
+  async getShippingMethods(): Promise<CheckoutShippingPackage[]> {
+    if (typeof this.client.cart !== 'function') {
+      throw new CoCartError('Cart endpoint is not available on the CoCart client.', 0, 'checkout_cart_unavailable');
+    }
+    const response = (await this.client.cart().getShippingMethods()).toObject() as Record<string, unknown>;
+    const shipping = response['shipping'] ?? response;
+    return Array.isArray(shipping) ? (shipping as CheckoutShippingPackage[]) : [];
+  }
+
+  createForm(options: { gatewayId?: string; theme?: CheckoutTheme; needsPayment?: boolean; includeSummary?: boolean; shippingMethods?: CheckoutShippingRate[] } = {}): CheckoutFormDefinition {
     const theme = options.theme ?? this.defaultTheme;
     const gatewayId = options.gatewayId ?? this.defaultGateway ?? [...this.adapters.keys()][0];
 
@@ -235,6 +246,27 @@ export class CheckoutClient implements CheckoutSDK {
       fields: applyTheme(this.fields?.notes ?? DEFAULT_NOTES_FIELDS, theme),
       className: theme.sectionClassName,
     });
+
+    if (options.shippingMethods && options.shippingMethods.length > 0) {
+      sections.push({
+        id: 'shipping-methods',
+        title: 'Shipping method',
+        fields: applyTheme([
+          {
+            name: 'shipping_method',
+            label: 'Shipping method',
+            type: 'radio',
+            required: true,
+            options: options.shippingMethods.map((rate) => ({
+              label: `${rate.label} — ${rate.cost}`,
+              value: rate.key,
+              description: rate.method_id,
+            })),
+          },
+        ], theme),
+        className: theme.sectionClassName,
+      });
+    }
 
     if (options.needsPayment !== false && gatewayId && this.hasGateway(gatewayId)) {
       const gateway = this.getGateway(gatewayId);

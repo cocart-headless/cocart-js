@@ -113,6 +113,30 @@ if (checkoutResult.payment_result?.redirect_url) {
 
 ---
 
+## Shipping Methods
+
+Fetch available shipping methods before rendering the form. Pass the flattened rates to `createForm()` to get a `shipping-methods` section with a `radio` field. The selected key goes into `update.shipping_method` on submit.
+
+```ts
+const packages = await client.checkout.getShippingMethods();
+const rates = packages.flatMap((pkg) => Object.values(pkg.rates));
+
+const form = client.checkout.createForm({ shippingMethods: rates });
+
+// On submit
+const { processResponse } = await client.checkout.submit({
+  gatewayId: 'stripe',
+  update: {
+    billing_address: { /* ... */ },
+    shipping_method: 'flat_rate:1', // selected rate key
+  },
+});
+```
+
+See [Shipping Methods](shipping.md) for the full pattern including multi-package support.
+
+---
+
 ## Coupons
 
 Apply or remove a coupon before submitting. After applying, re-check `needs_payment` because a coupon may reduce the total to zero.

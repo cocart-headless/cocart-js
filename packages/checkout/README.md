@@ -100,6 +100,7 @@ const paymentMethods = await client.checkout.getPaymentMethods();
 | [Gateways](docs/gateways.md) | Stripe, PayPal, Authorize.Net, offline gateways, and multi-gateway setup |
 | [Zero-Total Checkout](docs/zero-total.md) | Free orders, coupon-discounted totals, and skipping tokenization |
 | [Coupons](docs/coupons.md) | Applying coupons, removing coupons, order summary, and re-checking `needs_payment` |
+| [Shipping Methods](docs/shipping.md) | Fetching rates, rendering a selector, multi-package support |
 | [Frameworks](docs/frameworks.md) | Next.js, Astro, and framework integration patterns |
 | [Themes](docs/themes.md) | Tailwind CSS 4, shadcn-style presets, and headless form rendering |
 

@@ -53,12 +53,29 @@ export interface CheckoutPaymentMethodsResponse {
   [gatewayId: string]: CheckoutPaymentMethod;
 }
 
+export interface CheckoutShippingRate {
+  key: string;
+  method_id: string;
+  instance_id: number;
+  label: string;
+  cost: string;
+  tax: string;
+  [key: string]: unknown;
+}
+
+export interface CheckoutShippingPackage {
+  package_name: string;
+  rates: Record<string, CheckoutShippingRate>;
+  chosen_method: string;
+  [key: string]: unknown;
+}
+
 export interface CheckoutState {
   cart?: Record<string, unknown>;
   totals?: Record<string, unknown>;
   billing_address?: CheckoutAddressInput;
   shipping_address?: CheckoutAddressInput;
-  shipping_methods?: Record<string, unknown>;
+  shipping_methods?: CheckoutShippingPackage[];
   payment_methods?: CheckoutPaymentMethodsResponse;
   customer_data?: Record<string, unknown>;
   needs_payment?: boolean;
@@ -257,11 +274,12 @@ export interface CheckoutSDK {
   processCheckout(data: CheckoutProcessInput): Promise<Response<CheckoutState>>;
   getPaymentMethods(): Promise<Response<CheckoutPaymentMethodsResponse>>;
   createPaymentContext(request: CheckoutPaymentContextRequest): Promise<Response<Record<string, unknown>>>;
-  createForm(options?: { gatewayId?: string; theme?: CheckoutTheme; needsPayment?: boolean; includeSummary?: boolean }): CheckoutFormDefinition;
+  createForm(options?: { gatewayId?: string; theme?: CheckoutTheme; needsPayment?: boolean; includeSummary?: boolean; shippingMethods?: CheckoutShippingRate[] }): CheckoutFormDefinition;
   submit(input: CheckoutSubmitInput): Promise<CheckoutSubmitResult>;
   applyCoupon(code: string): Promise<Response>;
   removeCoupon(code: string): Promise<Response>;
   getOrderSummary(): Promise<CheckoutOrderSummary>;
+  getShippingMethods(): Promise<CheckoutShippingPackage[]>;
 }
 
 export interface CheckoutOptions extends CheckoutSDKOptions {
