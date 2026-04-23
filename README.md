@@ -18,7 +18,7 @@ Official TypeScript SDK for the [CoCart](https://cocartapi.com) REST API. Build 
 * [ ] Add SDK docs to documentation site
 * [ ] Add support for Cart API extras
 * [ ] Add Checkout API support
-* [ ] Add Customers Account API support
+* [x] Add Customers Account API support
 
 ---
 
@@ -163,6 +163,7 @@ console.log(cart.get('totals.total')); // Reach into nested data with dot notati
 | [Authentication](docs/authentication.md) | Guest, Basic Auth, JWT, consumer keys |
 | [Cart API](docs/cart.md) | Add, update, remove items, coupons, shipping, fees |
 | [Products API](docs/products.md) | List, filter, search, categories, tags, brands |
+| [Account API](docs/account.md) | Customer profile, orders, downloads, and reviews |
 | [Sessions API](docs/sessions.md) | Admin sessions, SessionManager, storage adapters |
 | [Error Handling](docs/error-handling.md) | Error hierarchy, catching errors, common scenarios |
 | [Utilities](docs/utilities.md) | Currency formatter, timezone helper, response transformer |

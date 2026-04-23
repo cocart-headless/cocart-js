@@ -6,6 +6,7 @@ export { JwtManager } from './jwt-manager.js';
 export { SessionManager } from './session-manager.js';
 
 // Endpoints
+export { Account } from './endpoints/account.js';
 export { Endpoint } from './endpoints/endpoint.js';
 export { Cart } from './endpoints/cart.js';
 export { Products } from './endpoints/products.js';
@@ -41,4 +42,7 @@ export type {
   PaginationParams, SortOrder, ProductOrderBy, ProductListParams, ProductParams, CartGetParams,
   // Event types
   RequestEvent, ResponseEvent, ErrorEvent, RetryEvent, CoCartEventMap, CoCartEventListener,
+  // Account types
+  AccountAddress, AccountUser, AccountProfile, AccountOrderSummary, AccountOrdersResponse,
+  AccountOrderDetail, AccountDownload, AccountUpdateInput, AccountChangePasswordInput, AccountOrdersParams,
 } from './cocart.types.js';
