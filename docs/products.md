@@ -401,3 +401,42 @@ console.log(response.get('categories.0.name'));
 ```
 
 See [Error Handling](error-handling.md) for handling API errors.
+
+---
+
+## Custom Fields
+
+If your store adds custom fields to product responses — via ACF, custom REST API extensions, or `register_rest_field()` — they are already accessible. The `Product` type includes an index signature (`[key: string]: unknown`) so any extra fields returned by the API pass through the SDK without being stripped.
+
+Access them directly on the response object:
+
+```ts
+const response = await client.products().find(123);
+const product = response.toObject();
+
+// Custom field added server-side
+console.log((product as any).my_custom_field);
+console.log((product as any).acf?.colour);
+```
+
+For a better experience, extend the `Product` interface in your own codebase to type your custom fields:
+
+```ts
+import type { Product } from '@cocartheadless/sdk';
+
+interface MyProduct extends Product {
+  my_custom_field: string;
+  acf?: {
+    colour: string;
+    size_guide_url: string;
+  };
+}
+
+const response = await client.products().find(123);
+const product = response.toObject() as MyProduct;
+
+console.log(product.my_custom_field); // typed
+console.log(product.acf?.colour);     // typed
+```
+
+This pattern works for all product methods — `all()`, `find()`, `search()`, `byCategory()`, etc.
