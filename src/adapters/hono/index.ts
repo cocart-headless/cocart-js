@@ -1,5 +1,5 @@
-import { CoCart, MemoryStorage } from '@cocart/sdk';
-import type { CoCartOptions } from '@cocart/sdk';
+import { CoCart, MemoryStorage } from '@cocartheadless/sdk';
+import type { CoCartOptions } from '@cocartheadless/sdk';
 
 /** Minimal duck-type for a Hono Context — avoids a hard dependency on `hono`. */
 interface HonoContext {
@@ -32,7 +32,7 @@ export function createBrowserClient(
  * Usage in a Hono route handler:
  * ```ts
  * import { Hono } from 'hono';
- * import { createServerClient } from '@cocart/sdk/hono';
+ * import { createServerClient } from '@cocartheadless/sdk/hono';
  *
  * const app = new Hono();
  *

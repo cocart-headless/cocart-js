@@ -7,7 +7,7 @@ The Remix adapter solves this by passing the cart key from browser to server via
 ## Installation
 
 ```bash
-npm install @cocart/sdk
+npm install @cocartheadless/sdk
 ```
 
 ## How It Works
@@ -26,8 +26,8 @@ Initialise the browser client once in a shared module. Call `attachCartKeyHeader
 
 ```ts
 // app/lib/cocart.ts
-import { createBrowserClient, attachCartKeyHeader } from '@cocart/sdk/remix';
-import { SessionManager } from '@cocart/sdk';
+import { createBrowserClient, attachCartKeyHeader } from '@cocartheadless/sdk/remix';
+import { SessionManager } from '@cocartheadless/sdk';
 
 let client: ReturnType<typeof createBrowserClient> | null = null;
 let session: SessionManager | null = null;
@@ -70,7 +70,7 @@ Use `createServerClient()` in loaders, actions, and resource routes. The `reques
 import type { LoaderFunctionArgs } from '@remix-run/node';
 import { json } from '@remix-run/node';
 import { useLoaderData } from '@remix-run/react';
-import { createServerClient } from '@cocart/sdk/remix';
+import { createServerClient } from '@cocartheadless/sdk/remix';
 
 export async function loader({ request }: LoaderFunctionArgs) {
   const client = createServerClient(process.env.COCART_STORE_URL!, request);
@@ -107,7 +107,7 @@ For registered customers, pass their `username` and `password`:
 ```ts
 import type { LoaderFunctionArgs } from '@remix-run/node';
 import { json } from '@remix-run/node';
-import { createServerClient } from '@cocart/sdk/remix';
+import { createServerClient } from '@cocartheadless/sdk/remix';
 
 export async function loader({ request }: LoaderFunctionArgs) {
   const client = createServerClient(process.env.COCART_STORE_URL!, request, {
@@ -126,7 +126,7 @@ Consumer keys are WooCommerce admin credentials. Use them only for admin-level A
 
 ```ts
 import type { LoaderFunctionArgs } from '@remix-run/node';
-import { createServerClient } from '@cocart/sdk/remix';
+import { createServerClient } from '@cocartheadless/sdk/remix';
 
 export async function loader({ request }: LoaderFunctionArgs) {
   const client = createServerClient(process.env.COCART_STORE_URL!, request, {
@@ -149,7 +149,7 @@ Use resource routes for API-style endpoints:
 // app/routes/api.cart.add.tsx
 import type { ActionFunctionArgs } from '@remix-run/node';
 import { json } from '@remix-run/node';
-import { createServerClient } from '@cocart/sdk/remix';
+import { createServerClient } from '@cocartheadless/sdk/remix';
 
 export async function action({ request }: ActionFunctionArgs) {
   const client = createServerClient(process.env.COCART_STORE_URL!, request);
@@ -168,7 +168,7 @@ export async function action({ request }: ActionFunctionArgs) {
 // app/routes/api.cart.$itemKey.delete.tsx
 import type { ActionFunctionArgs } from '@remix-run/node';
 import { json } from '@remix-run/node';
-import { createServerClient } from '@cocart/sdk/remix';
+import { createServerClient } from '@cocartheadless/sdk/remix';
 
 export async function action({ request, params }: ActionFunctionArgs) {
   const client = createServerClient(process.env.COCART_STORE_URL!, request);

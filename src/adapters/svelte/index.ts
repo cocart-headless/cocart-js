@@ -1,5 +1,5 @@
-import { CoCart, MemoryStorage } from '@cocart/sdk';
-import type { CoCartOptions } from '@cocart/sdk';
+import { CoCart, MemoryStorage } from '@cocartheadless/sdk';
+import type { CoCartOptions } from '@cocartheadless/sdk';
 
 /** Minimal duck-type for a SvelteKit RequestEvent — avoids a hard dependency on `@sveltejs/kit`. */
 interface RequestEvent {
@@ -29,7 +29,7 @@ export function createBrowserClient(
  *
  * Usage in a SvelteKit server load function:
  * ```ts
- * import { createServerClient } from '@cocart/sdk/svelte';
+ * import { createServerClient } from '@cocartheadless/sdk/svelte';
  *
  * export async function load(event) {
  *   const client = createServerClient('https://store.example.com', event);

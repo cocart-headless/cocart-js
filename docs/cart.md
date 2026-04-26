@@ -58,7 +58,7 @@ This sends `?_fields=items,totals` to the server, so only those fields are retur
 **Client-side validation** means the SDK checks your inputs _before_ sending anything to the server. If you pass an invalid product ID (like `-1`) or a quantity of `0`, the SDK throws an error immediately. This saves time because you don't have to wait for a server round-trip just to find out the input was bad.
 
 ```ts
-import { ValidationError } from '@cocart/sdk';
+import { ValidationError } from '@cocartheadless/sdk';
 
 try {
   await client.cart().addItem(-1, 0);
@@ -78,7 +78,7 @@ Validation rules:
 You can also use the validation functions directly:
 
 ```ts
-import { validateProductId, validateQuantity, validateEmail } from '@cocart/sdk';
+import { validateProductId, validateQuantity, validateEmail } from '@cocartheadless/sdk';
 
 validateProductId(123);           // OK
 validateProductId(-1);            // throws ValidationError

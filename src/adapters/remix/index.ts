@@ -1,5 +1,5 @@
-import { CoCart, MemoryStorage } from '@cocart/sdk';
-import type { CoCartOptions } from '@cocart/sdk';
+import { CoCart, MemoryStorage } from '@cocartheadless/sdk';
+import type { CoCartOptions } from '@cocartheadless/sdk';
 
 /**
  * Create a browser-side CoCart client for Remix.
@@ -24,7 +24,7 @@ export function createBrowserClient(
  *
  * Usage in a Remix loader:
  * ```ts
- * import { createServerClient } from '@cocart/sdk/remix';
+ * import { createServerClient } from '@cocartheadless/sdk/remix';
  *
  * export async function loader({ request }: LoaderFunctionArgs) {
  *   const client = createServerClient('https://store.example.com', request);

@@ -1,12 +1,17 @@
-# @cocart/sdk
+# @cocartheadless/sdk
 
+[![TypeScript](https://img.shields.io/badge/TypeScript-Ready-blue?style=for-the-badge&labelColor=000000)](https://www.typescriptlang.org/)
+[![npm version](https://img.shields.io/npm/v/@cocartheadless/sdk?style=for-the-badge&labelColor=000000)](https://www.npmjs.com/package/@cocartheadless/sdk)
+[![jsDelivr hits](https://img.shields.io/jsdelivr/npm/hm/@cocartheadless/sdk?style=for-the-badge&labelColor=000000)](https://www.jsdelivr.com/package/npm/@cocartheadless/sdk)
+[![Zero Dependencies](https://img.shields.io/badge/dependencies-0-brightgreen?style=for-the-badge&labelColor=000000)](https://www.npmjs.com/package/@cocartheadless/sdk)
 [![Tests](https://img.shields.io/github/actions/workflow/status/cocart-headless/cocart-js/tests.yml?label=tests&style=for-the-badge&labelColor=000000)](https://github.com/cocart-headless/cocart-js/actions/workflows/tests.yml)
+[![Socket](https://img.shields.io/badge/Socket-secured-brightgreen?style=for-the-badge&labelColor=000000)](https://socket.dev/npm/package/@cocartheadless/sdk)
 [![License](https://img.shields.io/github/license/jayanratna/resend-php?color=9cf&style=for-the-badge&labelColor=000000)](https://github.com/cocart-headless/cocart-js/blob/main/LICENSE)
 
 Official TypeScript SDK for the [CoCart](https://cocartapi.com) REST API. Build **headless WooCommerce storefronts** — meaning your frontend (React, Astro, Next.js, or any framework) talks to WooCommerce through its API instead of using PHP templates.
 
 > [!IMPORTANT]
-> This SDK is still in development and not yet ready for production use. Provide feedback if you experience a bug.
+> This SDK is looking for feedback, if you experience a bug please report it.
 
 ## TODO to complete the SDK
 
@@ -50,7 +55,7 @@ See [SUPPORT.md](SUPPORT.md) for our versioning policy, supported Node.js versio
 [npm](https://www.npmjs.com/) is the default package manager that comes with Node.js. Run this in your project's root folder:
 
 ```bash
-npm install @cocart/sdk
+npm install @cocartheadless/sdk
 ```
 
 ### Via yarn
@@ -58,7 +63,7 @@ npm install @cocart/sdk
 [Yarn](https://yarnpkg.com/) is an alternative package manager. If you use Yarn in your project:
 
 ```bash
-yarn add @cocart/sdk
+yarn add @cocartheadless/sdk
 ```
 
 ### Via pnpm
@@ -66,7 +71,7 @@ yarn add @cocart/sdk
 [pnpm](https://pnpm.io/) is a fast, disk-efficient package manager. If you use pnpm:
 
 ```bash
-pnpm add @cocart/sdk
+pnpm add @cocartheadless/sdk
 ```
 
 ### Via Bun
@@ -74,10 +79,46 @@ pnpm add @cocart/sdk
 [Bun](https://bun.sh/) is a fast JavaScript runtime with a built-in package manager. If you use Bun:
 
 ```bash
-bun add @cocart/sdk
+bun add @cocartheadless/sdk
 ```
 
 **Zero runtime dependencies** — the SDK does not install any additional packages, keeping your project lightweight.
+
+### Via CDN (Framer, Webflow, plain HTML)
+
+For platforms like **Framer**, **Webflow**, or any environment where you just need a `<script>` tag — no npm required:
+
+**jsDelivr:**
+
+```html
+<script src="https://cdn.jsdelivr.net/npm/@cocartheadless/sdk/dist/index.global.js"></script>
+```
+
+**unpkg:**
+
+```html
+<script src="https://unpkg.com/@cocartheadless/sdk/dist/index.global.js"></script>
+```
+
+Then use it:
+
+```html
+<script>
+  const client = new CoCart('https://your-store.com');
+</script>
+```
+
+This loads a single minified file that exposes all SDK exports under the `CoCart` global. See the dedicated guides for [Framer](docs/framer.md) and [Webflow](docs/webflow.md).
+
+You can also pin a specific version:
+
+```html
+<!-- jsDelivr -->
+<script src="https://cdn.jsdelivr.net/npm/@cocartheadless/sdk@1.1.0/dist/index.global.js"></script>
+
+<!-- unpkg -->
+<script src="https://unpkg.com/@cocartheadless/sdk@1.1.0/dist/index.global.js"></script>
+```
 
 ## Quick Start
 
@@ -86,7 +127,7 @@ An **SDK** (Software Development Kit) is a library that provides ready-made func
 The `import` statement loads the SDK into your code. The `await` keyword is used before operations that talk to the server, because network requests take time and JavaScript needs to wait for the response before continuing.
 
 ```ts
-import { CoCart } from '@cocart/sdk';
+import { CoCart } from '@cocartheadless/sdk';
 
 // Create a client pointing to your WooCommerce store
 const client = new CoCart('https://your-store.com');
@@ -140,6 +181,8 @@ console.log(cart.get('totals.total')); // Reach into nested data with dot notati
 | [Fastify](src/adapters/fastify/README.md) | Node.js route handlers (server-only) |
 | [Hono](src/adapters/hono/README.md) | Multi-runtime (Node, Bun, Cloudflare Workers, Deno) |
 | [Deno](src/adapters/deno/README.md) | `Deno.serve()`, Fresh islands |
+| [Framer](docs/framer.md) | CDN script, Code Overrides, product display |
+| [Webflow](docs/webflow.md) | CDN script, custom code, dynamic elements |
 
 ## Features
 
@@ -180,7 +223,7 @@ data.currency; // compile error — not requested  ✓
 ### Currency Formatting
 
 ```ts
-import { CurrencyFormatter } from '@cocart/sdk';
+import { CurrencyFormatter } from '@cocartheadless/sdk';
 
 const fmt = new CurrencyFormatter();
 const currency = response.getCurrency();
@@ -211,7 +254,7 @@ client.on('error', (e) => console.error(e.error));
 Cart keys and tokens are stored in the browser's `localStorage` encrypted with AES-256-GCM via the [Web Crypto API](https://developer.mozilla.org/en-US/docs/Web/API/Web_Crypto_API) — a browser-native encryption API that requires no extra libraries:
 
 ```ts
-import { CoCart, EncryptedStorage } from '@cocart/sdk';
+import { CoCart, EncryptedStorage } from '@cocartheadless/sdk';
 
 const storage = new EncryptedStorage('your-secret-key');
 const client = new CoCart('https://your-store.com', { storage });
@@ -233,7 +276,7 @@ Pre-built adapters for Astro, Next.js, Nuxt, Remix, SvelteKit, Elysia.js, Fastif
 
 ```ts
 // Astro / Next.js — browser
-import { createBrowserClient, attachCartKeyHeader } from '@cocart/sdk/astro';
+import { createBrowserClient, attachCartKeyHeader } from '@cocartheadless/sdk/astro';
 
 const client = createBrowserClient('https://your-store.com', {
   encryptionKey: 'your-key',
@@ -242,7 +285,7 @@ await client.restoreSession();
 attachCartKeyHeader(client);
 
 // Astro / Next.js — server
-import { createServerClient } from '@cocart/sdk/astro';
+import { createServerClient } from '@cocartheadless/sdk/astro';
 
 const client = createServerClient('https://your-store.com', Astro.request);
 ```

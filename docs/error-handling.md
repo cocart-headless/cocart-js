@@ -21,7 +21,7 @@ All errors extend `CoCartError`, which extends JavaScript's built-in `Error`. Th
 In JavaScript, `try/catch` lets you attempt an operation and handle any errors gracefully instead of crashing. The `instanceof` keyword checks what type of error was thrown, so you can respond differently to different problems:
 
 ```ts
-import { CoCartError, AuthenticationError, ValidationError, VersionError } from '@cocart/sdk';
+import { CoCartError, AuthenticationError, ValidationError, VersionError } from '@cocartheadless/sdk';
 
 try {
   const response = await client.cart().addItem(999, 1);
@@ -190,7 +190,7 @@ Client-side validation checks:
 Standalone validation functions are also exported for use in your own code:
 
 ```ts
-import { validateProductId, validateQuantity, validateEmail } from '@cocart/sdk';
+import { validateProductId, validateQuantity, validateEmail } from '@cocartheadless/sdk';
 
 validateProductId('abc');          // throws ValidationError
 validateQuantity(-1);              // throws ValidationError
@@ -269,7 +269,7 @@ try {
 When using the SDK with the legacy CoCart plugin (`mainPlugin: 'legacy'`), methods that require CoCart Basic throw immediately:
 
 ```ts
-import { VersionError } from '@cocart/sdk';
+import { VersionError } from '@cocartheadless/sdk';
 
 const client = new CoCart('https://your-store.com', { mainPlugin: 'legacy' });
 

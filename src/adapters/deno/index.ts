@@ -1,5 +1,5 @@
-import { CoCart, MemoryStorage } from '@cocart/sdk';
-import type { CoCartOptions } from '@cocart/sdk';
+import { CoCart, MemoryStorage } from '@cocartheadless/sdk';
+import type { CoCartOptions } from '@cocartheadless/sdk';
 
 /**
  * Create a server-side CoCart client for Deno.
@@ -9,7 +9,7 @@ import type { CoCartOptions } from '@cocart/sdk';
  *
  * Usage with Deno.serve():
  * ```ts
- * import { createServerClient } from '@cocart/sdk/deno';
+ * import { createServerClient } from '@cocartheadless/sdk/deno';
  *
  * Deno.serve(async (req) => {
  *   const client = createServerClient('https://store.example.com', req);
@@ -41,7 +41,7 @@ export function createServerClient(
  *
  * Usage:
  * ```ts
- * import { createClient } from '@cocart/sdk/deno';
+ * import { createClient } from '@cocartheadless/sdk/deno';
  *
  * const client = createClient('https://store.example.com');
  * const cart = await client.cart.get();

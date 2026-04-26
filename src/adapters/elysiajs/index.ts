@@ -1,5 +1,5 @@
-import { CoCart, MemoryStorage } from '@cocart/sdk';
-import type { CoCartOptions } from '@cocart/sdk';
+import { CoCart, MemoryStorage } from '@cocartheadless/sdk';
+import type { CoCartOptions } from '@cocartheadless/sdk';
 
 /**
  * Create a browser-side CoCart client for Elysia.js.
@@ -25,7 +25,7 @@ export function createBrowserClient(
  * Usage in an Elysia route handler:
  * ```ts
  * import Elysia from 'elysia';
- * import { createServerClient } from '@cocart/sdk/elysiajs';
+ * import { createServerClient } from '@cocartheadless/sdk/elysiajs';
  *
  * new Elysia()
  *   .get('/cart', async ({ request }) => {

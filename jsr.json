@@ -1,5 +1,5 @@
 {
-  "name": "@cocart/sdk",
+  "name": "@cocartheadless/sdk",
   "version": "1.0.0",
   "exports": {
     ".": "./src/index.ts",

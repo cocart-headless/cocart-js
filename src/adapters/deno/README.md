@@ -5,13 +5,13 @@
 ## Installation
 
 ```bash
-deno add npm:@cocart/sdk
+deno add npm:@cocartheadless/sdk
 ```
 
 Or import directly:
 
 ```ts
-import { createServerClient } from 'npm:@cocart/sdk/deno';
+import { createServerClient } from 'npm:@cocartheadless/sdk/deno';
 ```
 
 ## How It Works
@@ -29,7 +29,7 @@ No cookies are used at any point.
 Use `createServerClient()` inside a `Deno.serve()` handler or a Deno Fresh API route:
 
 ```ts
-import { createServerClient } from '@cocart/sdk/deno';
+import { createServerClient } from '@cocartheadless/sdk/deno';
 
 Deno.serve(async (req) => {
   const client = createServerClient('https://your-store.com', req);
@@ -44,7 +44,7 @@ Deno.serve(async (req) => {
 For registered customers, pass their `username` and `password`:
 
 ```ts
-import { createServerClient } from '@cocart/sdk/deno';
+import { createServerClient } from '@cocartheadless/sdk/deno';
 
 Deno.serve(async (req) => {
   const client = createServerClient('https://your-store.com', req, {
@@ -62,7 +62,7 @@ Deno.serve(async (req) => {
 Consumer keys are WooCommerce admin credentials. Use them only for admin-level APIs such as the Sessions API:
 
 ```ts
-import { createServerClient } from '@cocart/sdk/deno';
+import { createServerClient } from '@cocartheadless/sdk/deno';
 
 Deno.serve(async (req) => {
   const client = createServerClient('https://your-store.com', req, {
@@ -82,8 +82,8 @@ Deno.serve(async (req) => {
 Deno Fresh browser islands run in the browser where `localStorage` is available. Use `createClient()` to create a browser-side CoCart instance, then call `attachCartKeyHeader()` to inject the cart key into same-origin fetch requests:
 
 ```ts
-import { createClient, attachCartKeyHeader } from '@cocart/sdk/deno';
-import { SessionManager } from '@cocart/sdk';
+import { createClient, attachCartKeyHeader } from '@cocartheadless/sdk/deno';
+import { SessionManager } from '@cocartheadless/sdk';
 
 const client = createClient('https://your-store.com');
 
@@ -119,7 +119,7 @@ export { client, session };
 ```ts
 // routes/api/cart.ts
 import { Handlers } from '$fresh/server.ts';
-import { createServerClient } from '@cocart/sdk/deno';
+import { createServerClient } from '@cocartheadless/sdk/deno';
 
 export const handler: Handlers = {
   async GET(req) {
@@ -135,7 +135,7 @@ export const handler: Handlers = {
 ```ts
 // routes/api/cart/add.ts
 import { Handlers } from '$fresh/server.ts';
-import { createServerClient } from '@cocart/sdk/deno';
+import { createServerClient } from '@cocartheadless/sdk/deno';
 
 export const handler: Handlers = {
   async POST(req) {

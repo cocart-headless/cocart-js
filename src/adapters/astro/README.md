@@ -7,7 +7,7 @@ The Astro adapter solves this by using a custom HTTP header (`X-Cart-Key`) to pa
 ## Installation
 
 ```bash
-npm install @cocart/sdk
+npm install @cocartheadless/sdk
 ```
 
 ## How It Works
@@ -27,7 +27,7 @@ No cookies are used at any point. This avoids common cookie issues like GDPR con
 Create a CoCart client for use in client-side components and scripts:
 
 ```ts
-import { createBrowserClient, attachCartKeyHeader } from '@cocart/sdk/astro';
+import { createBrowserClient, attachCartKeyHeader } from '@cocartheadless/sdk/astro';
 
 const client = createBrowserClient('https://your-store.com', {
   encryptionKey: 'your-secret-encryption-key',
@@ -61,7 +61,7 @@ Create a CoCart client in your Astro page or API route. The cart key is read fro
 ```ts
 ---
 // src/pages/cart.astro
-import { createServerClient } from '@cocart/sdk/astro';
+import { createServerClient } from '@cocartheadless/sdk/astro';
 
 const client = createServerClient('https://your-store.com', Astro.request);
 const cart = await client.cart().get();
@@ -82,7 +82,7 @@ For registered customers, pass their `username` and `password`:
 
 ```ts
 ---
-import { createServerClient } from '@cocart/sdk/astro';
+import { createServerClient } from '@cocartheadless/sdk/astro';
 
 const client = createServerClient('https://your-store.com', Astro.request, {
   username: 'customer@example.com',
@@ -99,7 +99,7 @@ Consumer keys are WooCommerce admin credentials. Use them only for admin-level A
 
 ```ts
 ---
-import { createServerClient } from '@cocart/sdk/astro';
+import { createServerClient } from '@cocartheadless/sdk/astro';
 
 const client = createServerClient('https://your-store.com', Astro.request, {
   consumerKey: process.env.COCART_CONSUMER_KEY,
@@ -119,7 +119,7 @@ Use the server client in Astro API routes:
 ```ts
 // src/pages/api/cart/add.ts
 import type { APIRoute } from 'astro';
-import { createServerClient } from '@cocart/sdk/astro';
+import { createServerClient } from '@cocartheadless/sdk/astro';
 
 export const POST: APIRoute = async ({ request }) => {
   const client = createServerClient('https://your-store.com', request);
@@ -147,8 +147,8 @@ export const POST: APIRoute = async ({ request }) => {
 
 ```ts
 // src/lib/cocart.ts
-import { createBrowserClient, attachCartKeyHeader } from '@cocart/sdk/astro';
-import { SessionManager } from '@cocart/sdk';
+import { createBrowserClient, attachCartKeyHeader } from '@cocartheadless/sdk/astro';
+import { SessionManager } from '@cocartheadless/sdk';
 
 const client = createBrowserClient('https://your-store.com', {
   encryptionKey: import.meta.env.PUBLIC_COCART_ENCRYPTION_KEY,
@@ -172,7 +172,7 @@ export { client, session };
 ```ts
 ---
 // src/pages/cart.astro
-import { createServerClient } from '@cocart/sdk/astro';
+import { createServerClient } from '@cocartheadless/sdk/astro';
 
 const client = createServerClient(
   import.meta.env.COCART_STORE_URL,
@@ -221,8 +221,8 @@ const cart = await client.cart().get();
 ```ts
 // src/pages/api/auth/login.ts
 import type { APIRoute } from 'astro';
-import { createServerClient } from '@cocart/sdk/astro';
-import { SessionManager } from '@cocart/sdk';
+import { createServerClient } from '@cocartheadless/sdk/astro';
+import { SessionManager } from '@cocartheadless/sdk';
 
 export const POST: APIRoute = async ({ request }) => {
   const client = createServerClient('https://your-store.com', request);

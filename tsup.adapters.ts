@@ -17,5 +17,5 @@ export default defineConfig({
   dts: true,
   sourcemap: true,
   outDir: 'dist',
-  external: ['@cocart/sdk'],
+  external: ['@cocartheadless/sdk'],
 });

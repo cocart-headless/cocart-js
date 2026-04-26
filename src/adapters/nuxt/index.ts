@@ -1,5 +1,5 @@
-import { CoCart, MemoryStorage } from '@cocart/sdk';
-import type { CoCartOptions } from '@cocart/sdk';
+import { CoCart, MemoryStorage } from '@cocartheadless/sdk';
+import type { CoCartOptions } from '@cocartheadless/sdk';
 
 /** Minimal duck-type for an h3 H3Event — avoids a hard dependency on `h3`. */
 interface H3Event {
@@ -33,7 +33,7 @@ export function createBrowserClient(
  *
  * Usage in a Nuxt server route:
  * ```ts
- * import { createServerClient } from '@cocart/sdk/nuxt';
+ * import { createServerClient } from '@cocartheadless/sdk/nuxt';
  *
  * export default defineEventHandler(async (event) => {
  *   const client = createServerClient('https://store.example.com', event);

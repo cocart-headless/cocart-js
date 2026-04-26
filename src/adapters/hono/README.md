@@ -5,8 +5,8 @@
 ## Installation
 
 ```bash
-npm install @cocart/sdk   # Node.js
-bun add @cocart/sdk       # Bun
+npm install @cocartheadless/sdk   # Node.js
+bun add @cocartheadless/sdk       # Bun
 ```
 
 ## How It Works
@@ -25,7 +25,7 @@ Pass the Hono context `c` to `createServerClient()`:
 
 ```ts
 import { Hono } from 'hono';
-import { createServerClient } from '@cocart/sdk/hono';
+import { createServerClient } from '@cocartheadless/sdk/hono';
 
 const app = new Hono();
 
@@ -77,8 +77,8 @@ app.get('/admin/sessions', async (c) => {
 For browser-side code served by Hono, use `createBrowserClient()`:
 
 ```ts
-import { createBrowserClient, attachCartKeyHeader } from '@cocart/sdk/hono';
-import { SessionManager } from '@cocart/sdk';
+import { createBrowserClient, attachCartKeyHeader } from '@cocartheadless/sdk/hono';
+import { SessionManager } from '@cocartheadless/sdk';
 
 const client = createBrowserClient('https://your-store.com', {
   encryptionKey: 'your-secret-encryption-key',
@@ -102,7 +102,7 @@ export { client, session };
 
 ```ts
 import { Hono } from 'hono';
-import { createServerClient } from '@cocart/sdk/hono';
+import { createServerClient } from '@cocartheadless/sdk/hono';
 
 type Bindings = {
   COCART_STORE_URL: string;
@@ -151,7 +151,7 @@ Hono is a popular choice for Cloudflare Workers. Environment variables are passe
 ```ts
 // worker.ts
 import { Hono } from 'hono';
-import { createServerClient } from '@cocart/sdk/hono';
+import { createServerClient } from '@cocartheadless/sdk/hono';
 
 type Env = {
   COCART_STORE_URL: string;

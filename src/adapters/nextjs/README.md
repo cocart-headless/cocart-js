@@ -7,7 +7,7 @@ The Next.js adapter solves this the same way as the Astro adapter — by passing
 ## Installation
 
 ```bash
-npm install @cocart/sdk
+npm install @cocartheadless/sdk
 ```
 
 ## How It Works
@@ -30,8 +30,8 @@ No cookies are used at any point. This avoids common cookie issues like GDPR con
 // lib/cocart.ts
 'use client';
 
-import { createBrowserClient, attachCartKeyHeader } from '@cocart/sdk/nextjs';
-import { SessionManager } from '@cocart/sdk';
+import { createBrowserClient, attachCartKeyHeader } from '@cocartheadless/sdk/nextjs';
+import { SessionManager } from '@cocartheadless/sdk';
 
 let client: ReturnType<typeof createBrowserClient> | null = null;
 let session: SessionManager | null = null;
@@ -76,7 +76,7 @@ export async function getSession() {
 ```tsx
 // app/cart/page.tsx
 import { headers } from 'next/headers';
-import { createServerClient } from '@cocart/sdk/nextjs';
+import { createServerClient } from '@cocartheadless/sdk/nextjs';
 
 export default async function CartPage() {
   const headersList = await headers();
@@ -109,7 +109,7 @@ For registered customers, pass their `username` and `password`:
 
 ```ts
 import { headers } from 'next/headers';
-import { createServerClient } from '@cocart/sdk/nextjs';
+import { createServerClient } from '@cocartheadless/sdk/nextjs';
 
 const headersList = await headers();
 const client = createServerClient(process.env.COCART_STORE_URL!, headersList, {
@@ -126,7 +126,7 @@ Consumer keys are WooCommerce admin credentials. Use them only for admin-level A
 
 ```ts
 import { headers } from 'next/headers';
-import { createServerClient } from '@cocart/sdk/nextjs';
+import { createServerClient } from '@cocartheadless/sdk/nextjs';
 
 const headersList = await headers();
 const client = createServerClient(process.env.COCART_STORE_URL!, headersList, {
@@ -146,7 +146,7 @@ Use the server client in Next.js Route Handlers:
 ```ts
 // app/api/cart/add/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerClient } from '@cocart/sdk/nextjs';
+import { createServerClient } from '@cocartheadless/sdk/nextjs';
 
 export async function POST(request: NextRequest) {
   const client = createServerClient(
@@ -173,7 +173,7 @@ export async function POST(request: NextRequest) {
 ```ts
 // app/api/cart/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerClient } from '@cocart/sdk/nextjs';
+import { createServerClient } from '@cocartheadless/sdk/nextjs';
 
 export async function GET(request: NextRequest) {
   const client = createServerClient(
@@ -290,7 +290,7 @@ export function UpdateQuantityButton({
 
 ```tsx
 // app/products/page.tsx
-import { CoCart } from '@cocart/sdk';
+import { CoCart } from '@cocartheadless/sdk';
 import { AddToCartButton } from '@/components/AddToCartButton';
 
 export default async function ProductsPage() {

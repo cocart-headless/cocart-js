@@ -19,7 +19,7 @@ Only the **latest major version** receives active development. Older major versi
 - Removing or renaming an exported class, function, type, or interface
 - Changing required parameters of a public method
 - Changing return types in a way that breaks type assignability
-- Removing an export path (e.g., `@cocart/sdk/astro`)
+- Removing an export path (e.g., `@cocartheadless/sdk/astro`)
 - Changing the module output format (currently ESM + CJS)
 - Dropping a Node.js version from the supported matrix
 

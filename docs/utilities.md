@@ -11,7 +11,7 @@ CoCart returns prices as **smallest-unit integers** — that means cents for USD
 The `CurrencyFormatter` class converts these integers into human-readable price strings. It uses **`Intl.NumberFormat`** — a built-in JavaScript API (available in all modern browsers and Node.js) that knows how to format numbers according to different currencies and locales (e.g., `$45.99` in the US, `45,99 €` in Germany).
 
 ```ts
-import { CurrencyFormatter } from '@cocart/sdk';
+import { CurrencyFormatter } from '@cocartheadless/sdk';
 
 const fmt = new CurrencyFormatter();
 ```
@@ -70,7 +70,7 @@ Your WooCommerce store has a configured timezone (e.g., `America/New_York` or `U
 The `TimezoneHelper` class handles these conversions. It uses **`Intl.DateTimeFormat`** — another built-in JavaScript API (like `Intl.NumberFormat` for currencies) that understands timezone rules, including daylight saving time changes.
 
 ```ts
-import { TimezoneHelper } from '@cocart/sdk';
+import { TimezoneHelper } from '@cocartheadless/sdk';
 
 const tz = new TimezoneHelper();
 ```
