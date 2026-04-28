@@ -7,8 +7,7 @@ import { MemoryStorage } from './storage/memory-storage.js';
 import { LocalStorage } from './storage/local-storage.js';
 import { EncryptedStorage } from './storage/encrypted-storage.js';
 import type { StorageInterface } from './storage/storage.interface.js';
-import type { CoCartOptions, AuthCredentials, CoCartEventMap, CoCartEventListener } from './cocart.types.js';
-import { Account } from './endpoints/account.js';
+import type { CoCartOptions, AuthCredentials, CoCartEventMap, CoCartEventListener, CoCartExtension, CoCartExtensionRegistry } from './cocart.types.js';
 import { Cart } from './endpoints/cart.js';
 import { Products } from './endpoints/products.js';
 import { Store } from './endpoints/store.js';
@@ -54,6 +53,7 @@ export class CoCart {
   private etagEnabled: boolean = true;
   private etagCache: Map<string, string> = new Map();
   private mainPlugin: 'basic' | 'legacy' = 'basic';
+  private extensions: Map<string, unknown> = new Map();
 
   // Event listeners
   private listeners: { [K in keyof CoCartEventMap]?: Set<CoCartEventListener<K>> } = {};
@@ -97,6 +97,12 @@ export class CoCart {
     if (options.responseTransformer) this.responseTransformer = options.responseTransformer;
     if (options.etag !== undefined) this.etagEnabled = options.etag;
     if (options.mainPlugin) this.mainPlugin = options.mainPlugin;
+
+    if (options.extensions) {
+      for (const extension of options.extensions) {
+        this.use(extension);
+      }
+    }
   }
 
   /** Create a new instance with fluent interface. */
@@ -261,6 +267,63 @@ export class CoCart {
   setResponseTransformer(fn: ((response: Response) => Response) | null): this {
     this.responseTransformer = fn;
     return this;
+  }
+
+  // --- Extensions ---
+
+  /**
+   * Install an extension and expose it on the client instance by name.
+   *
+   * @example
+   * const client = new CoCart(storeUrl).use(checkoutExtension);
+   * await client.checkout.createOrder();
+   */
+  use<Name extends string, Instance>(extension: CoCartExtension<Name, Instance>): this & Record<Name, Instance> {
+    const existing = this.extensions.get(extension.name);
+
+    if (existing !== undefined) {
+      return this as this & Record<Name, Instance>;
+    }
+
+    if (extension.name in this) {
+      throw new CoCartError(
+        `Cannot install extension "${extension.name}" because that property already exists on the CoCart client.`,
+        0,
+        'extension_name_conflict',
+      );
+    }
+
+    const instance = extension.install(this);
+    this.extensions.set(extension.name, instance);
+
+    Object.defineProperty(this, extension.name, {
+      value: instance,
+      enumerable: true,
+      configurable: true,
+      writable: false,
+    });
+
+    return this as this & Record<Name, Instance>;
+  }
+
+  /** Check whether an extension has already been installed. */
+  hasExtension(name: string): boolean {
+    return this.extensions.has(name);
+  }
+
+  /** Retrieve an installed extension by name. */
+  extension<Name extends Extract<keyof CoCartExtensionRegistry, string>>(name: Name): CoCartExtensionRegistry[Name];
+  extension<Instance = unknown>(name: string): Instance;
+  extension(name: string): unknown {
+    if (!this.extensions.has(name)) {
+      throw new CoCartError(
+        `The "${name}" extension is not installed on this CoCart client.`,
+        0,
+        'extension_not_installed',
+      );
+    }
+
+    return this.extensions.get(name);
   }
 
   // --- Events ---

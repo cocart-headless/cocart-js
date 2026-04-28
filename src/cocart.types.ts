@@ -1,6 +1,24 @@
 import type { StorageInterface } from './storage/storage.interface.js';
 
 /**
+ * Extension registry for module augmentation.
+ *
+ * Third-party SDKs can augment this interface to provide strongly typed
+ * access to installed extensions via `client.extension('name')`.
+ */
+export interface CoCartExtensionRegistry {}
+
+/**
+ * Extension contract for composing additional SDK modules onto CoCart.
+ */
+export interface CoCartExtension<Name extends string = string, Instance = unknown> {
+  /** Unique extension name. Also used as the runtime property name on the client. */
+  name: Name;
+  /** Install the extension and return the public instance to expose. */
+  install: (client: import('./cocart.js').CoCart) => Instance;
+}
+
+/**
  * Configuration options for the CoCart client.
  */
 export interface CoCartOptions {
@@ -48,6 +66,8 @@ export interface CoCartOptions {
   etag?: boolean;
   /** CoCart main plugin: 'basic' (default) or 'legacy' for legacy CoCart plugin */
   mainPlugin?: 'basic' | 'legacy';
+  /** Extensions to install during client construction. */
+  extensions?: CoCartExtension[];
 }
 
 /**
