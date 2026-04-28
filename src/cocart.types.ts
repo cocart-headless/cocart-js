@@ -51,6 +51,18 @@ export interface CoCartOptions {
 }
 
 /**
+ * Two Factor Authentication challenge data returned in the step-1 401 response.
+ */
+export interface TwoFactorAuthChallenge {
+  /** Providers available for verification (e.g. 'totp', 'email', 'backup'). */
+  available_providers: string[];
+  /** The default provider the server will use if none is specified. */
+  default_provider: string | null;
+  /** Whether the server has already sent a code via email. */
+  email_sent: boolean;
+}
+
+/**
  * JWT Manager options.
  */
 export interface JwtOptions {

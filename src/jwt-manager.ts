@@ -3,6 +3,7 @@ import type { Response } from './response.js';
 import type { StorageInterface } from './storage/storage.interface.js';
 import type { JwtOptions } from './cocart.types.js';
 import { AuthenticationError } from './exceptions/authentication-error.js';
+import { TwoFactorAuthRequiredError } from './exceptions/two-factor-auth-required-error.js';
 
 /**
  * JWT Manager
@@ -50,33 +51,49 @@ export class JwtManager {
    *
    * Requires the CoCart JWT Authentication plugin. Throws an
    * AuthenticationError if the plugin is not installed.
+   *
+   * If the CoCart 2FA plugin is installed and the user has 2FA enabled, throws a
+   * `TwoFactorAuthRequiredError` containing the available providers. Catch this error
+   * and call `verifyTwoFactor()` with the code to complete login.
    */
   async login(username: string, password: string): Promise<Response> {
-    const response = await this.client.post('login', {
-      username,
-      password,
-    });
+    let response: Response;
 
-    const data = response.toObject() as Record<string, unknown>;
-    const extras = data['extras'] as Record<string, unknown> | undefined;
-    const jwtToken = extras?.['jwt_token'] as string | undefined;
-    const refreshToken = extras?.['jwt_refresh'] as string | undefined;
-
-    if (jwtToken) {
-      this.client.setJwtToken(jwtToken);
-      if (refreshToken) {
-        this.client.setRefreshToken(refreshToken);
+    try {
+      response = await this.client.post('login', { username, password });
+    } catch (e) {
+      if (e instanceof AuthenticationError && e.errorCode === 'cocart_2fa_required') {
+        const d = (e.responseData['data'] ?? e.responseData) as Record<string, unknown>;
+        throw new TwoFactorAuthRequiredError(e.message, d);
       }
-      await this.persistTokens();
-    } else {
-      throw new AuthenticationError(
-        'JWT token not found in login response. Is the CoCart JWT Authentication plugin installed?',
-        0,
-        'cocart_jwt_missing',
-      );
+      throw e;
     }
 
-    return response;
+    return this.extractAndPersistTokens(response);
+  }
+
+  /**
+   * Complete a Two Factor Authentication login challenge.
+   *
+   * Call this after catching a `TwoFactorAuthRequiredError` from `login()`.
+   * Submits the verification code (and optional provider) to acquire JWT tokens.
+   *
+   * @param username - The user's username or email
+   * @param password - The user's password
+   * @param code - The 2FA verification code
+   * @param provider - The provider to use (e.g. 'totp', 'email', 'backup'). Defaults to the server's default.
+   */
+  async verifyTwoFactor(
+    username: string,
+    password: string,
+    code: string,
+    provider?: string,
+  ): Promise<Response> {
+    const body: Record<string, string> = { username, password, '2fa_code': code };
+    if (provider) body['2fa_provider'] = provider;
+
+    const response = await this.client.post('login', body);
+    return this.extractAndPersistTokens(response);
   }
 
   /**
@@ -217,6 +234,29 @@ export class JwtManager {
     } catch {
       return null;
     }
+  }
+
+  private async extractAndPersistTokens(response: Response): Promise<Response> {
+    const data = response.toObject() as Record<string, unknown>;
+    const extras = data['extras'] as Record<string, unknown> | undefined;
+    const jwtToken = extras?.['jwt_token'] as string | undefined;
+    const refreshToken = extras?.['jwt_refresh'] as string | undefined;
+
+    if (jwtToken) {
+      this.client.setJwtToken(jwtToken);
+      if (refreshToken) {
+        this.client.setRefreshToken(refreshToken);
+      }
+      await this.persistTokens();
+    } else {
+      throw new AuthenticationError(
+        'JWT token not found in login response. Is the CoCart JWT Authentication plugin installed?',
+        0,
+        'cocart_jwt_missing',
+      );
+    }
+
+    return response;
   }
 
   private async persistTokens(): Promise<void> {

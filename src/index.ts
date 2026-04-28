@@ -16,6 +16,7 @@ export { Sessions } from './endpoints/sessions.js';
 // Exceptions
 export { CoCartError } from './exceptions/cocart-error.js';
 export { AuthenticationError } from './exceptions/authentication-error.js';
+export { TwoFactorAuthRequiredError } from './exceptions/two-factor-auth-required-error.js';
 export { ValidationError } from './exceptions/validation-error.js';
 export { VersionError } from './exceptions/version-error.js';
 
@@ -32,7 +33,7 @@ export { EncryptedStorage } from './storage/encrypted-storage.js';
 
 // Types
 export type {
-  CoCartOptions, JwtOptions, CartItemData, AuthCredentials,
+  CoCartOptions, JwtOptions, TwoFactorAuthChallenge, CartItemData, AuthCredentials,
   // Response types
   CurrencyInfo, CartItem, CartItemImage, CartTotals, CartCustomer, CustomerAddress,
   CartCoupon, CartFee, ShippingRate, ShippingPackage, CrossSellProduct, CartResponse,

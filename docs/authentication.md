@@ -186,6 +186,84 @@ client.jwt().isAutoRefreshEnabled(); // check auto-refresh status
 client.jwt().setAutoRefresh(true);   // enable/disable at runtime
 ```
 
+## Two Factor Authentication
+
+**Two Factor Authentication (2FA)** adds an extra layer of security to customer logins. After entering their username and password, the customer must also provide a time-based code from an authenticator app, a code sent via email, or a backup code.
+
+This requires the [WordPress Two Factor](https://wordpress.org/plugins/two-factor/) plugin to be installed and active, alongside CoCart Plus v1.6.0+.
+
+### The Two-Step Login Flow
+
+When a customer with 2FA enabled logs in, the server doesn't immediately issue a JWT token. Instead, it responds with a challenge — a notification that a verification code is required. The SDK translates this into a `TwoFactorAuthRequiredError`, which you catch and handle by prompting the customer for their code.
+
+```ts
+import { CoCart, JwtManager, TwoFactorAuthRequiredError } from '@cocart/sdk';
+
+const client = new CoCart('https://your-store.com');
+const jwt = new JwtManager(client);
+
+try {
+  await jwt.login('customer@email.com', 'password');
+  // Login succeeded — no 2FA configured for this user
+} catch (e) {
+  if (e instanceof TwoFactorAuthRequiredError) {
+    // Server requires a 2FA code
+    console.log('Available providers:', e.availableProviders); // ['totp', 'email']
+    console.log('Default provider:', e.defaultProvider);       // 'totp'
+    console.log('Email already sent:', e.emailSent);           // false
+
+    // Prompt the customer for their verification code
+    const code = await promptUserForCode();
+
+    // Complete the login with the code
+    await jwt.verifyTwoFactor('customer@email.com', 'password', code);
+  } else {
+    throw e;
+  }
+}
+```
+
+### Specifying a Provider
+
+If the store supports multiple 2FA providers (e.g. TOTP and email), you can specify which one to use:
+
+```ts
+// Use email provider (server will send a code via email)
+await jwt.verifyTwoFactor('customer@email.com', 'password', code, 'email');
+
+// Use TOTP provider (code from authenticator app)
+await jwt.verifyTwoFactor('customer@email.com', 'password', code, 'totp');
+
+// Use a backup code
+await jwt.verifyTwoFactor('customer@email.com', 'password', backupCode, 'backup');
+```
+
+If no provider is specified, the server uses its configured default for the user.
+
+### TwoFactorAuthRequiredError Properties
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `availableProviders` | `string[]` | Providers the user can choose from (e.g. `['totp', 'email']`) |
+| `defaultProvider` | `string \| null` | The provider the server will use by default |
+| `emailSent` | `boolean` | Whether the server has already sent a code via email |
+
+### Handling Invalid Codes
+
+If the customer enters a wrong code, `verifyTwoFactor()` throws an `AuthenticationError` with `errorCode === 'cocart_2fa_invalid_code'`:
+
+```ts
+import { AuthenticationError } from '@cocart/sdk';
+
+try {
+  await jwt.verifyTwoFactor('customer@email.com', 'password', '000000');
+} catch (e) {
+  if (e instanceof AuthenticationError && e.errorCode === 'cocart_2fa_invalid_code') {
+    console.log('Invalid code — please try again');
+  }
+}
+```
+
 ## Consumer Keys (Admin)
 
 **Consumer keys** are API credentials generated in the WooCommerce admin panel (WooCommerce > Settings > Advanced > REST API). They are different from a customer's username/password — they're meant for server-to-server access and administrative operations like managing cart sessions.
