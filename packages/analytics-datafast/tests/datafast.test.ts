@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { createDatafast } from '../src/extension.js';
 
-const mockDf = {
+const mockDf = vi.hoisted(() => ({
   track: vi.fn(),
   identify: vi.fn(),
   trackPageview: vi.fn(),
@@ -9,7 +9,7 @@ const mockDf = {
   reset: vi.fn(),
   getTrackingParams: vi.fn(),
   buildCrossDomainUrl: vi.fn(),
-};
+}));
 
 vi.mock('datafast', () => ({
   initDataFast: vi.fn().mockResolvedValue(mockDf),

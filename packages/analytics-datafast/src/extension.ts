@@ -1,5 +1,6 @@
 import type { CoCart, ResponseEvent, ErrorEvent } from '@cocartheadless/sdk';
 import type { DatafastExtension, DatafastInstance, DatafastOptions, DatafastSDK } from './types.js';
+import { initDataFast } from 'datafast';
 
 function matchesCartAdd(url: string): boolean {
   return url.includes('/cart/add-item');
@@ -37,14 +38,12 @@ export function createDatafast(options: DatafastOptions): DatafastExtension {
       };
 
       // initDataFast is async — events that fire before it resolves are queued
-      import('datafast').then(({ initDataFast }) =>
-        initDataFast(options).then((instance: DatafastInstance) => {
-          df = instance;
-          for (const fn of queue) fn();
-          queue.length = 0;
-          options.onReady?.(df);
-        }),
-      );
+      initDataFast(options).then((instance: DatafastInstance) => {
+        df = instance;
+        for (const fn of queue) fn();
+        queue.length = 0;
+        options.onReady?.(df);
+      });
 
       const onResponse = ({ method, url }: ResponseEvent) => {
         if (matchesCartAdd(url)) {
