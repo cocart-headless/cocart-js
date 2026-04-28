@@ -8,6 +8,7 @@ import { LocalStorage } from './storage/local-storage.js';
 import { EncryptedStorage } from './storage/encrypted-storage.js';
 import type { StorageInterface } from './storage/storage.interface.js';
 import type { CoCartOptions, AuthCredentials, CoCartEventMap, CoCartEventListener, CoCartExtension, CoCartExtensionRegistry } from './cocart.types.js';
+import { Account } from './endpoints/account.js';
 import { Cart } from './endpoints/cart.js';
 import { Products } from './endpoints/products.js';
 import { Store } from './endpoints/store.js';
