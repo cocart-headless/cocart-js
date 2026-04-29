@@ -142,6 +142,7 @@ export interface CheckoutFormField {
   component?: string;
   className?: string;
   inputClassName?: string;
+  hidden?: boolean;
   [key: string]: unknown;
 }
 

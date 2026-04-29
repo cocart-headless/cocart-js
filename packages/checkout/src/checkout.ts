@@ -255,6 +255,12 @@ export class CheckoutClient implements CheckoutSDK {
   createForm(options: { gatewayId?: string; theme?: CheckoutTheme; needsPayment?: boolean; includeSummary?: boolean; shippingMethods?: CheckoutShippingRate[] } = {}): CheckoutFormDefinition {
     const theme = options.theme ?? this.defaultTheme;
     const gatewayId = options.gatewayId ?? this.defaultGateway ?? [...this.adapters.keys()][0];
+    const isExpressGateway = gatewayId ? (this.adapters.get(gatewayId)?.express ?? false) : false;
+
+    const WALLET_HIDDEN_FIELDS = new Set([
+      'billing_address.first_name',
+      'billing_address.last_name',
+    ]);
 
     const sections: CheckoutFormSection[] = [
       {
@@ -266,7 +272,7 @@ export class CheckoutClient implements CheckoutSDK {
       {
         id: 'billing',
         title: 'Billing address',
-        fields: applyTheme(this.fields?.billing ?? DEFAULT_BILLING_FIELDS, theme),
+        fields: applyTheme(markHiddenForWallet(this.fields?.billing ?? DEFAULT_BILLING_FIELDS, isExpressGateway, WALLET_HIDDEN_FIELDS), theme),
         className: theme.sectionClassName,
       },
     ];
@@ -422,4 +428,9 @@ function applyTheme(fields: CheckoutFormField[], theme: CheckoutTheme): Checkout
     className: field.className ?? theme.fieldClassName,
     inputClassName: field.inputClassName ?? theme.inputClassName,
   }));
+}
+
+function markHiddenForWallet(fields: CheckoutFormField[], isWallet: boolean, hiddenNames: Set<string>): CheckoutFormField[] {
+  if (!isWallet) return fields;
+  return fields.map((f) => hiddenNames.has(f.name) ? { ...f, hidden: true } : f);
 }

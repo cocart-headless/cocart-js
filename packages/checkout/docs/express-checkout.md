@@ -8,6 +8,8 @@ Express checkout buttons (Apple Pay, Google Pay, Link, Venmo) bypass the standar
 
 Gateways that support express checkout set `express: true` on their adapter. The SDK collects all such adapters, sorts them by priority, and returns them via `listExpressGateways()` or as a complete bar definition via `createExpressCheckoutBar()`. Your UI renders this bar above the main form.
 
+When `createForm()` is called with an express gateway as the active gateway, the SDK automatically marks the billing `first_name` and `last_name` fields as `hidden: true`. The wallet token already carries the cardholder name, so these fields are redundant — hiding them removes friction without removing the fields from the form definition (UI libraries can still register them).
+
 ---
 
 ## Discovering express gateways
@@ -137,6 +139,32 @@ When multiple gateways support express checkout, `expressCheckoutPriority` contr
 | Custom adapters | `100` |
 
 Registration order breaks ties.
+
+---
+
+## Billing Name Fields Are Hidden Automatically
+
+When the active gateway is express, `createForm()` sets `hidden: true` on the billing `first_name` and `last_name` fields. The wallet token already carries the cardholder name, so collecting it again adds unnecessary friction.
+
+```ts
+const form = client.checkout.createForm({ gatewayId: 'stripe-express' });
+const billing = form.sections.find((s) => s.id === 'billing');
+
+// billing_address.first_name → { ..., hidden: true }
+// billing_address.last_name  → { ..., hidden: true }
+// All other billing fields are unaffected
+```
+
+The fields are still present in the definition — form libraries that register fields by name will not break. Your UI should check `field.hidden` and skip rendering those fields:
+
+```ts
+// React example
+{billing.fields
+  .filter((field) => !field.hidden)
+  .map((field) => <FormField key={field.name} {...field} />)}
+```
+
+Non-express gateways (standard card form, PayPal Buttons, offline methods) return all billing fields unchanged.
 
 ---
 

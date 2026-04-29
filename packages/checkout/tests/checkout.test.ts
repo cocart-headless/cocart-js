@@ -491,4 +491,38 @@ describe('@cocartheadless/checkout', () => {
     expect(result.paymentData).toBeUndefined();
     expect(requestRaw).toHaveBeenCalledTimes(2);
   });
+
+  it('hides billing name fields when active gateway is express', () => {
+    const client = new CoCart('https://store.com').use(createCheckout({
+      gatewayAdapters: [
+        createStripeExpressGateway({ stripe: {} as never, elements: {} as never }),
+      ],
+    }));
+
+    const form = client.checkout.createForm({ gatewayId: 'stripe-express' });
+    const billing = form.sections.find((s) => s.id === 'billing')!;
+    const firstName = billing.fields.find((f) => f.name === 'billing_address.first_name')!;
+    const lastName = billing.fields.find((f) => f.name === 'billing_address.last_name')!;
+    const address = billing.fields.find((f) => f.name === 'billing_address.address_1')!;
+
+    expect(firstName.hidden).toBe(true);
+    expect(lastName.hidden).toBe(true);
+    expect(address.hidden).toBeUndefined();
+  });
+
+  it('does not hide billing name fields for non-express gateways', () => {
+    const client = new CoCart('https://store.com').use(createCheckout({
+      gatewayAdapters: [
+        createStripeGateway({ tokenize: async () => ({ payment_intent_id: 'pi_123' }) }),
+      ],
+    }));
+
+    const form = client.checkout.createForm({ gatewayId: 'stripe' });
+    const billing = form.sections.find((s) => s.id === 'billing')!;
+    const firstName = billing.fields.find((f) => f.name === 'billing_address.first_name')!;
+    const lastName = billing.fields.find((f) => f.name === 'billing_address.last_name')!;
+
+    expect(firstName.hidden).toBeUndefined();
+    expect(lastName.hidden).toBeUndefined();
+  });
 });
