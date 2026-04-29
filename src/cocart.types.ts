@@ -71,6 +71,18 @@ export interface CoCartOptions {
 }
 
 /**
+ * Two Factor Authentication challenge data returned in the step-1 401 response.
+ */
+export interface TwoFactorAuthChallenge {
+  /** Providers available for verification (e.g. 'totp', 'email', 'backup'). */
+  available_providers: string[];
+  /** The default provider the server will use if none is specified. */
+  default_provider: string | null;
+  /** Whether the server has already sent a code via email. */
+  email_sent: boolean;
+}
+
+/**
  * JWT Manager options.
  */
 export interface JwtOptions {
@@ -467,3 +479,114 @@ export interface CoCartEventMap {
 
 /** Event listener function type. */
 export type CoCartEventListener<K extends keyof CoCartEventMap> = (event: CoCartEventMap[K]) => void;
+
+// --- Account ---
+
+export interface AccountAddress {
+  first_name?: string;
+  last_name?: string;
+  company?: string;
+  address_1?: string;
+  address_2?: string;
+  city?: string;
+  state?: string;
+  postcode?: string;
+  country?: string;
+  phone?: string;
+  email?: string;
+}
+
+export interface AccountUser {
+  id: number;
+  date_registered: string;
+  email: string;
+  first_name: string;
+  last_name: string;
+  display_name: string;
+  addresses: {
+    billing: AccountAddress;
+    shipping: AccountAddress;
+  };
+  orders_count: number;
+  total_spent: string;
+  is_paying_customer: boolean;
+  avatar_url: string;
+}
+
+export interface AccountProfile {
+  user: AccountUser;
+  recent_order: {
+    order_id: number | null;
+    order_date: string | null;
+    order_data: string | null;
+  };
+  meta: {
+    is_customer_outside_base: boolean;
+    is_vat_exempt: boolean;
+  };
+  extensions?: Record<string, unknown>;
+}
+
+export interface AccountOrderSummary {
+  order_id: number;
+  order_status: string;
+  order_date: string;
+  item_count: number;
+  order_total: string;
+  order_actions: Record<string, { url: string; name: string }>;
+}
+
+export interface AccountOrdersResponse {
+  orders: AccountOrderSummary[];
+  pagination: {
+    previous: string | null;
+    next: string | null;
+  };
+}
+
+export interface AccountOrderDetail {
+  order_id: number;
+  order_number: string;
+  order_parent: number;
+  order_date: string;
+  order_status: string;
+  order_currency: string;
+  billing_address: string;
+  shipping_address: string;
+  phone: string;
+  email: string;
+  ship_to_billing: boolean;
+  items: Record<string, unknown>[];
+  totals: Record<string, unknown>;
+  order_note: string;
+  order_notes: Record<string, unknown>[];
+  downloads: AccountDownload[];
+  order_actions: Record<string, { url: string; name: string }>;
+}
+
+export interface AccountDownload {
+  product_name: string;
+  download_name: string;
+  file: string;
+  downloads_remaining: string;
+  download_expires: string;
+}
+
+export interface AccountUpdateInput {
+  account_first_name: string;
+  account_last_name: string;
+  account_display_name: string;
+  account_email: string;
+}
+
+export interface AccountChangePasswordInput {
+  current: string;
+  password: string;
+  confirm: string;
+}
+
+export interface AccountOrdersParams {
+  page?: number;
+  per_page?: number;
+  order?: 'ASC' | 'DESC';
+}

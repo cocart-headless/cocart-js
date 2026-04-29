@@ -8,6 +8,7 @@ import { LocalStorage } from './storage/local-storage.js';
 import { EncryptedStorage } from './storage/encrypted-storage.js';
 import type { StorageInterface } from './storage/storage.interface.js';
 import type { CoCartOptions, AuthCredentials, CoCartEventMap, CoCartEventListener, CoCartExtension, CoCartExtensionRegistry } from './cocart.types.js';
+import { Account } from './endpoints/account.js';
 import { Cart } from './endpoints/cart.js';
 import { Products } from './endpoints/products.js';
 import { Store } from './endpoints/store.js';
@@ -60,6 +61,7 @@ export class CoCart {
 
   // Lazy-loaded instances
   private jwtManagerInstance: JwtManager | null = null;
+  private accountInstance: Account | null = null;
   private cartInstance: Cart | null = null;
   private productsInstance: Products | null = null;
   private storeInstance: Store | null = null;
@@ -461,6 +463,13 @@ export class CoCart {
   }
 
   // --- Endpoints (lazy-loaded) ---
+
+  account(): Account {
+    if (this.accountInstance === null) {
+      this.accountInstance = new Account(this);
+    }
+    return this.accountInstance;
+  }
 
   cart(): Cart {
     if (this.cartInstance === null) {

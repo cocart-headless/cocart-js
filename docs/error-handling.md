@@ -7,10 +7,11 @@ When something goes wrong — a product doesn't exist, the customer isn't logged
 The SDK uses three error classes organized in a hierarchy. A **hierarchy** means that `AuthenticationError` and `ValidationError` are special types of `CoCartError` — so if you catch `CoCartError`, you catch all of them.
 
 ```text
-CoCartError (base)           — any API error
-├── AuthenticationError      — login/permission problems (401, 403)
-├── ValidationError          — bad input (400)
-└── VersionError             — method requires CoCart Basic (legacy mode)
+CoCartError (base)                    — any API error
+├── AuthenticationError               — login/permission problems (401, 403)
+│   └── TwoFactorAuthRequiredError    — 2FA code required to complete login (401)
+├── ValidationError                   — bad input (400)
+└── VersionError                      — method requires CoCart Basic (legacy mode)
 ```
 
 All errors extend `CoCartError`, which extends JavaScript's built-in `Error`. This means you can use `instanceof` to check what kind of error you caught.
@@ -117,6 +118,7 @@ Every HTTP response includes a **status code** — a number that tells you wheth
 |-------------|-------------|----------------|
 | 400 | `ValidationError` | Invalid product ID, out of stock, invalid quantity, missing required fields |
 | 401 | `AuthenticationError` | Missing or invalid credentials |
+| 401 | `TwoFactorAuthRequiredError` | Login succeeded but a 2FA code is required to complete authentication |
 | 403 | `AuthenticationError` | Expired JWT token, insufficient permissions |
 | 404 | `CoCartError` | Endpoint not found, item key not found |
 | 500 | `CoCartError` | Server error |
@@ -221,6 +223,31 @@ try {
   }
 }
 ```
+
+### Two Factor Authentication Required
+
+When a customer with 2FA enabled logs in, `JwtManager.login()` throws `TwoFactorAuthRequiredError`. This is a subclass of `AuthenticationError`, so it is also caught by `instanceof AuthenticationError` checks — check for the more specific type first:
+
+```ts
+import { TwoFactorAuthRequiredError, AuthenticationError } from '@cocart/sdk';
+
+try {
+  await jwt.login('customer@email.com', 'password');
+} catch (e) {
+  if (e instanceof TwoFactorAuthRequiredError) {
+    // e.availableProviders => ['totp', 'email']
+    // e.defaultProvider    => 'totp'
+    // e.emailSent          => false
+    const code = await promptUserForCode();
+    await jwt.verifyTwoFactor('customer@email.com', 'password', code);
+  } else if (e instanceof AuthenticationError) {
+    // Wrong password, missing plugin, etc.
+    console.log('Auth failed:', e.message);
+  }
+}
+```
+
+See [Two Factor Authentication](authentication.md#two-factor-authentication) for the full flow.
 
 ### CoCart Plugin Required
 

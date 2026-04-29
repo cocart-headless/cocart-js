@@ -86,6 +86,9 @@
   "files": [
     "dist"
   ],
+  "workspaces": [
+    "packages/*"
+  ],
   "scripts": {
     "build": "tsup --config tsup.config.ts && tsup --config tsup.adapters.ts && tsup --config tsup.cdn.ts",
     "build:checkout": "npm run build --workspace @cocartheadless/checkout",
@@ -93,10 +96,16 @@
     "dev": "tsup --watch",
     "typecheck": "tsc --noEmit",
     "typecheck:checkout": "npm run typecheck --workspace @cocartheadless/checkout",
+    "typecheck:datafast": "npm run typecheck --workspace @cocartheadless/analytics-datafast",
+    "build:datafast": "npm run build --workspace @cocartheadless/analytics-datafast",
     "test": "vitest run",
     "test:checkout": "npm run test --workspace @cocartheadless/checkout",
     "test:all": "npm run test && npm run test:checkout",
     "test:watch": "vitest",
+    "test:datafast": "npm run test --workspace @cocartheadless/analytics-datafast",
+    "typecheck:gtm": "npm run typecheck --workspace @cocartheadless/analytics-gtm",
+    "build:gtm": "npm run build --workspace @cocartheadless/analytics-gtm",
+    "test:gtm": "npm run test --workspace @cocartheadless/analytics-gtm",
     "lint": "tsc --noEmit"
   },
   "keywords": [
