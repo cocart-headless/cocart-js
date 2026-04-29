@@ -17,7 +17,7 @@ Official TypeScript SDK for the [CoCart](https://cocartapi.com) REST API. Build 
 
 * [ ] Add SDK docs to documentation site
 * [ ] Add support for Cart API extras
-* [ ] Add Checkout API support
+* [x] Add Checkout API support
 * [x] Add Customers Account API support
 
 ---
