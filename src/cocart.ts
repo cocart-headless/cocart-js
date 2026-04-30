@@ -304,7 +304,7 @@ export class CoCart {
 
     if (extension.name in this) {
       throw new CoCartError(
-        `Cannot install extension "${extension.name}" because that property already exists on the CoCart client.`,
+        t('extension.nameConflict', { name: extension.name }, this.locale),
         0,
         'extension_name_conflict',
       );
@@ -334,7 +334,7 @@ export class CoCart {
   extension(name: string): unknown {
     if (!this.extensions.has(name)) {
       throw new CoCartError(
-        `The "${name}" extension is not installed on this CoCart client.`,
+        t('extension.notInstalled', { name }, this.locale),
         0,
         'extension_not_installed',
       );

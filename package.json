@@ -79,6 +79,12 @@
         "default": "./dist/adapters/vite.js"
       }
     },
+    "./tanstack-start": {
+      "import": {
+        "types": "./dist/adapters/tanstack-start.d.ts",
+        "default": "./dist/adapters/tanstack-start.js"
+      }
+    },
     "./i18n/en-us": {
       "import": {
         "types": "./dist/i18n/en-us.d.ts",
