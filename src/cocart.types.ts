@@ -66,6 +66,13 @@ export interface CoCartOptions {
   etag?: boolean;
   /** CoCart main plugin: 'basic' (default) or 'legacy' for legacy CoCart plugin */
   mainPlugin?: 'basic' | 'legacy';
+  /**
+   * Locale for SDK-internal messages (validation errors, JWT errors, debug logs, etc.).
+   * Defaults to 'en-us'. Additional locales must be registered first via a side-effect import:
+   *
+   *   import '@cocartheadless/sdk/i18n/fr'
+   */
+  locale?: string;
   /** Extensions to install during client construction. */
   extensions?: CoCartExtension[];
 }

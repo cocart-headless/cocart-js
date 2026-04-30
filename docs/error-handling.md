@@ -197,6 +197,8 @@ validateQuantity(-1);              // throws ValidationError
 validateEmail('not-an-email');     // throws ValidationError
 ```
 
+Error messages are in English (US) by default. See [Localization](localization.md) to receive SDK messages in another language.
+
 ## Common Error Scenarios
 
 ### Product Not Found

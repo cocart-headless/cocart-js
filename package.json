@@ -78,6 +78,16 @@
         "types": "./dist/adapters/vite.d.ts",
         "default": "./dist/adapters/vite.js"
       }
+    },
+    "./i18n/en-us": {
+      "import": {
+        "types": "./dist/i18n/en-us.d.ts",
+        "default": "./dist/i18n/en-us.js"
+      },
+      "require": {
+        "types": "./dist/i18n/en-us.d.cts",
+        "default": "./dist/i18n/en-us.cjs"
+      }
     }
   },
   "files": [
@@ -87,7 +97,7 @@
     "packages/*"
   ],
   "scripts": {
-    "build": "tsup --config tsup.config.ts && tsup --config tsup.adapters.ts && tsup --config tsup.cdn.ts",
+    "build": "tsup --config tsup.config.ts && tsup --config tsup.adapters.ts && tsup --config tsup.cdn.ts && tsup --config tsup.i18n.ts",
     "dev": "tsup --watch",
     "typecheck": "tsc --noEmit",
     "typecheck:datafast": "npm run typecheck --workspace @cocartheadless/analytics-datafast",
