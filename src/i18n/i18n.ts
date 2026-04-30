@@ -26,6 +26,9 @@ export type MessageKey =
   | 'version.requiresBasic'
   // Endpoint
   | 'endpoint.pluginRequired'
+  // Extension
+  | 'extension.nameConflict'
+  | 'extension.notInstalled'
   // Network / request
   | 'request.networkError'
   | 'request.timeout'

@@ -90,7 +90,7 @@ validateEmail('bad', 'fr');       // throws ValidationError with French message
 
 ## Contributing a Locale
 
-To add a new language, create a file at `src/i18n/locales/{locale}.ts` that calls `registerLocale` with all 16 message keys:
+To add a new language, create a file at `src/i18n/locales/{locale}.ts` that calls `registerLocale` with all 18 message keys:
 
 ```ts
 // src/i18n/locales/fr.ts
@@ -111,6 +111,10 @@ registerLocale('fr', {
 
   // Endpoint
   'endpoint.pluginRequired': "Cette méthode n'est disponible qu'avec un autre plugin CoCart. Contactez le support.",
+
+  // Extension
+  'extension.nameConflict': 'Impossible d\'installer l\'extension "{name}" car cette propriété existe déjà sur le client CoCart.',
+  'extension.notInstalled': 'L\'extension "{name}" n\'est pas installée sur ce client CoCart.',
 
   // Network / request
   'request.networkError': 'Erreur réseau',
@@ -153,7 +157,7 @@ entry: {
 
 ### Message key reference
 
-All 16 keys must be present. Interpolation placeholders (`{name}`) must be preserved exactly.
+All 18 keys must be present. Interpolation placeholders (`{name}`) must be preserved exactly.
 
 | Key | Placeholders | Description |
 |-----|-------------|-------------|
@@ -164,6 +168,8 @@ All 16 keys must be present. Interpolation placeholders (`{name}`) must be prese
 | `jwt.noRefreshToken` | — | No refresh token available |
 | `version.requiresBasic` | `{method}` | Method requires CoCart Basic |
 | `endpoint.pluginRequired` | — | Method requires an additional CoCart plugin |
+| `extension.nameConflict` | `{name}` | Extension name conflicts with existing client property |
+| `extension.notInstalled` | `{name}` | Extension has not been installed on the client |
 | `request.networkError` | — | Generic network failure |
 | `request.timeout` | `{timeout}` | Request timed out (ms) |
 | `request.unknownError` | — | Fallback when API returns no message |

@@ -16,6 +16,10 @@ registerLocale('en-us', {
   // Endpoint
   'endpoint.pluginRequired': 'This method is only available with another CoCart plugin. Please ask support for assistance!',
 
+  // Extension
+  'extension.nameConflict': 'Cannot install extension "{name}" because that property already exists on the CoCart client.',
+  'extension.notInstalled': 'The "{name}" extension is not installed on this CoCart client.',
+
   // Network / request
   'request.networkError': 'Network error',
   'request.timeout':      'Request timed out after {timeout}ms',
