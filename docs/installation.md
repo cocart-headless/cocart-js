@@ -59,6 +59,10 @@ const client = new CoCart('https://your-store.com', {
 
   // Enable debug logging to console (default: false)
   debug: true,
+
+  // Locale for SDK-internal messages (default: 'en-us')
+  // Requires a matching locale import, e.g. import '@cocartheadless/sdk/i18n/fr'
+  locale: 'en-us',
 });
 ```
 
@@ -76,6 +80,7 @@ const client = CoCart.create('https://your-store.com')
   .setAuthHeaderName('X-Auth-Token')
   .setETag(true)
   .setMainPlugin('basic')
+  .setLocale('en-us')
   .setDebug(true);
 ```
 

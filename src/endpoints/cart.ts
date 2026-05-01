@@ -54,8 +54,8 @@ export class Cart extends Endpoint {
     quantity: number = 1,
     options: Record<string, unknown> = {},
   ): Promise<Response> {
-    validateProductId(productId);
-    validateQuantity(quantity);
+    validateProductId(productId, this.client.getLocale());
+    validateQuantity(quantity, this.client.getLocale());
     const data = {
       id: String(productId),
       quantity: String(quantity),
@@ -84,7 +84,7 @@ export class Cart extends Endpoint {
    * @param options  Additional options
    */
   async updateItem(itemKey: string, quantity: number, options: Record<string, unknown> = {}): Promise<Response> {
-    validateQuantity(quantity);
+    validateQuantity(quantity, this.client.getLocale());
     const data = { quantity: String(quantity), ...options };
     return this.post(`item/${itemKey}`, data);
   }

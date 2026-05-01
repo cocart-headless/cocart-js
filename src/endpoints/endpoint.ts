@@ -1,6 +1,7 @@
 import type { CoCart } from '../cocart.js';
 import type { Response } from '../response.js';
 import { CoCartError } from '../exceptions/cocart-error.js';
+import { t } from '../i18n/i18n.js';
 
 /**
  * Abstract base class for all endpoint classes.
@@ -67,7 +68,7 @@ export abstract class Endpoint {
   protected handleNoRoute(e: unknown): never {
     if (e instanceof CoCartError && e.errorCode === 'rest_no_route') {
       throw new CoCartError(
-        'This method is only available with another CoCart plugin. Please ask support for assistance!',
+        t('endpoint.pluginRequired', undefined, this.client.getLocale()),
         404,
         'cocart_plugin_required',
       );

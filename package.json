@@ -81,6 +81,22 @@
         "types": "./dist/adapters/vite.d.ts",
         "default": "./dist/adapters/vite.js"
       }
+    },
+    "./tanstack-start": {
+      "import": {
+        "types": "./dist/adapters/tanstack-start.d.ts",
+        "default": "./dist/adapters/tanstack-start.js"
+      }
+    },
+    "./i18n/en-us": {
+      "import": {
+        "types": "./dist/i18n/en-us.d.ts",
+        "default": "./dist/i18n/en-us.js"
+      },
+      "require": {
+        "types": "./dist/i18n/en-us.d.cts",
+        "default": "./dist/i18n/en-us.cjs"
+      }
     }
   },
   "files": [
@@ -90,7 +106,7 @@
     "packages/*"
   ],
   "scripts": {
-    "build": "tsup --config tsup.config.ts && tsup --config tsup.adapters.ts && tsup --config tsup.cdn.ts",
+    "build": "tsup --config tsup.config.ts && tsup --config tsup.adapters.ts && tsup --config tsup.cdn.ts && tsup --config tsup.i18n.ts",
     "build:checkout": "npm run build --workspace @cocartheadless/checkout",
     "build:all": "npm run build && npm run build:checkout",
     "dev": "tsup --watch",

@@ -14,6 +14,8 @@ import { Products } from './endpoints/products.js';
 import { Store } from './endpoints/store.js';
 import { Sessions } from './endpoints/sessions.js';
 import { JwtManager } from './jwt-manager.js';
+import { t } from './i18n/i18n.js';
+import './i18n/locales/en-us.js';
 
 /**
  * CoCart TypeScript SDK
@@ -55,6 +57,7 @@ export class CoCart {
   private etagCache: Map<string, string> = new Map();
   private mainPlugin: 'basic' | 'legacy' = 'basic';
   private extensions: Map<string, unknown> = new Map();
+  private locale: string | undefined;
 
   // Event listeners
   private listeners: { [K in keyof CoCartEventMap]?: Set<CoCartEventListener<K>> } = {};
@@ -104,6 +107,8 @@ export class CoCart {
         this.use(extension);
       }
     }
+
+    if (options.locale) this.locale = options.locale;
   }
 
   /** Create a new instance with fluent interface. */
@@ -264,13 +269,24 @@ export class CoCart {
     return this;
   }
 
+  /** Get the configured locale for SDK-internal messages. */
+  getLocale(): string | undefined {
+    return this.locale;
+  }
+
+  /** Set the locale for SDK-internal messages. */
+  setLocale(locale: string): this {
+    this.locale = locale;
+    return this;
+  }
+
   /**
    * Guard that throws if a method requires CoCart Basic but the SDK
    * is configured for the legacy plugin.
    */
   requiresBasic(method: string): void {
     if (this.mainPlugin === 'legacy') {
-      throw new VersionError(method);
+      throw new VersionError(method, this.locale);
     }
   }
 
@@ -298,7 +314,7 @@ export class CoCart {
 
     if (extension.name in this) {
       throw new CoCartError(
-        `Cannot install extension "${extension.name}" because that property already exists on the CoCart client.`,
+        t('extension.nameConflict', { name: extension.name }, this.locale),
         0,
         'extension_name_conflict',
       );
@@ -328,7 +344,7 @@ export class CoCart {
   extension(name: string): unknown {
     if (!this.extensions.has(name)) {
       throw new CoCartError(
-        `The "${name}" extension is not installed on this CoCart client.`,
+        t('extension.notInstalled', { name }, this.locale),
         0,
         'extension_not_installed',
       );
@@ -379,23 +395,24 @@ export class CoCart {
   }
 
   private logDebug<K extends keyof CoCartEventMap>(event: K, data: CoCartEventMap[K]): void {
-    const prefix = '[CoCart]';
     const d = data as Record<string, unknown>;
     switch (event) {
       case 'request':
-        console.log(`${prefix} ${d['method']} ${d['url']}`);
+        console.log(t('debug.request', { method: String(d['method']), url: String(d['url']) }, this.locale));
         break;
       case 'response':
-        console.log(`${prefix} ${d['method']} ${d['url']} → ${d['status']} (${d['duration']}ms)`);
+        console.log(t('debug.response', { method: String(d['method']), url: String(d['url']), status: String(d['status']), duration: String(d['duration']) }, this.locale));
         break;
       case 'error':
-        console.error(`${prefix} ${d['method']} ${d['url']} → Error:`, d['error']);
+        console.error(t('debug.error', { method: String(d['method']), url: String(d['url']) }, this.locale), d['error']);
         break;
       case 'retry':
-        console.log(`${prefix} Retry ${d['attempt']}/${d['maxRetries']} after ${d['delay']}ms (${d['reason']})`);
+        console.log(t('debug.retry', { attempt: String(d['attempt']), maxRetries: String(d['maxRetries']), delay: String(d['delay']), reason: String(d['reason']) }, this.locale));
         break;
       case 'auth:refresh':
-        console.log(`${prefix} JWT token refresh ${d['success'] ? 'succeeded' : 'failed'}`);
+        console.log(d['success']
+          ? t('debug.jwtRefreshSuccess', undefined, this.locale)
+          : t('debug.jwtRefreshFailed', undefined, this.locale));
         break;
     }
   }
@@ -634,7 +651,7 @@ export class CoCart {
           continue;
         }
         const error = e instanceof CoCartError ? e : new CoCartError(
-          e instanceof Error ? e.message : 'Network error',
+          e instanceof Error ? e.message : t('request.networkError', undefined, this.locale),
           0,
           'network_error',
         );
@@ -699,7 +716,7 @@ export class CoCart {
     } catch (e) {
       if (e instanceof DOMException && e.name === 'AbortError') {
         throw new CoCartError(
-          `Request timed out after ${this.timeout}ms`,
+          t('request.timeout', { timeout: this.timeout }, this.locale),
           0,
           'request_timeout',
         );
@@ -778,7 +795,7 @@ export class CoCart {
   private handleErrorResponse(response: Response, method?: string, url?: string): never {
     const data = response.toObject() as Record<string, unknown>;
     const code = (data['code'] as string) ?? 'unknown_error';
-    const apiMessage = (data['message'] as string) ?? 'An unknown error occurred';
+    const apiMessage = (data['message'] as string) ?? t('request.unknownError', undefined, this.locale);
     const httpCode = response.statusCode;
 
     // Build a contextual message: "POST /cart/add-item: Product not found [cocart_product_not_found]"
