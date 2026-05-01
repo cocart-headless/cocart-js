@@ -9,7 +9,8 @@
   "unpkg": "./dist/index.global.js",
   "jsdelivr": "./dist/index.global.js",
   "workspaces": [
-    "packages/*"
+    "packages/*",
+    "apps/*"
   ],
   "exports": {
     ".": {
@@ -102,9 +103,6 @@
   "files": [
     "dist"
   ],
-  "workspaces": [
-    "packages/*"
-  ],
   "scripts": {
     "build": "tsup --config tsup.config.ts && tsup --config tsup.adapters.ts && tsup --config tsup.cdn.ts && tsup --config tsup.i18n.ts",
     "build:checkout": "npm run build --workspace @cocartheadless/checkout",
@@ -122,7 +120,9 @@
     "typecheck:gtm": "npm run typecheck --workspace @cocartheadless/analytics-gtm",
     "build:gtm": "npm run build --workspace @cocartheadless/analytics-gtm",
     "test:gtm": "npm run test --workspace @cocartheadless/analytics-gtm",
-    "lint": "tsc --noEmit"
+    "lint": "tsc --noEmit",
+    "dev:preview": "npm run dev --workspace @cocartheadless/checkout-preview",
+    "build:preview": "npm run build --workspace @cocartheadless/checkout-preview"
   },
   "keywords": [
     "cocart",
