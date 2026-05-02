@@ -16,6 +16,16 @@
         "types": "./dist/index.d.cts",
         "default": "./dist/index.cjs"
       }
+    },
+    "./react": {
+      "import": {
+        "types": "./dist/react.d.ts",
+        "default": "./dist/react.js"
+      },
+      "require": {
+        "types": "./dist/react.d.cts",
+        "default": "./dist/react.cjs"
+      }
     }
   },
   "files": [
@@ -39,9 +49,23 @@
   "author": "CoCart Headless, LLC",
   "license": "MIT",
   "peerDependencies": {
-    "@cocartheadless/sdk": "^1.1.2"
+    "@cocartheadless/sdk": "^1.1.2",
+    "react": "^18 || ^19",
+    "react-dom": "^18 || ^19"
+  },
+  "peerDependenciesMeta": {
+    "react": {
+      "optional": true
+    },
+    "react-dom": {
+      "optional": true
+    }
   },
   "devDependencies": {
-    "@cocartheadless/sdk": "file:../.."
+    "@cocartheadless/sdk": "file:../..",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "react": "^19.2.5",
+    "react-dom": "^19.2.5"
   }
 }

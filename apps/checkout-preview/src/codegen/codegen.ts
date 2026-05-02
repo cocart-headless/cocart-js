@@ -144,7 +144,8 @@ function buildJsxCode(state: BuilderState): string {
   }
 
   if (state.includeOrderSummary) {
-    lines.push('      <OrderSummary theme={form.theme} />');
+    const drawerProp = state.mobileOrderSummaryDrawer ? ' mobileDrawer' : '';
+    lines.push(`      <OrderSummary theme={form.theme}${drawerProp} />`);
   }
 
   lines.push('      <PayButton theme={form.theme} label="Pay now" />');

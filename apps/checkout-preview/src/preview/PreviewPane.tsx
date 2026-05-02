@@ -1,17 +1,10 @@
 import { createRoot } from 'react-dom/client';
-import { useState } from 'react';
 import type { Root } from 'react-dom/client';
 import { CheckoutClient, resolveTheme } from '@cocartheadless/checkout';
-import type { CheckoutGatewayAdapter, CheckoutFormSection } from '@cocartheadless/checkout';
+import type { CheckoutGatewayAdapter, CheckoutFormSection, CheckoutGatewayPresentation } from '@cocartheadless/checkout';
+import { CheckoutContainer, ExpressBar, Address, ShippingMethods, PaymentMethods, OrderSummary, PayButton } from '@cocartheadless/checkout/react';
 import { mockCoCartClient } from '../mock-client.js';
 import type { BuilderState, GatewayConfig } from '../state.js';
-import { CheckoutContainer } from '../components/checkout/CheckoutContainer.js';
-import { ExpressBar } from '../components/checkout/ExpressBar.js';
-import { Address } from '../components/checkout/Address.js';
-import { ShippingMethods } from '../components/checkout/ShippingMethods.js';
-import { PaymentMethods } from '../components/checkout/PaymentMethods.js';
-import { OrderSummary } from '../components/checkout/OrderSummary.js';
-import { PayButton } from '../components/checkout/PayButton.js';
 
 const SCOPE = '#checkout-preview-root';
 let themeStyleEl: HTMLStyleElement | null = null;
@@ -49,16 +42,15 @@ function buildStubAdapter(gw: GatewayConfig): CheckoutGatewayAdapter {
 
 interface PreviewProps {
   state: BuilderState;
-  expressGateways: GatewayConfig[];
-  regularGateways: GatewayConfig[];
+  expressGateways: CheckoutGatewayPresentation[];
+  regularGateways: CheckoutGatewayPresentation[];
   expressOnly: boolean;
   activeGatewayId: string | undefined;
   sections: CheckoutFormSection[];
 }
 
 function MobileScreen({ state, expressGateways, regularGateways, expressOnly, activeGatewayId, sections }: PreviewProps) {
-  const [drawerOpen, setDrawerOpen] = useState(false);
-  const { theme, includeOrderSummary } = state;
+  const { theme, includeOrderSummary, mobileOrderSummaryDrawer } = state;
 
   return (
     <div className="relative overflow-hidden rounded-[38px] bg-(--cocart-color-background)">
@@ -75,48 +67,14 @@ function MobileScreen({ state, expressGateways, regularGateways, expressOnly, ac
           activeGatewayId={activeGatewayId}
           sections={sections}
         />
+        {includeOrderSummary && !mobileOrderSummaryDrawer && (
+          <OrderSummary theme={theme} />
+        )}
       </div>
 
-      {/* Sticky bottom bar — outside scroll div so it never scrolls away */}
-      {includeOrderSummary && (
-        <div className="border-t border-(--cocart-color-border) bg-(--cocart-color-background-alt)">
-          <button
-            type="button"
-            onClick={() => setDrawerOpen(o => !o)}
-            className="w-full flex items-center justify-between px-4 py-3.5 text-sm font-medium text-(--cocart-color-text)"
-          >
-            <span className="flex items-center gap-2">
-              <svg className={`h-4 w-4 transition-transform duration-200 ${drawerOpen ? 'rotate-180' : ''}`} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M3 6l5 5 5-5" />
-              </svg>
-              Order summary
-            </span>
-            <span className="font-semibold">USD $95.70</span>
-          </button>
-        </div>
-      )}
-
-      {/* Drawer — absolute within screen, never scrolls */}
-      {drawerOpen && includeOrderSummary && (
-        <div className="absolute inset-0 z-30 flex flex-col justify-end bg-black/20" onClick={() => setDrawerOpen(false)}>
-          <div
-            className="rounded-t-2xl bg-(--cocart-color-background-alt) overflow-y-auto max-h-4/5 shadow-2xl"
-            onClick={e => e.stopPropagation()}
-          >
-            <div className="flex justify-center pt-3 pb-1">
-              <div className="h-1 w-10 rounded-full bg-(--cocart-color-border)" />
-            </div>
-            <div className="flex items-center justify-between px-4 py-3 border-b border-(--cocart-color-border)">
-              <span className="text-sm font-semibold text-(--cocart-color-text)">Order summary</span>
-              <button type="button" onClick={() => setDrawerOpen(false)} className="text-(--cocart-color-text-muted)">
-                <svg className="h-4 w-4" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                  <path d="M3 3l10 10M13 3L3 13" />
-                </svg>
-              </button>
-            </div>
-            <OrderSummary theme={theme} />
-          </div>
-        </div>
+      {/* Bottom bar + drawer — rendered outside scroll so bar never scrolls away */}
+      {includeOrderSummary && mobileOrderSummaryDrawer && (
+        <OrderSummary theme={theme} mobileDrawer />
       )}
 
       {/* Home indicator */}
@@ -138,7 +96,10 @@ function CheckoutPreview({ state, expressGateways, regularGateways, expressOnly,
   const paymentSection  = sections.find(s => s.id === 'payment');
 
   const showShipping = state.collectShippingAddress;
-  const formDef = { theme, sections, gatewayId: activeGatewayId };
+  const previewContainerClass = layout === 'two-column'
+    ? (theme.containerClassName ?? 'mx-auto max-w-5xl grid grid-cols-[1fr_380px]').replace(/\blg:grid-cols-/g, 'grid-cols-')
+    : theme.containerClassName;
+  const formDef = { theme: { ...theme, containerClassName: previewContainerClass }, sections, gatewayId: activeGatewayId };
 
   if (expressOnly) {
     return (
@@ -200,7 +161,7 @@ function CheckoutPreview({ state, expressGateways, regularGateways, expressOnly,
   return (
     <CheckoutContainer form={formDef} layout="two-column">
       {leftCol}
-      <div className="lg:self-stretch bg-(--cocart-color-background-alt)">
+      <div className="self-stretch bg-(--cocart-color-background-alt)">
         {includeOrderSummary && <OrderSummary theme={theme} />}
       </div>
     </CheckoutContainer>
@@ -220,8 +181,15 @@ export class PreviewPane {
     applyCustomCss(state.customCss);
 
     const enabledGateways  = state.gateways.filter(g => g.enabled);
-    const expressGateways  = enabledGateways.filter(g => g.isExpress);
-    const regularGateways  = enabledGateways.filter(g => !g.isExpress);
+    const toPresentation = (g: GatewayConfig): CheckoutGatewayPresentation => ({
+      id: g.id, label: g.label, provider: g.id, description: g.description,
+      supports: [
+        ...(g.isOffline ? ['offline'] : []),
+        ...(g.isExpress ? ['express'] : []),
+      ],
+    });
+    const expressGateways  = enabledGateways.filter(g => g.isExpress).map(toPresentation);
+    const regularGateways  = enabledGateways.filter(g => !g.isExpress).map(toPresentation);
     const expressOnly      = expressGateways.length > 0 && regularGateways.length === 0;
     const activeGatewayId  = state.defaultGateway || (regularGateways[0]?.id);
 

@@ -1,4 +1,4 @@
-import type { CheckoutFormDefinition } from '@cocartheadless/checkout';
+import type { CheckoutFormDefinition } from '../index.js';
 
 interface CheckoutContainerProps {
   form: CheckoutFormDefinition;

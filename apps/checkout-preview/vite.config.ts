@@ -10,6 +10,7 @@ export default defineConfig({
   plugins: [react(), tailwindcss()],
   resolve: {
     alias: {
+      '@cocartheadless/checkout/react': resolve(__dirname, '../../packages/checkout/src/react/index.ts'),
       '@cocartheadless/checkout': resolve(__dirname, '../../packages/checkout/src/index.ts'),
       '@cocartheadless/sdk': resolve(__dirname, '../../src/index.ts'),
     },

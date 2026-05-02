@@ -24,6 +24,12 @@ This package is separate from `@cocartheadless/sdk` and installs as an extension
 - Priority-ordered express button bar
 - Scroll or stack layout
 
+**React Components** (`@cocartheadless/checkout/react`)
+
+- `<CheckoutContainer>`, `<Address>`, `<ExpressBar>`, `<ShippingMethods>`
+- `<PaymentMethods>`, `<OrderSummary>`, `<PayButton>`
+- Stripe-inspired Appearance API — variables, rules, and three presets
+
 **Extras**
 - Headless UI Rendering
 - Tailwind CSS 4
@@ -76,13 +82,16 @@ bun add @cocartheadless/sdk @cocartheadless/checkout
 import { CoCart } from '@cocartheadless/sdk';
 import {
   createCheckout,
+  createModernCheckoutTheme,
   createStripeGateway,
-  shadcnCheckoutTheme,
 } from '@cocartheadless/checkout';
 
-const client = new CoCart('https://your-store.com', {
-}).use(createCheckout({
-  defaultTheme: shadcnCheckoutTheme,
+const theme = createModernCheckoutTheme({
+  variables: { colorPrimary: '#6366f1' },
+});
+
+const client = new CoCart('https://your-store.com').use(createCheckout({
+  defaultTheme: theme,
   gatewayAdapters: [
     createStripeGateway({
       tokenize: async ({ paymentContext }) => ({
@@ -94,6 +103,27 @@ const client = new CoCart('https://your-store.com', {
 
 const checkout = await client.checkout.getCheckout();
 const paymentMethods = await client.checkout.getPaymentMethods();
+```
+
+### React components
+
+```tsx
+import { CheckoutContainer, Address, PaymentMethods, PayButton } from '@cocartheadless/checkout/react';
+
+const form = client.checkout.createForm({ gatewayId: 'stripe' });
+
+export function CheckoutPage() {
+  const contactSection = form.sections.find(s => s.id === 'contact');
+  const paymentSection = form.sections.find(s => s.id === 'payment');
+
+  return (
+    <CheckoutContainer form={form}>
+      {contactSection && <Address type="contact" section={contactSection} theme={theme} />}
+      <PaymentMethods gateways={client.checkout.listGateways()} theme={theme} paymentSection={paymentSection} />
+      <PayButton theme={theme} />
+    </CheckoutContainer>
+  );
+}
 ```
 
 ## Documentation
@@ -108,7 +138,8 @@ const paymentMethods = await client.checkout.getPaymentMethods();
 | [Coupons](docs/coupons.md) | Applying coupons, removing coupons, order summary, and re-checking `needs_payment` |
 | [Shipping Methods](docs/shipping.md) | Fetching rates, rendering a selector, multi-package support |
 | [Frameworks](docs/frameworks.md) | Next.js, Astro, and framework integration patterns |
-| [Themes](docs/themes.md) | Tailwind CSS 4, shadcn-style presets, and headless form rendering |
+| [Themes](docs/themes.md) | Appearance API — variables, rules, presets, and CSS custom properties |
+| [React Components](docs/components.md) | `<Address>`, `<PaymentMethods>`, `<PayButton>`, and the full component API |
 
 ## Package purpose
 

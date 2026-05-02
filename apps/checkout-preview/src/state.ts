@@ -27,6 +27,7 @@ export interface BuilderState {
   shippingSameAsBilling: boolean;
   includeNotes: boolean;
   includeOrderSummary: boolean;
+  mobileOrderSummaryDrawer: boolean;
   successUrl: string;
   returnUrl: string;
   fields: {
@@ -64,6 +65,7 @@ function defaultState(): BuilderState {
     shippingSameAsBilling: false,
     includeNotes: false,
     includeOrderSummary: true,
+    mobileOrderSummaryDrawer: true,
     successUrl: '',
     returnUrl: '',
     fields: {

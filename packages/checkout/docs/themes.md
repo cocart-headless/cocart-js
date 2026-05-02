@@ -1,210 +1,281 @@
-# Themes
+# Themes & Appearance API
 
-The checkout package includes three theme presets. A theme is a plain object that maps each part of the checkout form to a CSS class string. You pass it to `createCheckout()` or directly to `createForm()`.
+The checkout package uses a Stripe-inspired Appearance API. You control brand colours, typography, shape, and spacing through **variables**, and use **rules** for per-element CSS overrides. CSS class name overrides are still supported for Tailwind / shadcn power users.
 
-## What a theme controls
-
-```ts
-interface CheckoutTheme {
-  name: string;                   // identifier, not rendered
-  containerClassName: string;     // wraps the entire form
-  sectionClassName: string;       // wraps each section (contact, billing, etc.)
-  fieldClassName: string;         // wraps a label + input pair
-  inputClassName: string;         // applied to every input/textarea/select
-  labelClassName: string;         // applied to every label
-  helperTextClassName: string;    // applied to description/helper text
-  submitButtonClassName: string;  // applied to the submit button
-  paymentContainerClassName: string; // wraps the payment gateway element
-  orderSummaryClassName: string;  // wraps the order summary block
-}
-```
-
-`createForm()` applies the theme to every field it generates. You read those class names back from `form.sections[n].fields[n].className` and `inputClassName` when rendering.
+Zero config gives you the **modern** preset — a clean, Shopify-style layout.
 
 ---
 
-## Presets
-
-### `bareCheckoutTheme`
-
-Outputs semantic BEM-style class names with no visual styles attached. Use this when you have your own CSS or design system and just need stable, predictable class hooks.
+## Quick start
 
 ```ts
-import { bareCheckoutTheme } from '@cocartheadless/checkout';
+import { createCheckoutTheme } from '@cocartheadless/checkout';
+
+// No args → modern preset with defaults
+const theme = createCheckoutTheme();
+
+// Override a brand colour
+const theme = createCheckoutTheme({
+  variables: { colorPrimary: '#6366f1' },
+});
+
+// Switch preset, then override
+const theme = createCheckoutTheme({
+  preset: 'tailwind',
+  variables: { colorPrimary: '#6366f1', borderRadius: '16px' },
+});
 ```
 
-Class names it produces:
+Pass the theme when setting up the checkout client:
 
-| Property | Class |
-|---|---|
-| `containerClassName` | `cocart-checkout` |
-| `sectionClassName` | `cocart-checkout__section` |
-| `fieldClassName` | `cocart-checkout__field` |
-| `inputClassName` | `cocart-checkout__input` |
-| `labelClassName` | `cocart-checkout__label` |
-| `helperTextClassName` | `cocart-checkout__helper` |
-| `submitButtonClassName` | `cocart-checkout__submit` |
-| `paymentContainerClassName` | `cocart-checkout__payment` |
-| `orderSummaryClassName` | `cocart-checkout__summary` |
-
-Best for: internal design systems, component libraries, enterprise storefronts with strict UI rules.
+```ts
+const client = new CoCart('https://your-store.com').use(createCheckout({
+  defaultTheme: theme,
+}));
+```
 
 ---
+
+## Preset factories
+
+Each factory sets a preset base and sensible layout class names. Pass `Partial<CheckoutTheme>` overrides to any of them.
+
+### `createModernCheckoutTheme(overrides?)`
+
+A minimal, Shopify-style layout. Sections flow edge-to-edge with thin dividers on a white/cream background. This is the default when no theme is supplied.
+
+```ts
+import { createModernCheckoutTheme } from '@cocartheadless/checkout';
+
+const theme = createModernCheckoutTheme();
+// or override specific parts:
+const theme = createModernCheckoutTheme({
+  variables: { colorPrimary: '#7c3aed', borderRadius: '12px' },
+});
+```
 
 ### `createTailwindCheckoutTheme(overrides?)`
 
-Returns a theme with Tailwind CSS 4 utility classes already set. Pass an `overrides` object to replace individual properties without rebuilding the full theme.
+Slate-palette card layout. Each section is a rounded card with a border. Matches Tailwind's default design system aesthetic.
 
 ```ts
 import { createTailwindCheckoutTheme } from '@cocartheadless/checkout';
 
-// Use as-is
 const theme = createTailwindCheckoutTheme();
-
-// Or override specific parts
-const theme = createTailwindCheckoutTheme({
-  submitButtonClassName: 'inline-flex min-h-12 items-center justify-center rounded-2xl bg-emerald-600 px-5 text-sm font-semibold text-white hover:bg-emerald-500',
-});
 ```
 
-Default class names it produces:
+### `createShadcnCheckoutTheme(overrides?)`
 
-| Property | Default classes |
-|---|---|
-| `containerClassName` | `mx-auto grid gap-6 lg:grid-cols-[1.2fr_0.8fr]` |
-| `sectionClassName` | `rounded-3xl border border-slate-200 bg-white p-6 shadow-sm` |
-| `fieldClassName` | `grid gap-2` |
-| `inputClassName` | `h-11 rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-slate-900 focus:ring-2 focus:ring-slate-900/10` |
-| `labelClassName` | `text-sm font-medium text-slate-900` |
-| `helperTextClassName` | `text-sm text-slate-500` |
-| `submitButtonClassName` | `inline-flex min-h-12 items-center justify-center rounded-2xl bg-slate-950 px-5 text-sm font-semibold text-white transition hover:bg-slate-800` |
-| `paymentContainerClassName` | `grid gap-4 rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-4` |
-| `orderSummaryClassName` | `rounded-3xl border border-slate-200 bg-slate-950 p-6 text-slate-50` |
-
-Best for: custom storefronts using Tailwind CSS 4, landing-page style checkout design.
-
----
-
-### `shadcnCheckoutTheme`
-
-Built on top of `createTailwindCheckoutTheme()` with shadcn-style CSS variable-based classes (`bg-card`, `border-input`, `text-primary-foreground`, etc.). Requires your project to have shadcn's CSS variables defined.
+Maps to shadcn/ui's HSL CSS variable palette. Border radius, spacing, and colours match shadcn component conventions. Use this when your app already has shadcn set up.
 
 ```ts
-import { shadcnCheckoutTheme } from '@cocartheadless/checkout';
+import { createShadcnCheckoutTheme } from '@cocartheadless/checkout';
+
+const theme = createShadcnCheckoutTheme();
 ```
 
-Class names it produces (shadcn-specific overrides shown):
+### `createCheckoutTheme(options?)` — generic factory
 
-| Property | Classes |
-|---|---|
-| `sectionClassName` | `rounded-xl border bg-card p-6 text-card-foreground shadow-sm` |
-| `inputClassName` | `flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background transition placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2` |
-| `labelClassName` | `text-sm font-medium leading-none` |
-| `helperTextClassName` | `text-sm text-muted-foreground` |
-| `submitButtonClassName` | `inline-flex h-10 items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition hover:bg-primary/90` |
-| `paymentContainerClassName` | `grid gap-4 rounded-lg border border-dashed border-border bg-muted/40 p-4` |
-| `orderSummaryClassName` | `rounded-xl border bg-muted/50 p-6 text-foreground` |
-
-All other properties inherit from `createTailwindCheckoutTheme()`.
-
-Best for: existing Radix + Tailwind apps using shadcn components.
-
----
-
-## Setting a default theme
-
-Pass `defaultTheme` to `createCheckout()` so every `createForm()` call uses it automatically:
+Lower-level factory. Accepts any `CheckoutTheme` shape and defaults to the `modern` preset. Use this if you want to specify a `preset` without the extra layout class names the named factories add.
 
 ```ts
-import { createCheckout, shadcnCheckoutTheme } from '@cocartheadless/checkout';
+import { createCheckoutTheme } from '@cocartheadless/checkout';
 
-const client = new CoCart('https://your-store.com').use(createCheckout({
-  defaultTheme: shadcnCheckoutTheme,
-}));
-
-// Uses shadcnCheckoutTheme automatically
-const form = client.checkout.createForm({ gatewayId: 'stripe' });
-```
-
-You can still override per-form:
-
-```ts
-const form = client.checkout.createForm({
-  gatewayId: 'stripe',
-  theme: createTailwindCheckoutTheme({ submitButtonClassName: 'btn-custom' }),
+const theme = createCheckoutTheme({
+  preset: 'shadcn',
+  variables: { colorPrimary: 'hsl(263 70% 50%)' },
+  rules: {
+    '.Input:focus': { boxShadow: '0 0 0 3px rgba(99,102,241,0.2)' },
+  },
 });
 ```
 
 ---
 
-## Rendering a form with theme classes
+## Variables reference
 
-`createForm()` returns a `CheckoutFormDefinition` with `sections`, each containing `fields`. The theme class names are already applied to every field.
-
-```ts
-const form = client.checkout.createForm({ gatewayId: 'stripe' });
-
-// form.sections:
-// [
-//   { id: 'contact', title: 'Contact', fields: [...] },
-//   { id: 'billing', title: 'Billing address', fields: [...] },
-//   { id: 'notes', title: 'Order notes', fields: [...] },
-//   { id: 'payment', title: 'Payment', fields: [...] },
-// ]
-```
-
-Minimal rendering loop (framework-agnostic):
+Variables are CSS custom properties scoped to your checkout container. They control the entire palette, typography, shape, and spacing.
 
 ```ts
-for (const section of form.sections) {
-  // section.className    → from theme.sectionClassName
-  // section.id          → 'contact' | 'billing' | 'shipping' | 'notes' | 'payment'
+interface CheckoutThemeVariables {
+  // Colours
+  colorPrimary:         string; // interactive accent — focus rings, radio/checkbox
+  colorBackground:      string; // page / canvas background
+  colorBackgroundAlt:   string; // order summary panel background
+  colorBackgroundHover: string; // row hover and selected state
+  colorSurface:         string; // input and card fill
+  colorText:            string; // primary body text
+  colorTextMuted:       string; // helper text, placeholders, labels
+  colorBorder:          string; // input and card borders
+  colorError:           string; // validation error text and borders
+  colorButton:          string; // submit button background
+  colorButtonText:      string; // submit button label
 
-  for (const field of section.fields) {
-    // field.className      → from theme.fieldClassName
-    // field.inputClassName → from theme.inputClassName
-    // field.name           → e.g. 'billing_address.first_name'
-    // field.label          → e.g. 'First name'
-    // field.type           → 'text' | 'email' | 'tel' | 'textarea' | 'gateway-element' | ...
-    // field.required       → boolean
-    // field.autoComplete   → e.g. 'given-name'
-    // field.component      → set for gateway fields, e.g. 'StripePaymentElement'
-  }
+  // Typography
+  fontFamily:       string; // applied as font-family on the checkout root
+  fontSizeBase:     string; // base font size (rem or px)
+  fontWeightNormal: string; // body weight
+  fontWeightMedium: string; // semi-emphasis weight
+  fontWeightBold:   string; // headings and labels weight
+
+  // Shape
+  borderRadius:     string; // base radius for inputs, cards
+  borderRadiusFull: string; // pill radius — submit button
+  inputHeight:      string; // height of text inputs
+
+  // Spacing
+  spacingUnit:  string; // base unit — not used directly but available as --cocart-spacing-unit
+  fieldGap:     string; // vertical gap between fields in a section
+  sectionGap:   string; // vertical gap between sections (used by tailwind / shadcn presets)
 }
 ```
 
-Fields with `type: 'gateway-element'` are mount points for the provider SDK (Stripe Elements, PayPal Buttons, etc.) — render a `<div>` using `field.inputClassName` and mount the provider UI into it.
+### Preset defaults
+
+| Variable | modern | tailwind | shadcn |
+|---|---|---|---|
+| `colorPrimary` | `#1a1a1a` | `#0f172a` | `hsl(222.2 47.4% 11.2%)` |
+| `colorBackground` | `#ffffff` | `#f8fafc` | `hsl(0 0% 100%)` |
+| `colorBackgroundAlt` | `#f6f6f1` | `#f1f5f9` | `hsl(210 40% 96.1%)` |
+| `colorBackgroundHover` | `#f5f5f5` | `#f1f5f9` | `hsl(210 40% 96.1%)` |
+| `colorSurface` | `#ffffff` | `#ffffff` | `hsl(0 0% 100%)` |
+| `colorText` | `#1a1a1a` | `#0f172a` | `hsl(222.2 84% 4.9%)` |
+| `colorTextMuted` | `#6b6b6b` | `#64748b` | `hsl(215.4 16.3% 46.9%)` |
+| `colorBorder` | `#d9d9d9` | `#cbd5e1` | `hsl(214.3 31.8% 91.4%)` |
+| `colorError` | `#dc2626` | `#ef4444` | `hsl(0 84.2% 60.2%)` |
+| `colorButton` | `#1a1a1a` | `#0f172a` | `hsl(222.2 47.4% 11.2%)` |
+| `colorButtonText` | `#ffffff` | `#ffffff` | `hsl(0 0% 100%)` |
+| `borderRadius` | `8px` | `12px` | `6px` |
+| `borderRadiusFull` | `9999px` | `16px` | `6px` |
+| `inputHeight` | `48px` | `44px` | `40px` |
+| `sectionGap` | `0px` | `24px` | `16px` |
 
 ---
 
-## Writing a custom theme
+## Rules reference
 
-Pass any object that satisfies `CheckoutTheme`:
+Rules map CSS selectors to property objects (camelCase property names). They are scoped to your checkout container automatically.
+
+Supported selectors follow the same conventions as Stripe's Appearance API:
+
+| Selector | What it targets |
+|---|---|
+| `.Input` | All text inputs, textareas, and selects |
+| `.Input:focus` | Focused input state |
+| `.Input::placeholder` | Input placeholder text |
+| `.Input--invalid` | Input in error state |
+| `.Label` | Field labels |
+| `.SubmitButton` | The pay/submit button |
+| `.SubmitButton:hover` | Submit button hover state |
+| `.Section` | Each form section wrapper |
+| `.SectionHeading` | Section `<h2>` headings |
+
+Rules are freeform — any valid CSS selector scoped under your container will work.
 
 ```ts
-import type { CheckoutTheme } from '@cocartheadless/checkout';
-
-const myTheme: CheckoutTheme = {
-  name: 'my-theme',
-  containerClassName: 'checkout-wrapper',
-  sectionClassName: 'checkout-section',
-  fieldClassName: 'checkout-field',
-  inputClassName: 'checkout-input',
-  labelClassName: 'checkout-label',
-  helperTextClassName: 'checkout-hint',
-  submitButtonClassName: 'checkout-submit',
-  paymentContainerClassName: 'checkout-payment',
-  orderSummaryClassName: 'checkout-summary',
-};
-
-const form = client.checkout.createForm({ theme: myTheme });
+const theme = createCheckoutTheme({
+  variables: { colorPrimary: '#6366f1' },
+  rules: {
+    '.Input': {
+      borderColor: 'var(--cocart-color-border)',
+      borderRadius: 'var(--cocart-border-radius)',
+    },
+    '.Input:focus': {
+      borderColor: 'var(--cocart-color-primary)',
+      boxShadow: '0 0 0 3px color-mix(in srgb, var(--cocart-color-primary) 15%, transparent)',
+    },
+    '.SubmitButton': {
+      borderRadius: 'var(--cocart-border-radius-full)',
+      letterSpacing: '0.025em',
+    },
+  },
+});
 ```
 
-Or derive from an existing preset and override specific parts:
+---
+
+## CSS custom properties
+
+Variables are injected as CSS custom properties on your checkout container element. You can reference them directly in your own CSS or Tailwind utilities:
+
+| Custom property | Variable |
+|---|---|
+| `--cocart-color-primary` | `colorPrimary` |
+| `--cocart-color-background` | `colorBackground` |
+| `--cocart-color-background-alt` | `colorBackgroundAlt` |
+| `--cocart-color-background-hover` | `colorBackgroundHover` |
+| `--cocart-color-surface` | `colorSurface` |
+| `--cocart-color-text` | `colorText` |
+| `--cocart-color-text-muted` | `colorTextMuted` |
+| `--cocart-color-border` | `colorBorder` |
+| `--cocart-color-error` | `colorError` |
+| `--cocart-color-button` | `colorButton` |
+| `--cocart-color-button-text` | `colorButtonText` |
+| `--cocart-font-family` | `fontFamily` |
+| `--cocart-font-size-base` | `fontSizeBase` |
+| `--cocart-font-weight-normal` | `fontWeightNormal` |
+| `--cocart-font-weight-medium` | `fontWeightMedium` |
+| `--cocart-font-weight-bold` | `fontWeightBold` |
+| `--cocart-border-radius` | `borderRadius` |
+| `--cocart-border-radius-full` | `borderRadiusFull` |
+| `--cocart-input-height` | `inputHeight` |
+| `--cocart-spacing-unit` | `spacingUnit` |
+| `--cocart-field-gap` | `fieldGap` |
+| `--cocart-section-gap` | `sectionGap` |
+
+---
+
+## Class name overrides
+
+All class name properties from the original API are still supported. They take precedence over variable-driven styles via normal CSS specificity.
 
 ```ts
-const myTheme: CheckoutTheme = {
-  ...shadcnCheckoutTheme,
-  submitButtonClassName: 'my-custom-button',
-};
+interface CheckoutTheme {
+  // ... variables, rules, preset above ...
+
+  containerClassName?: string;         // checkout root wrapper
+  sectionClassName?: string;           // each form section
+  fieldClassName?: string;             // label + input pair wrapper
+  inputClassName?: string;             // every input / textarea / select
+  labelClassName?: string;             // every label
+  helperTextClassName?: string;        // description / helper text
+  submitButtonClassName?: string;      // the pay button
+  paymentContainerClassName?: string;  // payment gateway element wrapper
+  orderSummaryClassName?: string;      // order summary block
+  expressCheckoutBarClassName?: string; // express checkout button row
+}
+```
+
+Use class names for Tailwind utilities, shadcn component classes, or any design system that doesn't map cleanly to the variable model:
+
+```ts
+const theme = createShadcnCheckoutTheme({
+  submitButtonClassName: 'inline-flex h-10 w-full items-center justify-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90',
+});
+```
+
+---
+
+## `resolveTheme()` — low-level CSS generation
+
+`resolveTheme(theme, scopeSelector)` returns the raw CSS string that the checkout runtime injects. You can call it yourself if you need to pre-render styles server-side or inject them into a shadow DOM.
+
+```ts
+import { resolveTheme } from '@cocartheadless/checkout';
+
+const css = resolveTheme(theme, '#my-checkout-root');
+// Returns a <style> block content string with scoped custom properties + rules
+```
+
+---
+
+## Advanced: reading preset variable sets
+
+```ts
+import { MODERN_VARIABLES, TAILWIND_VARIABLES, SHADCN_VARIABLES } from '@cocartheadless/checkout';
+
+// Spread to build a custom baseline
+const theme = createCheckoutTheme({
+  variables: { ...MODERN_VARIABLES, colorPrimary: '#7c3aed' },
+});
 ```

@@ -57,6 +57,15 @@ function buildDataTab(store: StateStore): HTMLElement {
     checked => store.update({ includeOrderSummary: checked }),
   ));
 
+  if (state.includeOrderSummary) {
+    panel.appendChild(makeToggleRow(
+      'Mobile Order Summary Drawer',
+      'On mobile, show the order summary as a bottom sheet drawer instead of inline.',
+      state.mobileOrderSummaryDrawer,
+      checked => store.update({ mobileOrderSummaryDrawer: checked }),
+    ));
+  }
+
   // ── Redirect URLs ──────────────────────────────────────────────────────
   panel.appendChild(buildGroupHeading('Redirect URLs'));
 

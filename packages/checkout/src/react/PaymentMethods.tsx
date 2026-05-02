@@ -1,10 +1,9 @@
 import { useState } from 'react';
-import type { CheckoutFormSection, CheckoutTheme } from '@cocartheadless/checkout';
-import type { GatewayConfig } from '../../state.js';
+import type { CheckoutFormSection, CheckoutTheme, CheckoutGatewayPresentation } from '../index.js';
 import { Address } from './Address.js';
 
 interface PaymentMethodsProps {
-  gateways: GatewayConfig[];
+  gateways: CheckoutGatewayPresentation[];
   activeGatewayId?: string;
   theme: CheckoutTheme;
   paymentSection?: CheckoutFormSection;
@@ -27,14 +26,14 @@ export function PaymentMethods({
   const activeId = activeGatewayId ?? (gateways.length > 0 ? gateways[0].id : undefined);
   const helperClass = theme.helperTextClassName ?? 'text-xs text-(--cocart-color-text-muted)';
 
-  const GatewayRow = ({ gw, selected, border }: { gw: GatewayConfig; selected: boolean; border: boolean }) => (
+  const GatewayRow = ({ gw, selected, border }: { gw: CheckoutGatewayPresentation; selected: boolean; border: boolean }) => (
     <label className={`flex items-center gap-3 px-4 py-3.5 text-sm cursor-pointer transition ${border ? 'border-t border-(--cocart-color-border)' : ''} ${selected ? 'bg-(--cocart-color-background-hover)' : 'bg-(--cocart-color-surface) hover:bg-(--cocart-color-background-hover)'}`}>
       <input type="radio" name="payment_method" value={gw.id} defaultChecked={selected} className="h-4 w-4 shrink-0 accent-(--cocart-color-primary)" />
       <div className="flex flex-col flex-1 min-w-0">
         <span className="font-medium text-(--cocart-color-text)">{gw.label}</span>
         {gw.description && <span className={helperClass}>{gw.description}</span>}
       </div>
-      {gw.isOffline && (
+      {gw.supports.includes('offline') && (
         <span className="rounded-full bg-(--cocart-color-background-hover) px-2 py-0.5 text-xs text-(--cocart-color-text-muted)">Offline</span>
       )}
     </label>
@@ -50,7 +49,7 @@ export function PaymentMethods({
           {gateways.map((gw, i) => (
             <GatewayRow key={gw.id} gw={gw} selected={gw.id === activeId} border={i > 0} />
           ))}
-          {gateways.length === 1 && !gateways[0].isOffline && paymentSection && (
+          {gateways.length === 1 && !gateways[0].supports.includes('offline') && paymentSection && (
             <div className="border-t border-(--cocart-color-border) px-4 py-4">
               <div className={theme.paymentContainerClassName ?? 'rounded-(--cocart-border-radius) border border-dashed border-(--cocart-color-border) bg-(--cocart-color-background-hover) p-4'}>
                 {paymentSection.fields.filter(f => !f.hidden).map(field => (

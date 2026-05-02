@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { CheckoutFormSection, CheckoutFormField, CheckoutTheme } from '@cocartheadless/checkout';
+import type { CheckoutFormSection, CheckoutFormField, CheckoutTheme } from '../types.js';
 import { COUNTRIES, countryFlag } from './countries.js';
 
 interface AddressProps {

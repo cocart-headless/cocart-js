@@ -11,6 +11,7 @@
     "noFallthroughCasesInSwitch": true,
     "paths": {
       "@cocartheadless/checkout": ["../../packages/checkout/src/index.ts"],
+      "@cocartheadless/checkout/react": ["../../packages/checkout/src/react/index.ts"],
       "@cocartheadless/sdk": ["../../src/index.ts"]
     }
   },

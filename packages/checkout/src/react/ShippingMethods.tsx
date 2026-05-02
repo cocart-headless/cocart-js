@@ -1,4 +1,4 @@
-import type { CheckoutTheme } from '@cocartheadless/checkout';
+import type { CheckoutTheme } from '../index.js';
 
 interface ShippingMethodsProps {
   theme: CheckoutTheme;

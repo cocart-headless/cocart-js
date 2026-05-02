@@ -1,8 +1,7 @@
-import type { CheckoutTheme } from '@cocartheadless/checkout';
-import type { GatewayConfig } from '../../state.js';
+import type { CheckoutTheme, CheckoutGatewayPresentation } from '../index.js';
 
 interface ExpressBarProps {
-  gateways: GatewayConfig[];
+  gateways: CheckoutGatewayPresentation[];
   theme: CheckoutTheme;
   expressOnly?: boolean;
 }
