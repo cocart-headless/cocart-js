@@ -82,7 +82,7 @@ export function buildLayout(root: HTMLElement, store: StateStore): LayoutParts {
   });
 
   const docsLink = document.createElement('a');
-  docsLink.href = 'https://cocart.io/docs/checkout';
+  docsLink.href = 'https://github.com/cocart-headless/cocart-js/blob/checkout/packages/checkout/docs/components.md';
   docsLink.target = '_blank';
   docsLink.rel = 'noopener noreferrer';
   docsLink.className = 'inline-flex items-center gap-1 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 transition';
