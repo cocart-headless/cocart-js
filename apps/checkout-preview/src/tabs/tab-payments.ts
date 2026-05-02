@@ -4,18 +4,20 @@ import type { GatewayConfig } from '../state.js';
 export function renderPaymentsTab(container: HTMLElement, store: StateStore): void {
   let el: HTMLElement | null = null;
   let prevGateways: GatewayConfig[] | null = null;
+  let prevDefaultGateway: string | null = null;
 
   store.subscribe(state => {
     if (state.activeTab !== 'payments') {
       el?.remove();
       el = null;
       prevGateways = null;
+      prevDefaultGateway = null;
       return;
     }
 
-    // If only label/description changed, skip the rebuild — the debounced input
-    // already holds the current value so no DOM update is needed.
-    if (el && prevGateways) {
+    // If only label/description changed (and defaultGateway is unchanged), skip
+    // the rebuild — the debounced input already holds the current value.
+    if (el && prevGateways && prevDefaultGateway === state.defaultGateway) {
       const prev = prevGateways;
       const curr = state.gateways;
       const onlyTextChanged = prev.length === curr.length &&
@@ -39,6 +41,7 @@ export function renderPaymentsTab(container: HTMLElement, store: StateStore): vo
     }
     el = next;
     prevGateways = store.get().gateways;
+    prevDefaultGateway = store.get().defaultGateway;
   });
 }
 

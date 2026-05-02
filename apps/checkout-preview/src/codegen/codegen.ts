@@ -90,12 +90,16 @@ function buildSetupCode(state: BuilderState): string {
   if (state.successUrl) lines.push(`  successUrl: '${state.successUrl}',`);
   if (state.returnUrl)  lines.push(`  returnUrl: '${state.returnUrl}',`);
   if (!state.collectShippingAddress) lines.push('  collectShippingAddress: false,');
-  if (!state.shippingSameAsBilling)  lines.push('  shippingSameAsBilling: false,');
+  if (state.shippingSameAsBilling)   lines.push('  shippingSameAsBilling: true,');
   lines.push(`  defaultTheme: ${themeExpression(state)},`);
-  if (state.defaultGateway) lines.push(`  defaultGateway: '${state.defaultGateway}',`);
+  const regularGateways = enabledGateways.filter(g => !g.isExpress);
+  const defaultId = state.defaultGateway || regularGateways[0]?.id;
+  const sortedGateways = [...enabledGateways].sort((a, b) =>
+    a.id === defaultId ? -1 : b.id === defaultId ? 1 : 0
+  );
   if (enabledGateways.length > 0) {
     lines.push('  gatewayAdapters: [');
-    enabledGateways.forEach(gw => {
+    sortedGateways.forEach(gw => {
       const base = CATALOG_DEFAULTS[gw.id];
       const labelOverride    = base && gw.label       !== base.label       ? `label: '${gw.label}', `       : '';
       const descOverride     = base && gw.description !== base.description ? `description: '${gw.description}', ` : '';

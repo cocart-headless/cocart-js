@@ -189,9 +189,12 @@ export class PreviewPane {
       ],
     });
     const expressGateways  = enabledGateways.filter(g => g.isExpress).map(toPresentation);
-    const regularGateways  = enabledGateways.filter(g => !g.isExpress).map(toPresentation);
+    const regularRaw       = enabledGateways.filter(g => !g.isExpress);
+    const activeGatewayId  = state.defaultGateway || regularRaw[0]?.id;
+    const regularGateways  = regularRaw
+      .sort((a, b) => (a.id === activeGatewayId ? -1 : b.id === activeGatewayId ? 1 : 0))
+      .map(toPresentation);
     const expressOnly      = expressGateways.length > 0 && regularGateways.length === 0;
-    const activeGatewayId  = state.defaultGateway || (regularGateways[0]?.id);
 
     const client = new CheckoutClient(mockCoCartClient, {
       defaultTheme: state.theme,
