@@ -95,7 +95,7 @@ function CheckoutPreview({ state, expressGateways, regularGateways, expressOnly,
   const notesSection    = sections.find(s => s.id === 'notes');
   const paymentSection  = sections.find(s => s.id === 'payment');
 
-  const showShipping = state.collectShippingAddress;
+  const showShipping = state.collectShippingAddress && !state.shippingSameAsBilling;
   const previewContainerClass = layout === 'two-column'
     ? (theme.containerClassName ?? 'mx-auto max-w-5xl grid grid-cols-[1fr_380px]').replace(/\blg:grid-cols-/g, 'grid-cols-')
     : theme.containerClassName;
