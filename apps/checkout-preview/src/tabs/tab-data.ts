@@ -86,6 +86,18 @@ function buildDataTab(store: StateStore): HTMLElement {
   ));
 
   // ── Field editors ──────────────────────────────────────────────────────
+  const fieldsNote = document.createElement('div');
+  fieldsNote.className = 'rounded-xl border border-blue-100 bg-blue-50 p-4';
+  const fieldsNoteTitle = document.createElement('p');
+  fieldsNoteTitle.className = 'text-xs font-semibold text-blue-800 mb-1';
+  fieldsNoteTitle.textContent = 'Field visibility is preview-only';
+  const fieldsNoteDesc = document.createElement('p');
+  fieldsNoteDesc.className = 'text-xs text-blue-600 leading-relaxed';
+  fieldsNoteDesc.textContent = 'Showing or hiding fields here only affects this preview. The actual fields shown at checkout are controlled by your WooCommerce store settings.';
+  fieldsNote.appendChild(fieldsNoteTitle);
+  fieldsNote.appendChild(fieldsNoteDesc);
+  panel.appendChild(fieldsNote);
+
   panel.appendChild(buildGroupHeading('Contact Fields'));
   panel.appendChild(buildFieldList(store, 'contact'));
 

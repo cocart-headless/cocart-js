@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { CheckoutFormSection, CheckoutTheme, CheckoutGatewayPresentation } from '../index.js';
 import { Address } from './Address.js';
+import { Sk } from './skeleton.js';
 
 interface PaymentMethodsProps {
   gateways: CheckoutGatewayPresentation[];
@@ -9,6 +10,7 @@ interface PaymentMethodsProps {
   paymentSection?: CheckoutFormSection;
   billingSection?: CheckoutFormSection;
   showBillingUnderPayment?: boolean;
+  loading?: boolean;
 }
 
 export function PaymentMethods({
@@ -18,8 +20,30 @@ export function PaymentMethods({
   paymentSection,
   billingSection,
   showBillingUnderPayment = true,
+  loading = false,
 }: PaymentMethodsProps) {
   const [billingSameAsShipping, setBillingSameAsShipping] = useState(true);
+
+  if (loading) {
+    const helperClass = theme.helperTextClassName ?? 'text-xs text-(--cocart-color-text-muted)';
+    return (
+      <div className={theme.sectionClassName ?? ''}>
+        <Sk className="mb-1 h-5 w-20" />
+        <Sk className={`mb-4 h-3 w-56 ${helperClass}`} />
+        <div className="mb-4 rounded-(--cocart-border-radius) border border-(--cocart-color-border) overflow-hidden">
+          {[0, 1].map((i) => (
+            <div key={i} className={`flex items-center gap-3 px-4 py-3.5 ${i > 0 ? 'border-t border-(--cocart-color-border)' : ''}`}>
+              <Sk className="h-4 w-4 shrink-0 rounded-full" />
+              <div className="flex flex-col flex-1 gap-1.5">
+                <Sk className="h-3.5 w-28" />
+                <Sk className="h-3 w-40" />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   if (gateways.length === 0 && !paymentSection) return null;
 

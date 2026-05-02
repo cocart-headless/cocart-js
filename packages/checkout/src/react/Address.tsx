@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import type { CheckoutFormSection, CheckoutFormField, CheckoutTheme } from '../types.js';
 import { COUNTRIES, countryFlag } from './countries.js';
+import { Sk } from './skeleton.js';
 
 interface AddressProps {
   type: 'contact' | 'billing' | 'shipping';
-  section: CheckoutFormSection;
+  section?: CheckoutFormSection;
   theme: CheckoutTheme;
+  loading?: boolean;
 }
 
 const FULL_WIDTH_FIELDS = new Set(['email', 'tel']);
@@ -139,10 +141,36 @@ function Field({ field, theme }: { field: CheckoutFormField; theme: CheckoutThem
   );
 }
 
-export function Address({ section, theme }: AddressProps) {
+export function Address({ type, section, theme, loading = false }: AddressProps) {
+  const sectionClass = theme.sectionClassName ?? '';
+
+  if (loading || !section) {
+    const isAddress = type === 'billing' || type === 'shipping';
+    return (
+      <div className={sectionClass}>
+        <Sk className="mb-4 h-5 w-32" />
+        {isAddress ? (
+          <div className="grid grid-cols-2 gap-(--cocart-field-gap)">
+            <div className="col-span-2"><Sk className="h-(--cocart-input-height) w-full" /></div>
+            <Sk className="h-(--cocart-input-height) w-full" />
+            <Sk className="h-(--cocart-input-height) w-full" />
+            <div className="col-span-2"><Sk className="h-(--cocart-input-height) w-full" /></div>
+            <div className="col-span-2"><Sk className="h-(--cocart-input-height) w-full" /></div>
+            <Sk className="h-(--cocart-input-height) w-full" />
+            <Sk className="h-(--cocart-input-height) w-full" />
+          </div>
+        ) : (
+          <div className="grid gap-(--cocart-field-gap)">
+            <Sk className="h-(--cocart-input-height) w-full" />
+            <Sk className="h-(--cocart-input-height) w-full" />
+          </div>
+        )}
+      </div>
+    );
+  }
+
   const isAddress = section.id === 'billing' || section.id === 'shipping';
   const visibleFields = section.fields.filter(f => !f.hidden);
-  const sectionClass = theme.sectionClassName ?? '';
 
   return (
     <div className={sectionClass}>

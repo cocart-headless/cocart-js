@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import type { CheckoutTheme } from '../index.js';
+import { Sk } from './skeleton.js';
 
 interface OrderSummaryProps {
   theme: CheckoutTheme;
   mobileDrawer?: boolean;
+  loading?: boolean;
   total?: string;
   currency?: string;
 }
@@ -56,8 +58,49 @@ function SummaryContent({ theme }: { theme: CheckoutTheme }) {
   );
 }
 
-export function OrderSummary({ theme, mobileDrawer = false, total = 'USD $95.70', currency: _currency }: OrderSummaryProps) {
+export function OrderSummary({ theme, mobileDrawer = false, loading = false, total = 'USD $95.70', currency: _currency }: OrderSummaryProps) {
   const [drawerOpen, setDrawerOpen] = useState(false);
+
+  if (loading) {
+    if (mobileDrawer) {
+      return (
+        <div className="border-t border-(--cocart-color-border) bg-(--cocart-color-background-alt)">
+          <div className="flex items-center justify-between px-4 py-3.5">
+            <Sk className="h-4 w-28" />
+            <Sk className="h-4 w-16" />
+          </div>
+        </div>
+      );
+    }
+    return (
+      <div className={theme.orderSummaryClassName ?? ''}>
+        <div className="grid gap-4 mb-6">
+          {[0, 1].map(i => (
+            <div key={i} className="flex items-center gap-3">
+              <Sk className="h-14 w-14 shrink-0 rounded-(--cocart-border-radius)" />
+              <div className="flex-1 grid gap-1.5">
+                <Sk className="h-3.5 w-3/4" />
+                <Sk className="h-3 w-1/2" />
+              </div>
+              <Sk className="h-3.5 w-12 shrink-0" />
+            </div>
+          ))}
+        </div>
+        <div className="border-t border-(--cocart-color-border) pt-4 grid gap-2.5">
+          {[0, 1, 2].map(i => (
+            <div key={i} className="flex justify-between">
+              <Sk className="h-3.5 w-16" />
+              <Sk className="h-3.5 w-12" />
+            </div>
+          ))}
+          <div className="flex justify-between border-t border-(--cocart-color-border) pt-3 mt-1">
+            <Sk className="h-4 w-12" />
+            <Sk className="h-4 w-20" />
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (!mobileDrawer) {
     return <SummaryContent theme={theme} />;

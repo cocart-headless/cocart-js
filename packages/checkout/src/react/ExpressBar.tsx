@@ -1,12 +1,27 @@
 import type { CheckoutTheme, CheckoutGatewayPresentation } from '../index.js';
+import { Sk } from './skeleton.js';
 
 interface ExpressBarProps {
   gateways: CheckoutGatewayPresentation[];
   theme: CheckoutTheme;
   expressOnly?: boolean;
+  loading?: boolean;
 }
 
-export function ExpressBar({ gateways, theme, expressOnly = false }: ExpressBarProps) {
+export function ExpressBar({ gateways, theme, expressOnly = false, loading = false }: ExpressBarProps) {
+  if (loading) {
+    return (
+      <div className={expressOnly ? 'max-w-sm mx-auto' : (theme.sectionClassName ?? '')}>
+        <Sk className="mb-2 h-3 w-24" />
+        <div className="flex gap-2.5">
+          <Sk className={`h-10 flex-1${expressOnly ? ' min-w-40' : ' min-w-30'}`} />
+          <Sk className={`h-10 flex-1${expressOnly ? ' min-w-40' : ' min-w-30'}`} />
+        </div>
+        {!expressOnly && <Sk className="mt-2 h-px w-full" />}
+      </div>
+    );
+  }
+
   if (gateways.length === 0) return null;
 
   return (

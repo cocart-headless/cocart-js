@@ -5,3 +5,4 @@ export { PaymentMethods } from './PaymentMethods.js';
 export { ShippingMethods } from './ShippingMethods.js';
 export { OrderSummary } from './OrderSummary.js';
 export { PayButton } from './PayButton.js';
+export { Sk as CheckoutSkeleton } from './skeleton.js';
