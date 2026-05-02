@@ -1,6 +1,6 @@
 import { CoCartError } from '@cocartheadless/sdk';
 import type { CoCart, Response } from '@cocartheadless/sdk';
-import { bareCheckoutTheme } from './presets.js';
+import { createCheckoutTheme } from './presets.js';
 import type {
   CheckoutExpressBar,
   CheckoutFormDefinition,
@@ -71,7 +71,7 @@ export class CheckoutClient implements CheckoutSDK {
   constructor(client: CoCart, options: CheckoutSDKOptions = {}) {
     this.client = client;
     this.routeBase = (options.routeBase ?? 'cocart/preview/checkout').replace(/^\/+|\/+$/g, '');
-    this.defaultTheme = options.defaultTheme ?? bareCheckoutTheme;
+    this.defaultTheme = options.defaultTheme ?? createCheckoutTheme();
     this.defaultGateway = options.defaultGateway;
     this.collectShippingAddress = options.collectShippingAddress ?? true;
     this.shippingSameAsBilling = options.shippingSameAsBilling ?? true;

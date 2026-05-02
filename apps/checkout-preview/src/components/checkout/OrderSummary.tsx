@@ -15,35 +15,35 @@ export function OrderSummary({ theme }: OrderSummaryProps) {
       <div className="grid gap-4 mb-6">
         {MOCK_ITEMS.map(item => (
           <div key={item.name} className="flex items-center gap-3">
-            <div className="relative h-14 w-14 shrink-0 rounded-lg border border-[#d9d9d9] bg-white flex items-center justify-center">
-              <span className="text-xs text-[#bbb]">img</span>
-              <span className="absolute -top-1.5 -right-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-[#6b6b6b] text-[10px] font-medium text-white">
+            <div className="relative h-14 w-14 shrink-0 rounded-(--cocart-border-radius) border border-(--cocart-color-border) bg-(--cocart-color-surface) flex items-center justify-center">
+              <span className="text-xs text-(--cocart-color-text-muted)">img</span>
+              <span className="absolute -top-1.5 -right-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-(--cocart-color-text-muted) text-[10px] font-medium text-(--cocart-color-surface)">
                 {item.qty}
               </span>
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-[#1a1a1a] truncate">{item.name}</p>
-              <p className="text-xs text-[#6b6b6b]">{item.variant}</p>
+              <p className="text-sm font-medium text-(--cocart-color-text) truncate">{item.name}</p>
+              <p className="text-xs text-(--cocart-color-text-muted)">{item.variant}</p>
             </div>
-            <span className="text-sm font-medium text-[#1a1a1a] shrink-0">{item.price}</span>
+            <span className="text-sm font-medium text-(--cocart-color-text) shrink-0">{item.price}</span>
           </div>
         ))}
       </div>
 
-      <div className="border-t border-[#d9d9d9] pt-4 grid gap-2.5">
-        <div className="flex justify-between text-sm text-[#1a1a1a]">
+      <div className="border-t border-(--cocart-color-border) pt-4 grid gap-2.5">
+        <div className="flex justify-between text-sm text-(--cocart-color-text)">
           <span>Subtotal</span>
           <span>$87.00</span>
         </div>
         <div className="flex justify-between text-sm">
-          <span className="text-[#1a1a1a]">Shipping</span>
-          <span className="text-[#6b6b6b]">Calculated at next step</span>
+          <span className="text-(--cocart-color-text)">Shipping</span>
+          <span className="text-(--cocart-color-text-muted)">Calculated at next step</span>
         </div>
-        <div className="flex justify-between text-sm text-[#1a1a1a]">
+        <div className="flex justify-between text-sm text-(--cocart-color-text)">
           <span>Taxes</span>
           <span>$8.70</span>
         </div>
-        <div className="flex justify-between text-base font-semibold text-[#1a1a1a] border-t border-[#d9d9d9] pt-3 mt-1">
+        <div className="flex justify-between text-base font-semibold text-(--cocart-color-text) border-t border-(--cocart-color-border) pt-3 mt-1">
           <span>Total</span>
           <span>USD $95.70</span>
         </div>

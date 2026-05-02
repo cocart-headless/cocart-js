@@ -2,6 +2,7 @@
 @plugin "daisyui";
 
 @source "../../packages/checkout/src/presets.ts";
+@source inline("bg-(--cocart-color-background-alt) bg-(--cocart-color-background-hover) bg-(--cocart-color-button) text-(--cocart-color-button-text)");
 
 @theme {
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;

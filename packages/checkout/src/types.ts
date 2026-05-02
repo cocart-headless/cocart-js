@@ -154,18 +154,53 @@ export interface CheckoutFormSection {
   className?: string;
 }
 
+export interface CheckoutThemeVariables {
+  // Colors
+  colorPrimary: string;
+  colorBackground: string;
+  colorBackgroundAlt: string;
+  colorBackgroundHover: string;
+  colorSurface: string;
+  colorText: string;
+  colorTextMuted: string;
+  colorBorder: string;
+  colorError: string;
+  colorButton: string;
+  colorButtonText: string;
+  // Typography
+  fontFamily: string;
+  fontSizeBase: string;
+  fontWeightNormal: string;
+  fontWeightMedium: string;
+  fontWeightBold: string;
+  // Shape
+  borderRadius: string;
+  borderRadiusFull: string;
+  inputHeight: string;
+  // Spacing
+  spacingUnit: string;
+  fieldGap: string;
+  sectionGap: string;
+}
+
+export type CheckoutThemeRules = Record<string, Record<string, string>>;
+
 export interface CheckoutTheme {
-  name: string;
-  containerClassName: string;
-  sectionClassName: string;
-  fieldClassName: string;
-  inputClassName: string;
-  labelClassName: string;
-  helperTextClassName: string;
-  submitButtonClassName: string;
-  paymentContainerClassName: string;
-  orderSummaryClassName: string;
-  expressCheckoutBarClassName: string;
+  name?: string;
+  preset?: 'modern' | 'tailwind' | 'shadcn';
+  variables?: Partial<CheckoutThemeVariables>;
+  rules?: CheckoutThemeRules;
+  // Class name overrides — applied after variables; Tailwind/shadcn power users
+  containerClassName?: string;
+  sectionClassName?: string;
+  fieldClassName?: string;
+  inputClassName?: string;
+  labelClassName?: string;
+  helperTextClassName?: string;
+  submitButtonClassName?: string;
+  paymentContainerClassName?: string;
+  orderSummaryClassName?: string;
+  expressCheckoutBarClassName?: string;
 }
 
 export interface CheckoutExpressBarGateway {

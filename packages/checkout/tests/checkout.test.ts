@@ -10,7 +10,7 @@ import {
   createStripeExpressGateway,
   createStripeGateway,
   createTailwindCheckoutTheme,
-  shadcnCheckoutTheme,
+  createShadcnCheckoutTheme,
 } from '../src/index.js';
 
 describe('@cocartheadless/checkout', () => {
@@ -102,9 +102,9 @@ describe('@cocartheadless/checkout', () => {
     }));
 
     const form = client.checkout.createForm({ gatewayId: 'paypal' });
-    expect(form.theme.name).toBe('tailwind');
+    expect(form.theme.preset).toBe('tailwind');
     expect(form.sections.map((section) => section.id)).toEqual(['contact', 'billing', 'shipping', 'notes', 'payment']);
-    expect(shadcnCheckoutTheme.inputClassName).toContain('border-input');
+    expect(createShadcnCheckoutTheme().preset).toBe('shadcn');
   });
 
   it('ships focused helpers for stripe, paypal, and authorizenet', () => {

@@ -55,7 +55,7 @@ src/
   response.ts          # Response wrapper with dot-notation access
   jwt-manager.ts       # JWT authentication manager
   session-manager.ts   # session lifecycle (guest → auth)
-  endpoints/           # cart, products, sessions, store endpoints
+  endpoints/           # account, cart, products, sessions, store endpoints
   adapters/            # framework adapters (Next.js, Astro, Nuxt, Remix, Svelte, Deno, Elysia, Fastify, Hono, Vite)
   storage/             # MemoryStorage, LocalStorage, EncryptedStorage
   exceptions/          # CoCartError and subclasses

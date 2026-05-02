@@ -13,20 +13,20 @@ export function ExpressBar({ gateways, theme, expressOnly = false }: ExpressBarP
   return (
     <div className={expressOnly ? 'max-w-sm mx-auto' : (theme.sectionClassName ?? '')}>
       {expressOnly ? (
-        <p className="mb-4 text-center text-xs text-slate-400">
+        <p className="mb-4 text-center text-xs text-(--cocart-color-text-muted)">
           Customer completes checkout via the wallet — no form fields required.
         </p>
       ) : (
-        <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+        <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-(--cocart-color-text-muted)">
           Express Checkout
         </p>
       )}
 
-      <div className={`${theme.expressCheckoutBarClassName ?? 'flex gap-3'}${expressOnly ? ' justify-center' : ''}`}>
+      <div className={`${theme.expressCheckoutBarClassName ?? 'flex gap-2.5 flex-wrap'}${expressOnly ? ' justify-center' : ''}`}>
         {gateways.map(gw => (
           <div
             key={gw.id}
-            className={`flex items-center justify-center gap-2 rounded-lg border-2 border-dashed border-slate-300 bg-slate-50 px-4 py-2.5 text-xs font-medium text-slate-500${expressOnly ? ' min-w-[160px]' : ' min-w-[120px]'}`}
+            className={`flex items-center justify-center gap-2 rounded-(--cocart-border-radius) border-2 border-dashed border-(--cocart-color-border) bg-(--cocart-color-surface) px-4 py-2.5 text-xs font-medium text-(--cocart-color-text-muted)${expressOnly ? ' min-w-40' : ' min-w-30'}`}
           >
             [ {gw.label} ]
           </div>
@@ -34,10 +34,10 @@ export function ExpressBar({ gateways, theme, expressOnly = false }: ExpressBarP
       </div>
 
       {!expressOnly && (
-        <div className="mt-2 flex items-center gap-3 text-xs text-slate-400">
-          <span className="flex-1 border-t border-slate-200" />
+        <div className="mt-2 flex items-center gap-3 text-xs text-(--cocart-color-text-muted)">
+          <span className="flex-1 border-t border-(--cocart-color-border)" />
           <span>or</span>
-          <span className="flex-1 border-t border-slate-200" />
+          <span className="flex-1 border-t border-(--cocart-color-border)" />
         </div>
       )}
     </div>

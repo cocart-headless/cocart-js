@@ -7,10 +7,10 @@ interface PayButtonProps {
 
 export function PayButton({ label = 'Pay now', theme }: PayButtonProps) {
   const btnClass = theme.submitButtonClassName
-    ?? 'w-full rounded-full bg-[#1a1a1a] py-4 text-white text-sm font-semibold hover:bg-[#333] transition';
+    ?? 'w-full rounded-(--cocart-border-radius-full) bg-(--cocart-color-button) py-4 text-(--cocart-color-button-text) text-[length:var(--cocart-font-size-base)] font-semibold tracking-wide transition hover:opacity-90';
 
   return (
-    <div className={`${theme.sectionClassName ?? ''} pt-0`}>
+    <div className={`${theme.sectionClassName ?? ''} border-b-0!`}>
       <button type="submit" className={btnClass}>
         {label}
       </button>

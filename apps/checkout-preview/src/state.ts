@@ -1,6 +1,6 @@
 import type { CheckoutFieldType, CheckoutTheme } from '@cocartheadless/checkout';
-import { createTailwindCheckoutTheme } from '@cocartheadless/checkout';
-import { createModernCheckoutTheme } from './components/checkout/themes.js';
+import { createModernCheckoutTheme, createTailwindCheckoutTheme, MODERN_VARIABLES, TAILWIND_VARIABLES, SHADCN_VARIABLES } from '@cocartheadless/checkout';
+import type { CheckoutThemeVariables } from '@cocartheadless/checkout';
 
 export interface GatewayConfig {
   id: string;
@@ -36,6 +36,7 @@ export interface BuilderState {
     notes: FieldConfig[];
   };
   themePreset: 'modern' | 'tailwind' | 'shadcn' | 'custom';
+  themeClassesEdited: boolean;
   theme: CheckoutTheme;
   customCss: string;
   gateways: GatewayConfig[];
@@ -54,8 +55,8 @@ export const GATEWAY_CATALOG: GatewayConfig[] = [
   { id: 'cod',            label: 'Cash on Delivery',      description: 'Customer pays upon delivery',               isExpress: false, isOffline: true,  enabled: true },
 ];
 
-const DEFAULT_TAILWIND_THEME = createTailwindCheckoutTheme();
-const DEFAULT_MODERN_THEME = createModernCheckoutTheme();
+const DEFAULT_TAILWIND_THEME = createTailwindCheckoutTheme({ variables: { ...TAILWIND_VARIABLES } });
+const DEFAULT_MODERN_THEME   = createModernCheckoutTheme({ variables: { ...MODERN_VARIABLES } });
 
 function defaultState(): BuilderState {
   return {
@@ -95,6 +96,7 @@ function defaultState(): BuilderState {
       ],
     },
     themePreset: 'modern',
+    themeClassesEdited: false,
     theme: DEFAULT_MODERN_THEME,
     customCss: '',
     gateways: GATEWAY_CATALOG.map(g => ({ ...g })),
@@ -131,3 +133,5 @@ class StateStore {
 
 export const store = new StateStore();
 export { DEFAULT_TAILWIND_THEME, DEFAULT_MODERN_THEME };
+export { MODERN_VARIABLES, TAILWIND_VARIABLES, SHADCN_VARIABLES };
+export type { CheckoutThemeVariables };

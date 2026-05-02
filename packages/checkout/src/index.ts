@@ -9,7 +9,16 @@ export {
   createStripeExpressGateway,
   createStripeGateway,
 } from './gateways.js';
-export { bareCheckoutTheme, createTailwindCheckoutTheme, shadcnCheckoutTheme } from './presets.js';
+export {
+  createCheckoutTheme,
+  createModernCheckoutTheme,
+  createTailwindCheckoutTheme,
+  createShadcnCheckoutTheme,
+  MODERN_VARIABLES,
+  TAILWIND_VARIABLES,
+  SHADCN_VARIABLES,
+} from './presets.js';
+export { resolveTheme, getPresetVariables } from './theme-engine.js';
 
 export type {
   AuthorizeNetGatewayOptions,
@@ -50,6 +59,8 @@ export type {
   CheckoutSubmitInput,
   CheckoutSubmitResult,
   CheckoutTheme,
+  CheckoutThemeVariables,
+  CheckoutThemeRules,
   CheckoutUpdateInput,
   PayPalGatewayOptions,
   StripeGatewayOptions,

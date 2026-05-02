@@ -1,8 +1,6 @@
-import type { CheckoutTheme } from '@cocartheadless/checkout';
-import { createTailwindCheckoutTheme, shadcnCheckoutTheme } from '@cocartheadless/checkout';
+import { getPresetVariables } from '@cocartheadless/checkout';
+import type { CheckoutThemeVariables } from '@cocartheadless/checkout';
 import type { BuilderState } from '../state.js';
-
-const TAILWIND_DEFAULTS = createTailwindCheckoutTheme();
 
 const GATEWAY_IMPORT_MAP: Record<string, string> = {
   'stripe':         'createStripeGateway',
@@ -25,44 +23,61 @@ const GATEWAY_SNIPPET: Record<string, string> = {
 };
 
 function themeExpression(state: BuilderState): string {
-  if (state.themePreset === 'modern') return 'createModernCheckoutTheme()';
-  if (state.themePreset === 'shadcn') return 'shadcnCheckoutTheme';
-  if (state.themePreset === 'tailwind') {
-    const overrides = getThemeOverrides(state.theme, TAILWIND_DEFAULTS);
-    if (Object.keys(overrides).length === 0) return 'createTailwindCheckoutTheme()';
-    const entries = Object.entries(overrides)
-      .map(([k, v]) => `    ${k}: '${v}'`)
-      .join(',\n');
-    return `createTailwindCheckoutTheme({\n${entries},\n  })`;
-  }
-  // custom — inline object
-  const entries = (Object.keys(state.theme) as (keyof CheckoutTheme)[])
-    .filter(k => k !== 'name')
-    .map(k => `    ${k}: '${state.theme[k]}'`)
-    .join(',\n');
-  return `{\n    name: 'custom',\n${entries},\n  }`;
-}
+  const preset = state.themePreset as 'modern' | 'tailwind' | 'shadcn' | 'custom';
 
-function getThemeOverrides(theme: CheckoutTheme, defaults: CheckoutTheme): Partial<Record<keyof CheckoutTheme, string>> {
-  const out: Partial<Record<keyof CheckoutTheme, string>> = {};
-  for (const k of Object.keys(defaults) as (keyof CheckoutTheme)[]) {
-    if (k === 'name') continue;
-    if (theme[k] !== defaults[k]) {
-      out[k] = theme[k] as string;
+  if (preset === 'custom') {
+    // Emit full createCheckoutTheme call with all variables and rules
+    const vars = state.theme.variables;
+    const rules = state.theme.rules;
+    const parts: string[] = [];
+    if (vars && Object.keys(vars).length > 0) {
+      const entries = Object.entries(vars).map(([k, v]) => `    ${k}: '${v}'`).join(',\n');
+      parts.push(`  variables: {\n${entries},\n  }`);
+    }
+    if (rules && Object.keys(rules).length > 0) {
+      const ruleEntries = Object.entries(rules)
+        .map(([sel, props]) => {
+          const propEntries = Object.entries(props).map(([p, v]) => `      ${p}: '${v}'`).join(',\n');
+          return `    '${sel}': {\n${propEntries},\n    }`;
+        })
+        .join(',\n');
+      parts.push(`  rules: {\n${ruleEntries},\n  }`);
+    }
+    if (parts.length === 0) return `createCheckoutTheme()`;
+    return `createCheckoutTheme({\n${parts.join(',\n')},\n})`;
+  }
+
+  // Named preset — only emit variables that differ from the preset defaults
+  const presetVars = getPresetVariables(preset);
+  const themeVars = state.theme.variables ?? {};
+  const overrides: Partial<CheckoutThemeVariables> = {};
+  for (const key of Object.keys(presetVars) as (keyof CheckoutThemeVariables)[]) {
+    if (themeVars[key] !== undefined && themeVars[key] !== presetVars[key]) {
+      overrides[key] = themeVars[key];
     }
   }
-  return out;
+
+  const presetFn = preset === 'modern' ? 'createModernCheckoutTheme'
+    : preset === 'tailwind' ? 'createTailwindCheckoutTheme'
+    : 'createShadcnCheckoutTheme';
+
+  if (Object.keys(overrides).length === 0) return `${presetFn}()`;
+
+  const entries = Object.entries(overrides).map(([k, v]) => `    ${k}: '${v}'`).join(',\n');
+  return `${presetFn}({\n  variables: {\n${entries},\n  },\n})`;
 }
 
 function buildSetupCode(state: BuilderState): string {
   const enabledGateways = state.gateways.filter(g => g.enabled);
+  const preset = state.themePreset as string;
   const lines: string[] = [];
 
-  const baseImports: string[] = ['createCheckout'];
-  if (state.themePreset === 'modern') baseImports.push('createModernCheckoutTheme');
-  if (state.themePreset === 'tailwind') baseImports.push('createTailwindCheckoutTheme');
-  if (state.themePreset === 'shadcn') baseImports.push('shadcnCheckoutTheme');
+  const themeImport = preset === 'modern' ? 'createModernCheckoutTheme'
+    : preset === 'tailwind' ? 'createTailwindCheckoutTheme'
+    : preset === 'shadcn' ? 'createShadcnCheckoutTheme'
+    : 'createCheckoutTheme';
 
+  const baseImports = ['createCheckout', themeImport];
   const gatewayFns = enabledGateways.map(g => GATEWAY_IMPORT_MAP[g.id]).filter(Boolean);
   const allImports = [...new Set([...baseImports, ...gatewayFns])];
 
@@ -230,6 +245,3 @@ function tokenizeLine(line: string): Token[] {
 
   return tokens;
 }
-
-// Keep shadcnCheckoutTheme import live (used in themeExpression string comparison)
-void shadcnCheckoutTheme;

@@ -1,6 +1,7 @@
 import { createRoot } from 'react-dom/client';
+import { useState } from 'react';
 import type { Root } from 'react-dom/client';
-import { CheckoutClient } from '@cocartheadless/checkout';
+import { CheckoutClient, resolveTheme } from '@cocartheadless/checkout';
 import type { CheckoutGatewayAdapter, CheckoutFormSection } from '@cocartheadless/checkout';
 import { mockCoCartClient } from '../mock-client.js';
 import type { BuilderState, GatewayConfig } from '../state.js';
@@ -12,16 +13,17 @@ import { PaymentMethods } from '../components/checkout/PaymentMethods.js';
 import { OrderSummary } from '../components/checkout/OrderSummary.js';
 import { PayButton } from '../components/checkout/PayButton.js';
 
+const SCOPE = '#checkout-preview-root';
+let themeStyleEl: HTMLStyleElement | null = null;
 let customStyleEl: HTMLStyleElement | null = null;
-let shadcnStyleEl: HTMLStyleElement | null = null;
 
-const SHADCN_CSS_VARS = `
-  --background: #ffffff; --foreground: #0f172a;
-  --card: #ffffff; --card-foreground: #0f172a;
-  --primary: #1e293b; --primary-foreground: #f8fafc;
-  --muted: #f1f5f9; --muted-foreground: #64748b;
-  --border: #e2e8f0; --input: #e2e8f0; --ring: #1e293b;
-`;
+function applyTheme(state: BuilderState): void {
+  themeStyleEl?.remove();
+  themeStyleEl = document.createElement('style');
+  themeStyleEl.id = 'checkout-preview-theme';
+  themeStyleEl.textContent = resolveTheme(state.theme, SCOPE);
+  document.head.appendChild(themeStyleEl);
+}
 
 function applyCustomCss(css: string): void {
   customStyleEl?.remove();
@@ -29,17 +31,6 @@ function applyCustomCss(css: string): void {
   customStyleEl.id = 'checkout-preview-custom-css';
   customStyleEl.textContent = css;
   document.head.appendChild(customStyleEl);
-}
-
-function applyShadcnVars(active: boolean): void {
-  if (active && !shadcnStyleEl) {
-    shadcnStyleEl = document.createElement('style');
-    shadcnStyleEl.textContent = `#checkout-preview-root .shadcn-vars { ${SHADCN_CSS_VARS} }`;
-    document.head.appendChild(shadcnStyleEl);
-  } else if (!active && shadcnStyleEl) {
-    shadcnStyleEl.remove();
-    shadcnStyleEl = null;
-  }
 }
 
 function buildStubAdapter(gw: GatewayConfig): CheckoutGatewayAdapter {
@@ -65,6 +56,77 @@ interface PreviewProps {
   sections: CheckoutFormSection[];
 }
 
+function MobileScreen({ state, expressGateways, regularGateways, expressOnly, activeGatewayId, sections }: PreviewProps) {
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const { theme, includeOrderSummary } = state;
+
+  return (
+    <div className="relative overflow-hidden rounded-[38px] bg-(--cocart-color-background)">
+      {/* Status bar spacer */}
+      <div className="h-10 bg-(--cocart-color-background)" />
+
+      {/* Scrollable form content */}
+      <div className="overflow-y-auto max-h-180">
+        <CheckoutPreview
+          state={state}
+          expressGateways={expressGateways}
+          regularGateways={regularGateways}
+          expressOnly={expressOnly}
+          activeGatewayId={activeGatewayId}
+          sections={sections}
+        />
+      </div>
+
+      {/* Sticky bottom bar — outside scroll div so it never scrolls away */}
+      {includeOrderSummary && (
+        <div className="border-t border-(--cocart-color-border) bg-(--cocart-color-background-alt)">
+          <button
+            type="button"
+            onClick={() => setDrawerOpen(o => !o)}
+            className="w-full flex items-center justify-between px-4 py-3.5 text-sm font-medium text-(--cocart-color-text)"
+          >
+            <span className="flex items-center gap-2">
+              <svg className={`h-4 w-4 transition-transform duration-200 ${drawerOpen ? 'rotate-180' : ''}`} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M3 6l5 5 5-5" />
+              </svg>
+              Order summary
+            </span>
+            <span className="font-semibold">USD $95.70</span>
+          </button>
+        </div>
+      )}
+
+      {/* Drawer — absolute within screen, never scrolls */}
+      {drawerOpen && includeOrderSummary && (
+        <div className="absolute inset-0 z-30 flex flex-col justify-end bg-black/20" onClick={() => setDrawerOpen(false)}>
+          <div
+            className="rounded-t-2xl bg-(--cocart-color-background-alt) overflow-y-auto max-h-4/5 shadow-2xl"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex justify-center pt-3 pb-1">
+              <div className="h-1 w-10 rounded-full bg-(--cocart-color-border)" />
+            </div>
+            <div className="flex items-center justify-between px-4 py-3 border-b border-(--cocart-color-border)">
+              <span className="text-sm font-semibold text-(--cocart-color-text)">Order summary</span>
+              <button type="button" onClick={() => setDrawerOpen(false)} className="text-(--cocart-color-text-muted)">
+                <svg className="h-4 w-4" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                  <path d="M3 3l10 10M13 3L3 13" />
+                </svg>
+              </button>
+            </div>
+            <OrderSummary theme={theme} />
+          </div>
+        </div>
+      )}
+
+      {/* Home indicator */}
+      <div className="flex justify-center py-2 bg-(--cocart-color-background)">
+        <div className="h-1 w-24 rounded-full bg-slate-300" />
+      </div>
+    </div>
+  );
+}
+
 function CheckoutPreview({ state, expressGateways, regularGateways, expressOnly, activeGatewayId, sections }: PreviewProps) {
   const { theme, includeOrderSummary } = state;
   const layout = state.previewViewport === 'mobile' ? 'stacked' : 'two-column';
@@ -85,6 +147,8 @@ function CheckoutPreview({ state, expressGateways, regularGateways, expressOnly,
       </CheckoutContainer>
     );
   }
+
+  const isModern = state.themePreset === 'modern';
 
   // Left column content — shared between stacked and two-column
   const leftContent = (
@@ -119,17 +183,16 @@ function CheckoutPreview({ state, expressGateways, regularGateways, expressOnly,
     </>
   );
 
-  const leftCol = (
-    <div className="bg-white *:py-4">
-      {leftContent}
-    </div>
-  );
+  // Modern theme: wrap sections with dividers and white bg.
+  // Other themes: render content directly so their sectionClassName card styles drive layout.
+  const leftCol = isModern
+    ? <div className="bg-(--cocart-color-background) text-(--cocart-color-text) *:py-4 *:border-b *:border-(--cocart-color-border) last:*:border-b-0">{leftContent}</div>
+    : <div className="grid gap-(--cocart-section-gap) py-4">{leftContent}</div>;
 
   if (layout === 'stacked') {
     return (
       <CheckoutContainer form={formDef} layout="stacked">
         {leftCol}
-        {includeOrderSummary && <OrderSummary theme={theme} />}
       </CheckoutContainer>
     );
   }
@@ -137,7 +200,7 @@ function CheckoutPreview({ state, expressGateways, regularGateways, expressOnly,
   return (
     <CheckoutContainer form={formDef} layout="two-column">
       {leftCol}
-      <div className="grid content-start">
+      <div className="lg:self-stretch bg-(--cocart-color-background-alt)">
         {includeOrderSummary && <OrderSummary theme={theme} />}
       </div>
     </CheckoutContainer>
@@ -153,7 +216,7 @@ export class PreviewPane {
   }
 
   render(state: BuilderState): void {
-    applyShadcnVars(state.themePreset === 'shadcn');
+    applyTheme(state);
     applyCustomCss(state.customCss);
 
     const enabledGateways  = state.gateways.filter(g => g.enabled);
@@ -184,14 +247,17 @@ export class PreviewPane {
       includeSummary: false,
     });
 
-    const wrapperClass = state.themePreset === 'shadcn' ? 'shadcn-vars' : '';
+    const wrapperClass = `bg-(--cocart-color-background) min-h-full${state.themePreset === 'shadcn' ? ' shadcn-vars' : ''}`;
 
     this.root.render(
       <div className={wrapperClass}>
         {state.previewViewport === 'mobile' ? (
-          <div className="max-w-[390px] mx-auto device-frame overflow-hidden rounded-[20px] bg-white">
-            <div className="overflow-y-auto max-h-[700px]">
-              <CheckoutPreview
+          <div className="flex items-start justify-center py-8">
+            <div className="relative w-97.5 rounded-[48px] bg-slate-900 p-3 shadow-2xl ring-1 ring-slate-700">
+              {/* Notch */}
+              <div className="absolute top-3 left-1/2 -translate-x-1/2 h-7 w-28 rounded-b-2xl bg-slate-900 z-10" />
+              {/* Screen */}
+              <MobileScreen
                 state={state}
                 expressGateways={expressGateways}
                 regularGateways={regularGateways}

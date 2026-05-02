@@ -27,6 +27,7 @@ function buildPaymentsTab(store: StateStore): HTMLElement {
 
   // ── Default gateway ─────────────────────────────────────────────────────
   const enabledGateways = state.gateways.filter(g => g.enabled);
+  const regularEnabled = enabledGateways.filter(g => !g.isExpress);
 
   const heading = document.createElement('h4');
   heading.className = 'text-xs font-semibold uppercase tracking-wider text-slate-400';
@@ -48,8 +49,8 @@ function buildPaymentsTab(store: StateStore): HTMLElement {
   panel.appendChild(list);
 
   // ── Default gateway selector ───────────────────────────────────────────
-  if (enabledGateways.length > 1) {
-    panel.appendChild(buildDefaultGatewaySelector(enabledGateways, state.defaultGateway, store));
+  if (regularEnabled.length > 1) {
+    panel.appendChild(buildDefaultGatewaySelector(regularEnabled, state.defaultGateway, store));
   }
 
   // ── Info ───────────────────────────────────────────────────────────────
@@ -129,8 +130,8 @@ function buildGatewayRow(gw: GatewayConfig, idx: number, store: StateStore): HTM
   header.appendChild(toggle);
   header.appendChild(nameWrap);
 
-  // Set-as-default button (only for enabled gateways)
-  if (gw.enabled && state.defaultGateway !== gw.id) {
+  // Set-as-default button (only for enabled non-express gateways)
+  if (gw.enabled && !gw.isExpress && state.defaultGateway !== gw.id) {
     const defaultBtn = document.createElement('button');
     defaultBtn.type = 'button';
     defaultBtn.className = 'text-xs text-violet-600 font-medium hover:underline shrink-0';
