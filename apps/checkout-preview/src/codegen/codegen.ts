@@ -1,6 +1,9 @@
 import { getPresetVariables } from '@cocartheadless/checkout';
 import type { CheckoutThemeVariables } from '@cocartheadless/checkout';
 import type { BuilderState } from '../state.js';
+import { GATEWAY_CATALOG } from '../state.js';
+
+const CATALOG_DEFAULTS = Object.fromEntries(GATEWAY_CATALOG.map(g => [g.id, g]));
 
 const GATEWAY_IMPORT_MAP: Record<string, string> = {
   'stripe':         'createStripeGateway',
@@ -93,7 +96,20 @@ function buildSetupCode(state: BuilderState): string {
   if (enabledGateways.length > 0) {
     lines.push('  gatewayAdapters: [');
     enabledGateways.forEach(gw => {
-      lines.push(`    ${GATEWAY_SNIPPET[gw.id] ?? `/* ${gw.id} */`},`);
+      const base = CATALOG_DEFAULTS[gw.id];
+      const labelOverride    = base && gw.label       !== base.label       ? `label: '${gw.label}', `       : '';
+      const descOverride     = base && gw.description !== base.description ? `description: '${gw.description}', ` : '';
+      const baseSnippet      = GATEWAY_SNIPPET[gw.id] ?? `/* ${gw.id} */`;
+      if (labelOverride || descOverride) {
+        const overrideObj = `{ ${labelOverride}${descOverride}}`;
+        // Inject into existing arg object if present, otherwise add as new arg
+        const injected = baseSnippet.includes('({')
+          ? baseSnippet.replace(/\(\{/, `({ ${labelOverride}${descOverride}`)
+          : baseSnippet.replace(/\(\)/, `(${overrideObj})`);
+        lines.push(`    ${injected},`);
+      } else {
+        lines.push(`    ${baseSnippet},`);
+      }
     });
     lines.push('  ],');
   }

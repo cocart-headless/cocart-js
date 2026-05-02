@@ -3,13 +3,34 @@ import type { GatewayConfig } from '../state.js';
 
 export function renderPaymentsTab(container: HTMLElement, store: StateStore): void {
   let el: HTMLElement | null = null;
+  let prevGateways: GatewayConfig[] | null = null;
 
   store.subscribe(state => {
     if (state.activeTab !== 'payments') {
       el?.remove();
       el = null;
+      prevGateways = null;
       return;
     }
+
+    // If only label/description changed, skip the rebuild — the debounced input
+    // already holds the current value so no DOM update is needed.
+    if (el && prevGateways) {
+      const prev = prevGateways;
+      const curr = state.gateways;
+      const onlyTextChanged = prev.length === curr.length &&
+        curr.every((gw, i) =>
+          gw.id === prev[i].id &&
+          gw.enabled === prev[i].enabled &&
+          gw.isExpress === prev[i].isExpress &&
+          gw.isOffline === prev[i].isOffline
+        );
+      if (onlyTextChanged) {
+        prevGateways = curr;
+        return;
+      }
+    }
+
     const next = buildPaymentsTab(store);
     if (el) {
       el.replaceWith(next);
@@ -17,6 +38,7 @@ export function renderPaymentsTab(container: HTMLElement, store: StateStore): vo
       container.appendChild(next);
     }
     el = next;
+    prevGateways = store.get().gateways;
   });
 }
 
@@ -158,6 +180,11 @@ function buildGatewayRow(gw: GatewayConfig, idx: number, store: StateStore): HTM
       newGateways[idx] = { ...newGateways[idx], description: val };
       store.update({ gateways: newGateways });
     }));
+
+    const labelNote = document.createElement('p');
+    labelNote.className = 'text-xs text-slate-400 leading-relaxed';
+    labelNote.textContent = 'Changes to label and description are passed to the gateway factory in the generated code.';
+    fields.appendChild(labelNote);
 
     card.appendChild(fields);
   }
