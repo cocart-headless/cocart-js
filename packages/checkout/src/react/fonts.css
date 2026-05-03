@@ -1,0 +1,37 @@
+/*
+ * Self-hosted Inter font for CoCart Checkout.
+ *
+ * OPTION A — fontsource (recommended, zero Google calls)
+ * -------------------------------------------------------
+ * npm install @fontsource-variable/inter
+ *
+ * Then import in your app entry point:
+ *   import '@fontsource-variable/inter';
+ *
+ * This bundles the WOFF2 files into your build — no network request at runtime.
+ *
+ *
+ * OPTION B — local files
+ * -------------------------------------------------------
+ * Download Inter from https://rsms.me/inter/ and place the WOFF2 files
+ * alongside your CSS, then declare them yourself:
+ *
+ *   @font-face {
+ *     font-family: 'Inter';
+ *     font-style: normal;
+ *     font-weight: 100 900;
+ *     font-display: swap;
+ *     src: url('./inter/Inter-Variable.woff2') format('woff2');
+ *   }
+ *
+ *
+ * OPTION C — system font fallback (no download needed)
+ * -------------------------------------------------------
+ * Pass a custom fontFamily to createCheckoutTheme() to skip Inter entirely:
+ *
+ *   createCheckoutTheme({
+ *     variables: {
+ *       fontFamily: "ui-sans-serif, system-ui, -apple-system, sans-serif",
+ *     },
+ *   })
+ */
