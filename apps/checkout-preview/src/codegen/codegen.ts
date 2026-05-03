@@ -141,7 +141,8 @@ function buildJsxCode(state: BuilderState): string {
   lines.push('');
   lines.push('export function CheckoutForm({ form }) {');
   lines.push('  return (');
-  lines.push('    <CheckoutContainer form={form} layout="two-column">');
+  const layoutProp = state.containerLayout === 'stacked' ? 'stacked' : 'two-column';
+  lines.push(`    <CheckoutContainer form={form} layout="${layoutProp}">`);
 
   if (expressGateways.length > 0) {
     lines.push('      <ExpressBar gateways={expressBar.gateways} theme={form.theme} />');

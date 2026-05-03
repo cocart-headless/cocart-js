@@ -23,6 +23,7 @@ export interface FieldConfig {
 }
 
 export interface BuilderState {
+  containerLayout: 'two-column' | 'stacked';
   collectShippingAddress: boolean;
   shippingSameAsBilling: boolean;
   includeNotes: boolean;
@@ -61,6 +62,7 @@ const DEFAULT_MODERN_THEME   = createModernCheckoutTheme({ variables: { ...MODER
 
 function defaultState(): BuilderState {
   return {
+    containerLayout: 'two-column',
     collectShippingAddress: true,
     shippingSameAsBilling: false,
     includeNotes: false,

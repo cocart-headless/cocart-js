@@ -345,6 +345,57 @@ function buildAppearanceTab(store: StateStore): HTMLElement {
   const panel = document.createElement('div');
   panel.className = 'tab-panel grid gap-4';
 
+  // ── Container layout ──────────────────────────────────────────────────────
+  panel.appendChild(buildSectionHeading('Layout'));
+
+  const layoutGrid = document.createElement('div');
+  layoutGrid.className = 'grid grid-cols-2 gap-2';
+
+  const layouts: { id: 'two-column' | 'stacked'; name: string; desc: string; icon: string }[] = [
+    { id: 'two-column', name: 'Two Column', desc: 'Form left, summary right', icon: '⬜⬛' },
+    { id: 'stacked',    name: 'Stacked',    desc: 'Single column, top to bottom', icon: '⬜' },
+  ];
+
+  layouts.forEach(layout => {
+    const card = document.createElement('button');
+    card.type = 'button';
+    card.dataset['layoutId'] = layout.id;
+    const isActive = state.containerLayout === layout.id;
+    card.className = `flex flex-col items-start rounded-xl border px-3 py-3 text-left transition gap-1 ${
+      isActive
+        ? 'border-violet-500 bg-violet-50 ring-1 ring-violet-500'
+        : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50'
+    }`;
+
+    const nameEl = document.createElement('p');
+    nameEl.className = 'text-xs font-medium text-slate-900';
+    nameEl.textContent = layout.name;
+
+    const descEl = document.createElement('p');
+    descEl.className = 'text-xs text-slate-400 leading-snug';
+    descEl.textContent = layout.desc;
+
+    card.appendChild(nameEl);
+    card.appendChild(descEl);
+
+    card.addEventListener('click', () => {
+      if (store.get().containerLayout === layout.id) return;
+      store.update({ containerLayout: layout.id });
+      layoutGrid.querySelectorAll<HTMLButtonElement>('[data-layout-id]').forEach(c => {
+        const active = c.dataset['layoutId'] === layout.id;
+        c.className = `flex flex-col items-start rounded-xl border px-3 py-3 text-left transition gap-1 ${
+          active
+            ? 'border-violet-500 bg-violet-50 ring-1 ring-violet-500'
+            : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50'
+        }`;
+      });
+    });
+
+    layoutGrid.appendChild(card);
+  });
+
+  panel.appendChild(layoutGrid);
+
   // ── Preset selector ───────────────────────────────────────────────────────
   panel.appendChild(buildSectionHeading('Theme Preset'));
 

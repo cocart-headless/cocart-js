@@ -8,6 +8,8 @@ interface AddressProps {
   section?: CheckoutFormSection;
   theme: CheckoutTheme;
   loading?: boolean;
+  /** Whether the customer is already authenticated. When false (default) the contact section shows a Sign in toggle. */
+  isAuthorized?: boolean;
 }
 
 const FULL_WIDTH_FIELDS = new Set(['email', 'tel']);
@@ -141,7 +143,9 @@ function Field({ field, theme }: { field: CheckoutFormField; theme: CheckoutThem
   );
 }
 
-export function Address({ type, section, theme, loading = false }: AddressProps) {
+export function Address({ type, section, theme, loading = false, isAuthorized = false }: AddressProps) {
+  const [signInOpen, setSignInOpen] = useState(false);
+  const [loggedIn, setLoggedIn] = useState(false);
   const sectionClass = theme.sectionClassName ?? '';
 
   if (loading || !section) {
@@ -170,12 +174,67 @@ export function Address({ type, section, theme, loading = false }: AddressProps)
   }
 
   const isAddress = section.id === 'billing' || section.id === 'shipping';
+  const isContact = type === 'contact' && section.id === 'contact';
   const visibleFields = section.fields.filter(f => !f.hidden);
+  const showSignIn = isContact && !isAuthorized;
+  const inputClass = theme.inputClassName ?? DEFAULT_INPUT;
+  const btnClass = 'h-(--cocart-input-height) w-full rounded-(--cocart-border-radius) bg-(--cocart-color-button) px-4 text-[length:var(--cocart-font-size-base)] font-medium text-(--cocart-color-button-text) transition hover:opacity-90';
+
+  // Sign-in form: replaces contact fields entirely while open
+  if (showSignIn && signInOpen && !loggedIn) {
+    const emailField = visibleFields.find(f => f.type === 'email');
+    return (
+      <div className={sectionClass}>
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="text-base font-bold text-(--cocart-color-text)">Login</h2>
+          <button
+            type="button"
+            className="text-xs text-(--cocart-color-text) underline"
+            onClick={() => setSignInOpen(false)}
+          >
+            Cancel
+          </button>
+        </div>
+        <div className="grid gap-(--cocart-field-gap)">
+          {emailField && <Field field={emailField} theme={theme} />}
+          <input
+            type="password"
+            autoComplete="current-password"
+            placeholder="Password"
+            className={inputClass}
+          />
+          <button type="button" className={btnClass} onClick={() => { setLoggedIn(true); setSignInOpen(false); }}>
+            Sign in
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={sectionClass}>
       {section.title && (
-        <h2 className="mb-4 text-base font-bold text-(--cocart-color-text)">{section.title}</h2>
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="text-base font-bold text-(--cocart-color-text)">{section.title}</h2>
+          {showSignIn && !loggedIn && (
+            <button
+              type="button"
+              className="text-xs text-(--cocart-color-text) underline"
+              onClick={() => setSignInOpen(true)}
+            >
+              Sign in
+            </button>
+          )}
+          {showSignIn && loggedIn && (
+            <button
+              type="button"
+              className="text-xs text-(--cocart-color-text-muted) underline"
+              onClick={() => setLoggedIn(false)}
+            >
+              Sign out
+            </button>
+          )}
+        </div>
       )}
       {isAddress ? (
         <div className="grid grid-cols-2 gap-(--cocart-field-gap)">

@@ -87,7 +87,7 @@ function MobileScreen({ state, expressGateways, regularGateways, expressOnly, ac
 
 function CheckoutPreview({ state, expressGateways, regularGateways, expressOnly, activeGatewayId, sections }: PreviewProps) {
   const { theme, includeOrderSummary } = state;
-  const layout = state.previewViewport === 'mobile' ? 'stacked' : 'two-column';
+  const layout = state.previewViewport === 'mobile' ? 'stacked' : state.containerLayout;
 
   const contactSection  = sections.find(s => s.id === 'contact');
   const billingSection  = sections.find(s => s.id === 'billing');
