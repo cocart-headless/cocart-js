@@ -142,11 +142,11 @@ function RadioLayout({ gateways, activeId, onSelect, paymentSection, helperClass
         const selected = gw.id === activeId;
         return (
           <div key={gw.id} className={i > 0 ? 'border-t border-(--cocart-color-border)' : ''}>
-            <label className={`flex items-center gap-3 px-4 py-3.5 text-sm cursor-pointer transition ${selected ? 'bg-(--cocart-color-background-hover)' : 'bg-(--cocart-color-surface) hover:bg-(--cocart-color-background-hover)'}`}>
-              <input type="radio" name="payment_method" value={gw.id} checked={selected} onChange={() => onSelect(gw.id)} className="h-4 w-4 shrink-0 accent-(--cocart-color-primary)" />
+            <label className={`flex items-start gap-3 px-4 py-3.5 text-sm cursor-pointer transition ${selected ? 'bg-(--cocart-color-background-hover)' : 'bg-(--cocart-color-surface) hover:bg-(--cocart-color-background-hover)'}`}>
+              <input type="radio" name="payment_method" value={gw.id} checked={selected} onChange={() => onSelect(gw.id)} className="h-4 w-4 mt-0.5 shrink-0 accent-(--cocart-color-primary)" />
               <div className="flex flex-col flex-1 min-w-0">
                 <span className="font-medium text-(--cocart-color-text)">{gw.label}</span>
-                {gw.description && <span className={helperClass}>{gw.description}</span>}
+                {selected && gw.description && <span className={helperClass}>{gw.description}</span>}
               </div>
               {icons.length > 0 && (
                 <span className="flex items-center gap-1 shrink-0">
@@ -254,11 +254,11 @@ function AccordionLayout({ gateways, activeId, onSelect, paymentSection, helperC
             <button
               type="button"
               onClick={() => onSelect(gw.id)}
-              className="w-full flex items-center gap-3 px-4 py-3.5 text-sm text-left transition hover:bg-(--cocart-color-background-hover)"
+              className="w-full flex items-start gap-3 px-4 py-3.5 text-sm text-left transition hover:bg-(--cocart-color-background-hover)"
             >
               <div className="flex flex-col flex-1 min-w-0">
                 <span className="font-medium text-(--cocart-color-text)">{gw.label}</span>
-                {gw.description && <span className={helperClass}>{gw.description}</span>}
+                {selected && gw.description && <span className={helperClass}>{gw.description}</span>}
               </div>
               {icons.length > 0 && (
                 <span className="flex items-center gap-1 shrink-0">
@@ -330,7 +330,7 @@ export function PaymentMethods({
   };
 
   return (
-    <div className={theme.sectionClassName ?? ''}>
+    <div className={`w-full overflow-hidden ${theme.sectionClassName ?? ''}`}>
       <h2 className="mb-1 text-base font-bold text-(--cocart-color-text)">Payment</h2>
       <p className={`mb-4 ${helperClass}`}>All transactions are secure and encrypted.</p>
 

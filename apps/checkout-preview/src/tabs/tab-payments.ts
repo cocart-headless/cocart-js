@@ -98,7 +98,7 @@ function buildGatewayRow(gw: GatewayConfig, idx: number, store: StateStore): HTM
   const state = store.get();
 
   const card = document.createElement('div');
-  card.className = `rounded-xl border transition ${gw.enabled ? 'border-violet-200 bg-violet-50' : 'border-slate-200 bg-white'}`;
+  card.className = `rounded-xl border transition min-w-0 overflow-hidden ${gw.enabled ? 'border-violet-200 bg-violet-50' : 'border-slate-200 bg-white'}`;
 
   // Header row
   const header = document.createElement('div');
