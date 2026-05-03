@@ -4,6 +4,7 @@ import { Sk } from './skeleton.js';
 interface ShippingMethodsProps {
   theme: CheckoutTheme;
   loading?: boolean;
+  freeShipping?: boolean;
 }
 
 const MOCK_RATES = [
@@ -11,7 +12,7 @@ const MOCK_RATES = [
   { id: 'express',  label: 'Express shipping',  meta: '2–3 business days', price: '$12.00' },
 ];
 
-export function ShippingMethods({ theme, loading = false }: ShippingMethodsProps) {
+export function ShippingMethods({ theme, loading = false, freeShipping = false }: ShippingMethodsProps) {
   if (loading) {
     return (
       <div className={theme.sectionClassName ?? ''}>
@@ -52,7 +53,16 @@ export function ShippingMethods({ theme, loading = false }: ShippingMethodsProps
               <span className="font-medium text-(--cocart-color-text)">{rate.label}</span>
               <span className="text-xs text-(--cocart-color-text-muted)">{rate.meta}</span>
             </div>
-            <span className="font-medium shrink-0 text-(--cocart-color-text)">{rate.price}</span>
+            <span className="font-medium shrink-0 flex items-center gap-1.5">
+              {freeShipping && rate.price !== 'Free' ? (
+                <>
+                  <span className="line-through text-(--cocart-color-text-muted) font-normal">{rate.price}</span>
+                  <span className="text-green-600">Free</span>
+                </>
+              ) : (
+                <span className="text-(--cocart-color-text)">{rate.price}</span>
+              )}
+            </span>
           </label>
         ))}
       </div>

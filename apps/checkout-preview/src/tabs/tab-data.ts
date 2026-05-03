@@ -51,6 +51,13 @@ function buildDataTab(store: StateStore): HTMLElement {
   ));
 
   panel.appendChild(makeToggleRow(
+    'Terms & Conditions',
+    'Require customers to accept terms before paying.',
+    state.includeTerms,
+    checked => store.update({ includeTerms: checked }),
+  ));
+
+  panel.appendChild(makeToggleRow(
     'Order Summary',
     'Show a live order summary section alongside the form.',
     state.includeOrderSummary,

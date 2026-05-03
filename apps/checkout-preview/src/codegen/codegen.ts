@@ -133,6 +133,7 @@ function buildJsxCode(state: BuilderState): string {
     'Address',
     regularGateways.length > 0 ? 'PaymentMethods' : null,
     state.includeOrderSummary ? 'OrderSummary' : null,
+    state.includeTerms ? 'TermsAndConditions' : null,
     'PayButton',
   ].filter(Boolean) as string[];
 
@@ -169,7 +170,13 @@ function buildJsxCode(state: BuilderState): string {
     lines.push(`      <OrderSummary theme={form.theme}${drawerProp} />`);
   }
 
-  lines.push('      <PayButton theme={form.theme} label="Pay now" />');
+  if (state.includeTerms) {
+    lines.push('      <TermsAndConditions theme={form.theme} termsUrl="/terms" privacyUrl="/privacy">');
+    lines.push('        <PayButton theme={form.theme} label="Pay now" />');
+    lines.push('      </TermsAndConditions>');
+  } else {
+    lines.push('      <PayButton theme={form.theme} label="Pay now" />');
+  }
   lines.push('    </CheckoutContainer>');
   lines.push('  );');
   lines.push('}');

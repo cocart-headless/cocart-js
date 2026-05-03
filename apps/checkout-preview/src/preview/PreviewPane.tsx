@@ -1,8 +1,10 @@
+import { useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import type { Root } from 'react-dom/client';
 import { CheckoutClient, resolveTheme } from '@cocartheadless/checkout';
 import type { CheckoutGatewayAdapter, CheckoutFormSection, CheckoutGatewayPresentation } from '@cocartheadless/checkout';
-import { CheckoutContainer, ExpressBar, Address, ShippingMethods, PaymentMethods, OrderSummary, PayButton } from '@cocartheadless/checkout/react';
+import type { AppliedCoupon } from '@cocartheadless/checkout/react';
+import { CheckoutContainer, ExpressBar, Address, ShippingMethods, PaymentMethods, OrderSummary, PayButton, TermsAndConditions } from '@cocartheadless/checkout/react';
 import { mockCoCartClient } from '../mock-client.js';
 import type { BuilderState, GatewayConfig } from '../state.js';
 
@@ -47,10 +49,13 @@ interface PreviewProps {
   expressOnly: boolean;
   activeGatewayId: string | undefined;
   sections: CheckoutFormSection[];
+  freeShipping?: boolean;
+  onFreeShippingChange?: (free: boolean) => void;
 }
 
 function MobileScreen({ state, expressGateways, regularGateways, expressOnly, activeGatewayId, sections }: PreviewProps) {
   const { theme, includeOrderSummary, mobileOrderSummaryDrawer } = state;
+  const [freeShipping, setFreeShipping] = useState(false);
 
   return (
     <div className="relative overflow-hidden rounded-[38px] bg-(--cocart-color-background)">
@@ -66,15 +71,17 @@ function MobileScreen({ state, expressGateways, regularGateways, expressOnly, ac
           expressOnly={expressOnly}
           activeGatewayId={activeGatewayId}
           sections={sections}
+          freeShipping={freeShipping}
+          onFreeShippingChange={setFreeShipping}
         />
         {includeOrderSummary && !mobileOrderSummaryDrawer && (
-          <OrderSummary theme={theme} />
+          <OrderSummary theme={theme} onCouponsChange={c => setFreeShipping(c.some(x => x.freeShipping))} />
         )}
       </div>
 
       {/* Bottom bar + drawer — rendered outside scroll so bar never scrolls away */}
       {includeOrderSummary && mobileOrderSummaryDrawer && (
-        <OrderSummary theme={theme} mobileDrawer />
+        <OrderSummary theme={theme} mobileDrawer onCouponsChange={c => setFreeShipping(c.some(x => x.freeShipping))} />
       )}
 
       {/* Home indicator */}
@@ -85,7 +92,14 @@ function MobileScreen({ state, expressGateways, regularGateways, expressOnly, ac
   );
 }
 
-function CheckoutPreview({ state, expressGateways, regularGateways, expressOnly, activeGatewayId, sections }: PreviewProps) {
+function CheckoutPreview({ state, expressGateways, regularGateways, expressOnly, activeGatewayId, sections, freeShipping: freeShippingProp, onFreeShippingChange }: PreviewProps) {
+  const [freeShippingLocal, setFreeShippingLocal] = useState(false);
+  const freeShipping = freeShippingProp ?? freeShippingLocal;
+  function handleCouponsChange(coupons: AppliedCoupon[]) {
+    const free = coupons.some(c => c.freeShipping);
+    setFreeShippingLocal(free);
+    onFreeShippingChange?.(free);
+  }
   const { theme, includeOrderSummary } = state;
   const layout = state.previewViewport === 'mobile' ? 'stacked' : state.containerLayout;
 
@@ -124,7 +138,10 @@ function CheckoutPreview({ state, expressGateways, regularGateways, expressOnly,
         <Address type="shipping" section={shippingSection} theme={theme} />
       )}
       {showShipping && (
-        <ShippingMethods theme={theme} />
+        <ShippingMethods theme={theme} freeShipping={freeShipping} />
+      )}
+      {!showShipping && billingSection && (
+        <Address type="billing" section={billingSection} theme={theme} />
       )}
       {notesSection && state.includeNotes && (
         <Address type="contact" section={notesSection} theme={theme} />
@@ -137,10 +154,13 @@ function CheckoutPreview({ state, expressGateways, regularGateways, expressOnly,
         billingSection={billingSection}
         showBillingUnderPayment={showShipping}
       />
-      {!showShipping && billingSection && (
-        <Address type="billing" section={billingSection} theme={theme} />
+      {state.includeTerms ? (
+        <TermsAndConditions theme={theme}>
+          <PayButton theme={theme} />
+        </TermsAndConditions>
+      ) : (
+        <PayButton theme={theme} />
       )}
-      <PayButton theme={theme} />
     </>
   );
 
@@ -162,7 +182,7 @@ function CheckoutPreview({ state, expressGateways, regularGateways, expressOnly,
     <CheckoutContainer form={formDef} layout="two-column">
       {leftCol}
       <div className="self-stretch bg-(--cocart-color-background-alt)">
-        {includeOrderSummary && <OrderSummary theme={theme} />}
+        {includeOrderSummary && <OrderSummary theme={theme} onCouponsChange={handleCouponsChange} />}
       </div>
     </CheckoutContainer>
   );

@@ -2,12 +2,103 @@ import { useState } from 'react';
 import type { CheckoutTheme } from '../index.js';
 import { Sk } from './skeleton.js';
 
+export interface AppliedCoupon {
+  code: string;
+  /** Human-readable discount label shown in the totals, e.g. "-$10.00" or "-15%" */
+  discount: string;
+  /** Discount value in cents used to compute the adjusted total */
+  discountCents: number;
+  /** When true, shipping is shown as free and excluded from the total */
+  freeShipping?: boolean;
+}
+
+interface DiscountCodeProps {
+  theme: CheckoutTheme;
+  applied: AppliedCoupon[];
+  /** Called when the user clicks Apply. Resolve with an AppliedCoupon on success, or reject/return null to show an error. */
+  onApply: (code: string) => Promise<AppliedCoupon | null>;
+  onRemove: (code: string) => void;
+}
+
+export function DiscountCode({ theme, applied, onApply, onRemove }: DiscountCodeProps) {
+  const [code, setCode] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const inputClass = theme.inputClassName
+    ? `${theme.inputClassName} flex-1 min-w-0`
+    : 'h-(--cocart-input-height) flex-1 min-w-0 rounded-(--cocart-border-radius) border border-(--cocart-color-border) bg-(--cocart-color-surface) px-3.5 text-sm text-(--cocart-color-text) placeholder:text-(--cocart-color-text-muted) outline-none transition focus:border-(--cocart-color-primary)';
+  const btnClass = 'h-(--cocart-input-height) shrink-0 rounded-(--cocart-border-radius) border border-(--cocart-color-border) bg-(--cocart-color-background) px-4 text-sm font-medium text-(--cocart-color-text) transition hover:bg-(--cocart-color-background-hover) disabled:opacity-40';
+
+  async function handleApply() {
+    const trimmed = code.trim().toUpperCase();
+    if (!trimmed) return;
+    if (applied.some(c => c.code === trimmed)) {
+      setError('This code has already been applied.');
+      return;
+    }
+    setLoading(true);
+    setError('');
+    try {
+      const result = await onApply(trimmed);
+      if (result) {
+        setCode('');
+      } else {
+        setError('This code is invalid or has expired.');
+      }
+    } catch {
+      setError('Could not apply code. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div className="grid gap-2 mb-4">
+      <div className="flex gap-2">
+        <input
+          type="text"
+          value={code}
+          onChange={e => { setCode(e.target.value); setError(''); }}
+          onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); void handleApply(); } }}
+          placeholder="Discount code or gift card"
+          className={`${inputClass}${error ? ' border-red-400' : ''}`}
+          disabled={loading}
+        />
+        <button
+          type="button"
+          disabled={!code.trim() || loading}
+          className={btnClass}
+          onClick={() => void handleApply()}
+        >
+          {loading ? '…' : 'Apply'}
+        </button>
+      </div>
+      {error && <p className="text-xs text-red-500">{error}</p>}
+      {applied.map(coupon => (
+        <div key={coupon.code} className="flex items-center justify-between gap-2 text-sm">
+          <span className="inline-flex items-center rounded-full bg-green-50 border border-green-200 px-2.5 py-0.5 font-mono text-xs font-medium text-green-700 uppercase">
+            {coupon.code}
+          </span>
+          <button
+            type="button"
+            className="text-xs text-(--cocart-color-text-muted) underline shrink-0 ml-auto"
+            onClick={() => onRemove(coupon.code)}
+          >
+            Remove
+          </button>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 interface OrderSummaryProps {
   theme: CheckoutTheme;
   mobileDrawer?: boolean;
   loading?: boolean;
   total?: string;
   currency?: string;
+  onCouponsChange?: (coupons: AppliedCoupon[]) => void;
 }
 
 const MOCK_ITEMS = [
@@ -15,7 +106,41 @@ const MOCK_ITEMS = [
   { name: 'Product Two', variant: 'Size M / Black', qty: 2, price: '$38.00' },
 ];
 
-function SummaryContent({ theme }: { theme: CheckoutTheme }) {
+// Mock coupons for preview — real integrations replace onApply with an API call
+const MOCK_COUPONS: Record<string, { discount: string; discountCents: number; freeShipping?: boolean }> = {
+  'SAVE10':   { discount: '-$10.00',       discountCents: 1000 },
+  'SUMMER15': { discount: '-$13.05 (15%)', discountCents: 1305 },
+  'FREESHIP': { discount: 'Free shipping', discountCents: 0, freeShipping: true },
+};
+
+function SummaryContent({ theme, onCouponsChange }: { theme: CheckoutTheme; onCouponsChange?: (coupons: AppliedCoupon[]) => void }) {
+  const [coupons, setCoupons] = useState<AppliedCoupon[]>([]);
+
+  function updateCoupons(next: AppliedCoupon[]) {
+    setCoupons(next);
+    onCouponsChange?.(next);
+  }
+
+  async function handleApplyAndAdd(code: string): Promise<AppliedCoupon | null> {
+    await new Promise(r => setTimeout(r, 600));
+    const mock = MOCK_COUPONS[code];
+    if (!mock) return null;
+    const coupon: AppliedCoupon = { code, discount: mock.discount, discountCents: mock.discountCents, freeShipping: mock.freeShipping };
+    updateCoupons([...coupons, coupon]);
+    return coupon;
+  }
+
+  function handleRemove(code: string) {
+    updateCoupons(coupons.filter(c => c.code !== code));
+  }
+
+  const subtotalCents = 8700;
+  const taxCents = 870;
+  const hasFreeShipping = coupons.some(c => c.freeShipping);
+  const totalDiscountCents = coupons.reduce((sum, c) => sum + (Number(c.discountCents) || 0), 0);
+  const totalCents = subtotalCents - totalDiscountCents + taxCents;
+  const fmt = (cents: number) => `$${(cents / 100).toFixed(2)}`;
+
   return (
     <div className={theme.orderSummaryClassName ?? ''}>
       <div className="grid gap-4 mb-6">
@@ -36,29 +161,50 @@ function SummaryContent({ theme }: { theme: CheckoutTheme }) {
         ))}
       </div>
 
+      <DiscountCode
+        theme={theme}
+        applied={coupons}
+        onApply={handleApplyAndAdd}
+        onRemove={handleRemove}
+      />
+
       <div className="border-t border-(--cocart-color-border) pt-4 grid gap-2.5">
         <div className="flex justify-between text-sm text-(--cocart-color-text)">
-          <span>Subtotal</span>
-          <span>$87.00</span>
+          <span>Subtotal · 2 items</span>
+          <span>{fmt(subtotalCents)}</span>
         </div>
+        {coupons.filter(c => !c.freeShipping).map(coupon => (
+          <div key={coupon.code} className="flex justify-between text-sm">
+            <span className="text-green-600">Discount ({coupon.code})</span>
+            <span className="text-green-600 font-medium">-{fmt(coupon.discountCents)}</span>
+          </div>
+        ))}
+        {hasFreeShipping && (
+          <div className="flex justify-between text-sm">
+            <span className="text-green-600">Discount ({coupons.find(c => c.freeShipping)?.code})</span>
+            <span className="text-green-600 font-medium">Free</span>
+          </div>
+        )}
         <div className="flex justify-between text-sm">
           <span className="text-(--cocart-color-text)">Shipping</span>
-          <span className="text-(--cocart-color-text-muted)">Calculated at next step</span>
+          <span className={hasFreeShipping ? 'line-through text-(--cocart-color-text-muted)' : 'text-(--cocart-color-text-muted)'}>
+            {hasFreeShipping ? 'Free' : 'Enter shipping address'}
+          </span>
         </div>
         <div className="flex justify-between text-sm text-(--cocart-color-text)">
           <span>Taxes</span>
-          <span>$8.70</span>
+          <span>{fmt(taxCents)}</span>
         </div>
         <div className="flex justify-between text-base font-semibold text-(--cocart-color-text) border-t border-(--cocart-color-border) pt-3 mt-1">
           <span>Total</span>
-          <span>USD $95.70</span>
+          <span>USD {fmt(totalCents)}</span>
         </div>
       </div>
     </div>
   );
 }
 
-export function OrderSummary({ theme, mobileDrawer = false, loading = false, total = 'USD $95.70', currency: _currency }: OrderSummaryProps) {
+export function OrderSummary({ theme, mobileDrawer = false, loading = false, total = 'USD $95.70', currency: _currency, onCouponsChange }: OrderSummaryProps) {
   const [drawerOpen, setDrawerOpen] = useState(false);
 
   if (loading) {
@@ -103,7 +249,7 @@ export function OrderSummary({ theme, mobileDrawer = false, loading = false, tot
   }
 
   if (!mobileDrawer) {
-    return <SummaryContent theme={theme} />;
+    return <SummaryContent theme={theme} onCouponsChange={onCouponsChange} />;
   }
 
   return (
@@ -154,7 +300,7 @@ export function OrderSummary({ theme, mobileDrawer = false, loading = false, tot
                 </svg>
               </button>
             </div>
-            <SummaryContent theme={theme} />
+            <SummaryContent theme={theme} onCouponsChange={onCouponsChange} />
           </div>
         </div>
       )}
