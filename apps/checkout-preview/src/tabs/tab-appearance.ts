@@ -7,15 +7,15 @@ const THEME_PRESETS = [
   {
     id: 'modern' as const,
     name: 'Modern',
-    description: 'Clean two-column layout inspired by Shopify checkout',
+    description: 'Clean two-column layout inspired by Shopify',
     badge: 'Default',
     badgeClass: 'bg-emerald-100 text-emerald-700',
   },
   {
     id: 'tailwind' as const,
     name: 'daisyUI',
-    description: 'Responsive 2-column grid with slate palette',
-    badge: 'Popular',
+    description: 'Responsive grid with slate palette',
+    badge: 'Alternative',
     badgeClass: 'bg-violet-100 text-violet-700',
   },
   {
@@ -403,9 +403,9 @@ function buildAppearanceTab(store: StateStore): HTMLElement {
   paymentLayoutGrid.className = 'grid grid-cols-3 gap-2';
 
   const paymentLayouts: { id: 'radio' | 'tabs' | 'accordion'; name: string; desc: string }[] = [
-    { id: 'radio',     name: 'Radio',     desc: 'Stacked list' },
-    { id: 'tabs',      name: 'Tabs',      desc: 'Tab bar' },
-    { id: 'accordion', name: 'Accordion', desc: 'Expandable' },
+    { id: 'tabs',      name: 'Tabs',      desc: 'Displays horizontally' },
+    { id: 'radio',     name: 'Accordion',     desc: 'Displays vertically' },
+    { id: 'accordion', name: 'Accordion', desc: 'Displays vertically without buttons' },
   ];
 
   paymentLayouts.forEach(pl => {

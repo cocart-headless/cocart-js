@@ -227,6 +227,8 @@ export interface CheckoutGatewayRenderContext {
   gatewayId: string;
   remoteMethod?: CheckoutPaymentMethod;
   theme: CheckoutTheme;
+  /** Whether the checkout is collecting a shipping address. Pass to express gateways so they can request shipping from the wallet (e.g. Stripe `requestShipping`). */
+  collectShippingAddress: boolean;
   /** Success URL with `{CHECKOUT_ID}` already substituted if a checkout ID is available, otherwise the raw template. */
   successUrl?: string;
   /** Return URL for failed or cancelled payments. */

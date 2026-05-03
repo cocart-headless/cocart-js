@@ -73,9 +73,27 @@ import { Address } from '@cocartheadless/checkout/react';
 
 ## `<ExpressBar>`
 
-Renders express checkout buttons (Apple Pay, Google Pay, etc.) as placeholder boxes. In a two-column layout it appears above the main form with an "or" divider. In `expressOnly` mode it centres on screen with a description line and no divider.
+Renders actual express checkout buttons from registered gateway adapters — Apple Pay, Google Pay, Link, etc. — by delegating rendering to a `renderExpressField` prop you provide. Falls back to placeholder boxes when no renderer is given (useful in previews and tests).
+
+In a two-column layout it appears above the main form with an "or" divider. In `expressOnly` mode it centres on screen with a description line and no divider.
 
 ```tsx
+// With real gateway buttons (production)
+const bar = client.checkout.createExpressCheckoutBar();
+
+<ExpressBar
+  gateways={expressGateways}
+  theme={theme}
+  expressFields={bar.gateways}
+  renderExpressField={({ field, gatewayId }) => {
+    if (field.component === 'StripeExpressCheckoutElement') {
+      return <div id="stripe-express-checkout-element" />;
+    }
+    return null;
+  }}
+/>
+
+// Preview / skeleton (no renderer — shows placeholder boxes)
 <ExpressBar gateways={expressGateways} theme={theme} />
 <ExpressBar gateways={expressGateways} theme={theme} expressOnly />
 ```
@@ -84,11 +102,48 @@ Renders express checkout buttons (Apple Pay, Google Pay, etc.) as placeholder bo
 
 | Prop | Type | Default | Description |
 |---|---|---|---|
-| `gateways` | `CheckoutGatewayPresentation[]` | required | Express gateway list |
+| `gateways` | `CheckoutGatewayPresentation[]` | required | Express gateway list from `listExpressGateways()` |
 | `theme` | `CheckoutTheme` | required | Controls `sectionClassName`, `expressCheckoutBarClassName` |
 | `expressOnly` | `boolean` | `false` | Centred layout with no "or" divider — use when no regular gateways are enabled |
+| `expressFields` | `{ id: string; label: string; fields: CheckoutFormField[] }[]` | — | Gateway fields from `createExpressCheckoutBar().gateways`. Required for `renderExpressField` to receive field data |
+| `renderExpressField` | `(ctx: ExpressFieldRenderContext) => React.ReactNode` | — | Render prop called for each `gateway-element` field. Mount the provider's express button here |
 
 `CheckoutGatewayPresentation` is returned by `client.checkout.listExpressGateways()`.
+
+### `ExpressFieldRenderContext`
+
+```ts
+interface ExpressFieldRenderContext {
+  field: CheckoutFormField;   // The gateway-element field (includes field.component, field.props)
+  gatewayId: string;          // e.g. 'stripe-express'
+  gatewayLabel: string;       // e.g. 'Express Checkout'
+}
+```
+
+### Shipping address from the wallet
+
+When `collectShippingAddress` is set on the checkout client, it is passed into `getExpressFields()` via the render context. The Stripe express gateway uses it to set `requestShipping: true` on the `StripeExpressCheckoutElement` field props, which triggers the wallet's address sheet.
+
+```tsx
+// field.props.requestShipping is automatically set by createStripeExpressGateway
+// based on the collectShippingAddress option you passed to createCheckout()
+const bar = client.checkout.createExpressCheckoutBar();
+// bar.gateways[0].fields[0].props → { requestShipping: true }
+```
+
+Pass `field.props` through to your Stripe element mount options:
+
+```tsx
+renderExpressField={({ field }) => {
+  if (field.component === 'StripeExpressCheckoutElement') {
+    // Mount the element — Stripe reads requestShipping from the Elements options
+    return <div id="stripe-express-checkout-element" />;
+  }
+  return null;
+}}
+```
+
+> The `requestShipping` value is already wired into the `ExpressCheckoutElement` when you initialize it via Stripe's `elements.create('expressCheckout', { ... })`. You do not need to pass it again at mount time — it comes from the `elements` instance you created with `mode: 'shipping'` or the Stripe `shippingAddressRequired` option.
 
 ---
 

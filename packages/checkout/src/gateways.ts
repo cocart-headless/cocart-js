@@ -118,13 +118,14 @@ export function createStripeExpressGateway(options: StripeExpressGatewayOptions)
     supports: ['payment_context', 'payment_intents', 'express_checkout'],
     express: true,
     expressCheckoutPriority: options.expressCheckoutPriority ?? 10,
-    getExpressFields: ({ theme }) => [
+    getExpressFields: ({ theme, collectShippingAddress }) => [
       {
         name: 'payment_data.express_element',
         label: 'Express checkout',
         type: 'gateway-element',
         component: 'StripeExpressCheckoutElement',
         className: theme.paymentContainerClassName,
+        props: { requestShipping: collectShippingAddress },
       },
     ],
     tokenize: async ({ paymentContext, successUrl, returnUrl }) => {

@@ -111,6 +111,7 @@ import { createCheckout, createStripeExpressGateway } from '@cocartheadless/chec
 const client = new CoCart('https://your-store.com').use(createCheckout({
   successUrl: 'https://your-store.com/order-complete?id={CHECKOUT_ID}',
   returnUrl: 'https://your-store.com/checkout',
+  collectShippingAddress: true, // passed to the express element as requestShipping
   gatewayAdapters: [
     createStripeExpressGateway({ stripe, elements }),
   ],
@@ -126,6 +127,17 @@ const client = new CoCart('https://your-store.com').use(createCheckout({
 | `expressCheckoutPriority` | `number` | `10` | Lower = shown first in the bar |
 
 The adapter id is `'stripe-express'`, distinct from the standard `'stripe'` card gateway.
+
+### Shipping address collection
+
+When `collectShippingAddress: true` is set on the checkout client, the SDK passes `requestShipping: true` into the `StripeExpressCheckoutElement` field props automatically. The wallet (Apple Pay / Google Pay) will then show an address sheet to the customer.
+
+```ts
+const bar = client.checkout.createExpressCheckoutBar();
+// bar.gateways[0].fields[0].props.requestShipping === true (when collectShippingAddress is true)
+```
+
+You do not need to set this manually — it flows from `createCheckout({ collectShippingAddress })` through `getExpressFields()` via the render context.
 
 ---
 
@@ -200,35 +212,62 @@ const paypalExpressAdapter = {
 ## Recommended pattern
 
 ```ts
+import { loadStripe } from '@stripe/stripe-js';
 import { CoCart } from '@cocartheadless/sdk';
 import { createCheckout, createStripeExpressGateway, createStripeGateway } from '@cocartheadless/checkout';
+import { ExpressBar } from '@cocartheadless/checkout/react';
+
+const stripe = await loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
+const elements = stripe.elements({ mode: 'payment', currency: 'usd', amount: 0 });
 
 const client = new CoCart('https://your-store.com').use(createCheckout({
   successUrl: 'https://your-store.com/order-complete?id={CHECKOUT_ID}',
   returnUrl: 'https://your-store.com/checkout',
+  collectShippingAddress: true,
   gatewayAdapters: [
-    // Standard card form gateway
     createStripeGateway({ stripe, elements }),
-    // Express buttons gateway
-    createStripeExpressGateway({ stripe, expressElements }),
+    createStripeExpressGateway({ stripe, elements }),
   ],
 }));
 
 // Render the express bar above the main form
-const bar = client.checkout.createExpressCheckoutBar({ layout: 'scroll' });
-
+const expressGateways = client.checkout.listExpressGateways();
+const bar = client.checkout.createExpressCheckoutBar();
 // bar.gateways[0].fields[0].component === 'StripeExpressCheckoutElement'
-// Mount the element, listen for the express checkout confirmation event,
-// then call submit() with the express gateway id.
+// bar.gateways[0].fields[0].props.requestShipping === true (because collectShippingAddress: true)
+```
 
-const { processResponse } = await client.checkout.submit({
-  gatewayId: 'stripe-express',
+Pass the bar's gateway fields to `<ExpressBar>` and mount the Stripe element in `renderExpressField`:
+
+```tsx
+<ExpressBar
+  gateways={expressGateways}
+  theme={theme}
+  expressFields={bar.gateways}
+  renderExpressField={({ field }) => {
+    if (field.component === 'StripeExpressCheckoutElement') {
+      return <div id="stripe-express-checkout-element" />;
+    }
+    return null;
+  }}
+/>
+```
+
+Then mount the Stripe element to that container and listen for the confirm event:
+
+```ts
+const expressElement = elements.create('expressCheckout');
+expressElement.mount('#stripe-express-checkout-element');
+
+expressElement.on('confirm', async () => {
+  const { processResponse } = await client.checkout.submit({
+    gatewayId: 'stripe-express',
+  });
+  const result = processResponse.toObject();
+  if (result.payment_result?.redirect_url) {
+    window.location.href = result.payment_result.redirect_url;
+  }
 });
-
-const result = processResponse.toObject();
-if (result.payment_result?.redirect_url) {
-  window.location.href = result.payment_result.redirect_url;
-}
 ```
 
 > [!NOTE]

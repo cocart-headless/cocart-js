@@ -135,6 +135,7 @@ export class CheckoutClient implements CheckoutSDK {
             checkout: this,
             gatewayId: adapter.id,
             theme,
+            collectShippingAddress: this.collectShippingAddress,
             successUrl: this.successUrl,
             returnUrl: this.returnUrl,
           }) ?? [],
@@ -324,6 +325,7 @@ export class CheckoutClient implements CheckoutSDK {
             checkout: this,
             gatewayId,
             theme,
+            collectShippingAddress: this.collectShippingAddress,
             successUrl: this.successUrl,
             returnUrl: this.returnUrl,
           }) ?? [
