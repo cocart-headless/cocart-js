@@ -2,7 +2,7 @@
 @plugin "daisyui";
 
 @source "../../packages/checkout/src/presets.ts";
-@source inline("bg-(--cocart-color-background-alt) bg-(--cocart-color-background-hover) bg-(--cocart-color-button) text-(--cocart-color-button-text) line-through text-red-500 text-green-500 text-green-600");
+@source inline("bg-(--cocart-color-background-alt) bg-(--cocart-color-background-hover) bg-(--cocart-color-button) text-(--cocart-color-button-text) line-through text-red-500 text-green-500 text-green-600 border-red-400 focus:border-red-400");
 
 @theme {
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;

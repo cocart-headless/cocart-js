@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import type { CheckoutFormSection, CheckoutFormField, CheckoutTheme } from '../types.js';
-import { COUNTRIES, countryFlag } from './countries.js';
+import { COUNTRIES, countryFlag, detectCountryFromPhone } from './countries.js';
 import { Sk } from './skeleton.js';
 
 interface AddressProps {
@@ -67,6 +67,73 @@ function CountrySelect({ field, inputClass }: { field: CheckoutFormField; inputC
   );
 }
 
+function PhoneInput({ field, inputClass }: { field: CheckoutFormField; inputClass: string }) {
+  const [value, setValue] = useState('');
+  const [countryCode, setCountryCode] = useState<string | null>(null);
+
+  function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const val = e.target.value;
+    setValue(val);
+    if (val.startsWith('+')) {
+      setCountryCode(detectCountryFromPhone(val));
+    } else {
+      setCountryCode(null);
+    }
+  }
+
+  return (
+    <div className="relative">
+      {countryCode && (
+        <span className="pointer-events-none absolute top-1/2 -translate-y-1/2 text-lg leading-none select-none" style={{ left: '14px' }}>
+          {countryFlag(countryCode)}
+        </span>
+      )}
+      <input
+        type="tel"
+        name={field.name}
+        autoComplete={field.autoComplete}
+        required={field.required}
+        placeholder={field.placeholder ?? field.label}
+        value={value}
+        onChange={handleChange}
+        className={inputClass}
+        style={countryCode ? { paddingLeft: '2.25rem' } : undefined}
+      />
+    </div>
+  );
+}
+
+function EmailInput({ field, inputClass, helperClass }: { field: CheckoutFormField; inputClass: string; helperClass: string }) {
+  const [value, setValue] = useState('');
+  const [showError, setShowError] = useState(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+
+  useEffect(() => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+    if (value.length === 0) { setShowError(false); return; }
+    timerRef.current = setTimeout(() => setShowError(!isValid), 1000);
+    return () => { if (timerRef.current) clearTimeout(timerRef.current); };
+  }, [value, isValid]);
+
+  return (
+    <>
+      <input
+        type="email"
+        name={field.name}
+        autoComplete={field.autoComplete}
+        required={field.required}
+        placeholder={field.placeholder ?? field.label}
+        value={value}
+        onChange={e => { setValue(e.target.value); if (showError && isValid) setShowError(false); }}
+        className={`${inputClass}${showError ? ' border-red-400 focus:border-red-400' : ''}`}
+      />
+      {showError && <p className="text-xs text-red-500 mt-1">Please enter a valid email address.</p>}
+      {!showError && field.description && <p className={helperClass}>{field.description}</p>}
+    </>
+  );
+}
+
 function Field({ field, theme }: { field: CheckoutFormField; theme: CheckoutTheme }) {
   if (field.hidden) return null;
 
@@ -128,10 +195,18 @@ function Field({ field, theme }: { field: CheckoutFormField; theme: CheckoutThem
     );
   }
 
+  if (field.type === 'tel') {
+    return <PhoneInput field={field} inputClass={inputClass} />;
+  }
+
+  if (field.type === 'email') {
+    return <EmailInput field={field} inputClass={inputClass} helperClass={helperClass} />;
+  }
+
   return (
     <>
       <input
-        type={field.type === 'email' ? 'email' : field.type === 'tel' ? 'tel' : 'text'}
+        type="text"
         name={field.name}
         autoComplete={field.autoComplete}
         required={field.required}
