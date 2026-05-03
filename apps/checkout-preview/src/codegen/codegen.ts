@@ -162,7 +162,8 @@ function buildJsxCode(state: BuilderState): string {
   });
 
   if (regularGateways.length > 0) {
-    lines.push('      <PaymentMethods gateways={gateways} theme={form.theme} />');
+    const paymentLayoutProp = state.paymentLayout !== 'radio' ? ` layout="${state.paymentLayout}"` : '';
+    lines.push(`      <PaymentMethods gateways={gateways} theme={form.theme}${paymentLayoutProp} />`);
   }
 
   if (state.includeOrderSummary) {

@@ -396,6 +396,58 @@ function buildAppearanceTab(store: StateStore): HTMLElement {
 
   panel.appendChild(layoutGrid);
 
+  // ── Payment layout ────────────────────────────────────────────────────────
+  panel.appendChild(buildSectionHeading('Payment Layout'));
+
+  const paymentLayoutGrid = document.createElement('div');
+  paymentLayoutGrid.className = 'grid grid-cols-3 gap-2';
+
+  const paymentLayouts: { id: 'radio' | 'tabs' | 'accordion'; name: string; desc: string }[] = [
+    { id: 'radio',     name: 'Radio',     desc: 'Stacked list' },
+    { id: 'tabs',      name: 'Tabs',      desc: 'Tab bar' },
+    { id: 'accordion', name: 'Accordion', desc: 'Expandable' },
+  ];
+
+  paymentLayouts.forEach(pl => {
+    const card = document.createElement('button');
+    card.type = 'button';
+    card.dataset['paymentLayoutId'] = pl.id;
+    const isActive = state.paymentLayout === pl.id;
+    card.className = `flex flex-col items-start rounded-xl border px-3 py-3 text-left transition gap-1 ${
+      isActive
+        ? 'border-violet-500 bg-violet-50 ring-1 ring-violet-500'
+        : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50'
+    }`;
+
+    const nameEl = document.createElement('p');
+    nameEl.className = 'text-xs font-medium text-slate-900';
+    nameEl.textContent = pl.name;
+
+    const descEl = document.createElement('p');
+    descEl.className = 'text-xs text-slate-400 leading-snug';
+    descEl.textContent = pl.desc;
+
+    card.appendChild(nameEl);
+    card.appendChild(descEl);
+
+    card.addEventListener('click', () => {
+      if (store.get().paymentLayout === pl.id) return;
+      store.update({ paymentLayout: pl.id });
+      paymentLayoutGrid.querySelectorAll<HTMLButtonElement>('[data-payment-layout-id]').forEach(c => {
+        const active = c.dataset['paymentLayoutId'] === pl.id;
+        c.className = `flex flex-col items-start rounded-xl border px-3 py-3 text-left transition gap-1 ${
+          active
+            ? 'border-violet-500 bg-violet-50 ring-1 ring-violet-500'
+            : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50'
+        }`;
+      });
+    });
+
+    paymentLayoutGrid.appendChild(card);
+  });
+
+  panel.appendChild(paymentLayoutGrid);
+
   // ── Preset selector ───────────────────────────────────────────────────────
   panel.appendChild(buildSectionHeading('Theme Preset'));
 

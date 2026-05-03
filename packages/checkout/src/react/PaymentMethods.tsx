@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import type { CheckoutFormSection, CheckoutTheme, CheckoutGatewayPresentation } from '../index.js';
 import { Address } from './Address.js';
 import { Sk } from './skeleton.js';
@@ -47,6 +47,37 @@ const Icons = {
       <rect x="44" y="46" width="18" height="10" rx="3" fill="#94A3B8"/>
     </svg>
   ),
+  bank: (
+    <svg width="38" height="24" viewBox="0 0 38 24" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Bank transfer">
+      <rect width="38" height="24" rx="4" fill="#F8FAFC"/>
+      <path d="M19 5L29 10H9L19 5Z" stroke="#64748B" strokeWidth="1.2" strokeLinejoin="round" fill="#E2E8F0"/>
+      <rect x="11" y="11" width="2.5" height="7" rx="0.5" fill="#64748B"/>
+      <rect x="15" y="11" width="2.5" height="7" rx="0.5" fill="#64748B"/>
+      <rect x="19" y="11" width="2.5" height="7" rx="0.5" fill="#64748B"/>
+      <rect x="23" y="11" width="2.5" height="7" rx="0.5" fill="#64748B"/>
+      <rect x="9" y="18.5" width="20" height="1.5" rx="0.5" fill="#64748B"/>
+    </svg>
+  ),
+  cheque: (
+    <svg width="38" height="24" viewBox="0 0 38 24" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Cheque">
+      <rect width="38" height="24" rx="4" fill="#F8FAFC"/>
+      <rect x="5" y="6" width="28" height="12" rx="2" stroke="#64748B" strokeWidth="1.2" fill="none"/>
+      <rect x="8" y="9.5" width="8" height="1.5" rx="0.5" fill="#64748B"/>
+      <rect x="8" y="12.5" width="14" height="1" rx="0.5" fill="#94A3B8"/>
+      <rect x="8" y="14.5" width="10" height="1" rx="0.5" fill="#94A3B8"/>
+      <rect x="25" y="8.5" width="5" height="4" rx="1" fill="#E2E8F0" stroke="#94A3B8" strokeWidth="0.8"/>
+    </svg>
+  ),
+  cod: (
+    <svg width="38" height="24" viewBox="0 0 38 24" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Cash on delivery">
+      <rect width="38" height="24" rx="4" fill="#F8FAFC"/>
+      <rect x="5" y="8" width="20" height="12" rx="2" stroke="#64748B" strokeWidth="1.2" fill="none"/>
+      <circle cx="15" cy="14" r="3" stroke="#64748B" strokeWidth="1.2" fill="none"/>
+      <circle cx="15" cy="14" r="1" fill="#64748B"/>
+      <path d="M27 6c2 0 6 1.5 6 6s-4 6-6 6" stroke="#64748B" strokeWidth="1.2" strokeLinecap="round" fill="none"/>
+      <path d="M27 9.5c1 0 3 0.8 3 2.5s-2 2.5-3 2.5" stroke="#94A3B8" strokeWidth="1" strokeLinecap="round" fill="none"/>
+    </svg>
+  ),
 };
 
 type IconKey = keyof typeof Icons;
@@ -62,8 +93,10 @@ function gatewayIcons(gw: CheckoutGatewayPresentation): IconKey[] {
   if (id.includes('visa')) return ['visa'];
   if (id.includes('mastercard')) return ['mastercard'];
   if (id.includes('amex') || id.includes('american')) return ['amex'];
-  if (gw.supports.includes('offline')) return [];
-  // Generic card gateway
+  if (id.includes('bacs') || id.includes('bank')) return ['bank'];
+  if (id.includes('cheque') || id.includes('check')) return ['cheque'];
+  if (id.includes('cod') || id.includes('delivery') || id.includes('cash')) return ['cod'];
+  if (gw.supports.includes('offline')) return ['bank'];
   return ['card'];
 }
 
@@ -75,6 +108,177 @@ interface PaymentMethodsProps {
   billingSection?: CheckoutFormSection;
   showBillingUnderPayment?: boolean;
   loading?: boolean;
+  layout?: 'radio' | 'tabs' | 'accordion';
+}
+
+interface LayoutProps {
+  gateways: CheckoutGatewayPresentation[];
+  activeId: string;
+  onSelect: (id: string) => void;
+  paymentSection?: CheckoutFormSection;
+  helperClass: string;
+  paymentContainerClass: string;
+}
+
+function PaymentFields({ fields, helperClass, paymentContainerClass }: { fields: CheckoutFormSection['fields']; helperClass: string; paymentContainerClass: string }) {
+  const visible = fields.filter(f => !f.hidden);
+  if (visible.length === 0) return null;
+  return (
+    <div className={paymentContainerClass}>
+      {visible.map(field => (
+        <div key={field.name} className="flex items-center justify-center min-h-16">
+          <span className={helperClass}>[{field.label}]</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function RadioLayout({ gateways, activeId, onSelect, paymentSection, helperClass, paymentContainerClass }: LayoutProps) {
+  return (
+    <div className="mb-4 rounded-(--cocart-border-radius) border border-(--cocart-color-border) overflow-hidden">
+      {gateways.map((gw, i) => {
+        const icons = gatewayIcons(gw);
+        const selected = gw.id === activeId;
+        return (
+          <div key={gw.id} className={i > 0 ? 'border-t border-(--cocart-color-border)' : ''}>
+            <label className={`flex items-center gap-3 px-4 py-3.5 text-sm cursor-pointer transition ${selected ? 'bg-(--cocart-color-background-hover)' : 'bg-(--cocart-color-surface) hover:bg-(--cocart-color-background-hover)'}`}>
+              <input type="radio" name="payment_method" value={gw.id} checked={selected} onChange={() => onSelect(gw.id)} className="h-4 w-4 shrink-0 accent-(--cocart-color-primary)" />
+              <div className="flex flex-col flex-1 min-w-0">
+                <span className="font-medium text-(--cocart-color-text)">{gw.label}</span>
+                {gw.description && <span className={helperClass}>{gw.description}</span>}
+              </div>
+              {icons.length > 0 && (
+                <span className="flex items-center gap-1 shrink-0">
+                  {icons.map(key => <span key={key}>{Icons[key]}</span>)}
+                </span>
+              )}
+            </label>
+            {selected && !gw.supports.includes('offline') && paymentSection && (
+              <div className="border-t border-(--cocart-color-border) px-4 py-4">
+                <PaymentFields fields={paymentSection.fields} helperClass={helperClass} paymentContainerClass={paymentContainerClass} />
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function TabsLayout({ gateways, activeId, onSelect, paymentSection, helperClass, paymentContainerClass }: LayoutProps) {
+  const activeGw = gateways.find(g => g.id === activeId);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const dragRef = useRef({ dragging: false, startX: 0, scrollLeft: 0, moved: false });
+
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+
+    function onMouseMove(e: MouseEvent) {
+      const d = dragRef.current;
+      if (!d.dragging) return;
+      e.preventDefault();
+      const walk = e.pageX - d.startX;
+      if (Math.abs(walk) > 4) d.moved = true;
+      el!.scrollLeft = d.scrollLeft - walk;
+    }
+
+    function onMouseUp() {
+      dragRef.current.dragging = false;
+      el!.style.cursor = 'grab';
+    }
+
+    document.addEventListener('mousemove', onMouseMove);
+    document.addEventListener('mouseup', onMouseUp);
+    return () => {
+      document.removeEventListener('mousemove', onMouseMove);
+      document.removeEventListener('mouseup', onMouseUp);
+    };
+  }, []);
+
+  function onMouseDown(e: React.MouseEvent) {
+    const el = scrollRef.current;
+    if (!el) return;
+    dragRef.current = { dragging: true, startX: e.pageX, scrollLeft: el.scrollLeft, moved: false };
+    el.style.cursor = 'grabbing';
+  }
+
+  return (
+    <div className="mb-4">
+      <div
+        ref={scrollRef}
+        className="flex gap-2 pb-3 select-none"
+        style={{ cursor: 'grab', WebkitOverflowScrolling: 'touch', overflowX: 'auto', width: '100%', msOverflowStyle: 'none', scrollbarWidth: 'none' } as React.CSSProperties}
+        onMouseDown={onMouseDown}
+      >
+        {gateways.map(gw => {
+          const icons = gatewayIcons(gw);
+          const selected = gw.id === activeId;
+          const icon = icons[0];
+          return (
+            <button
+              key={gw.id}
+              type="button"
+              onClick={() => { if (!dragRef.current.moved) onSelect(gw.id); }}
+              className={`flex flex-col items-center justify-center gap-1.5 rounded-(--cocart-border-radius) border-2 px-4 py-3 text-xs font-medium whitespace-nowrap shrink-0 min-w-24 transition ${selected ? 'border-(--cocart-color-primary) text-(--cocart-color-text)' : 'border-(--cocart-color-border) text-(--cocart-color-text-muted) hover:border-(--cocart-color-text-muted)'}`}
+            >
+              {icon ? <span className="block">{Icons[icon]}</span> : <span className="h-6" />}
+              <span>{gw.label}</span>
+            </button>
+          );
+        })}
+      </div>
+      {(activeGw?.supports.includes('offline') || paymentSection) && (
+        <div className="mt-2">
+          {activeGw?.supports.includes('offline') ? (
+            <p className={helperClass}>{activeGw.description ?? 'No additional details required.'}</p>
+          ) : paymentSection ? (
+            <PaymentFields fields={paymentSection.fields} helperClass={helperClass} paymentContainerClass={paymentContainerClass} />
+          ) : null}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function AccordionLayout({ gateways, activeId, onSelect, paymentSection, helperClass, paymentContainerClass }: LayoutProps) {
+  return (
+    <div className="mb-4 rounded-(--cocart-border-radius) border border-(--cocart-color-border) overflow-hidden">
+      {gateways.map((gw, i) => {
+        const icons = gatewayIcons(gw);
+        const selected = gw.id === activeId;
+        const hasFields = !gw.supports.includes('offline') && paymentSection && paymentSection.fields.some(f => !f.hidden);
+        return (
+          <div key={gw.id} className={`${i > 0 ? 'border-t border-(--cocart-color-border)' : ''} ${selected ? 'bg-(--cocart-color-background-hover)' : 'bg-(--cocart-color-surface)'}`}>
+            <button
+              type="button"
+              onClick={() => onSelect(gw.id)}
+              className="w-full flex items-center gap-3 px-4 py-3.5 text-sm text-left transition hover:bg-(--cocart-color-background-hover)"
+            >
+              <div className="flex flex-col flex-1 min-w-0">
+                <span className="font-medium text-(--cocart-color-text)">{gw.label}</span>
+                {gw.description && <span className={helperClass}>{gw.description}</span>}
+              </div>
+              {icons.length > 0 && (
+                <span className="flex items-center gap-1 shrink-0">
+                  {icons.map(key => <span key={key}>{Icons[key]}</span>)}
+                </span>
+              )}
+              {hasFields && (
+                <svg className={`h-4 w-4 shrink-0 text-(--cocart-color-text-muted) transition-transform ${selected ? 'rotate-180' : ''}`} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M4 6l4 4 4-4"/></svg>
+              )}
+            </button>
+            {selected && hasFields && (
+              <div className="px-4 pb-4">
+                <PaymentFields fields={paymentSection!.fields} helperClass={helperClass} paymentContainerClass={paymentContainerClass} />
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
 }
 
 export function PaymentMethods({
@@ -85,7 +289,9 @@ export function PaymentMethods({
   billingSection,
   showBillingUnderPayment = true,
   loading = false,
+  layout = 'radio',
 }: PaymentMethodsProps) {
+  const [activeId, setActiveId] = useState(activeGatewayId ?? (gateways.length > 0 ? gateways[0].id : ''));
   const [billingSameAsShipping, setBillingSameAsShipping] = useState(true);
 
   if (loading) {
@@ -111,28 +317,16 @@ export function PaymentMethods({
 
   if (gateways.length === 0 && !paymentSection) return null;
 
-  const activeId = activeGatewayId ?? (gateways.length > 0 ? gateways[0].id : undefined);
   const helperClass = theme.helperTextClassName ?? 'text-xs text-(--cocart-color-text-muted)';
+  const paymentContainerClass = theme.paymentContainerClassName ?? 'rounded-(--cocart-border-radius) border border-dashed border-(--cocart-color-border) bg-(--cocart-color-background-hover) p-4';
 
-  const GatewayRow = ({ gw, selected, border }: { gw: CheckoutGatewayPresentation; selected: boolean; border: boolean }) => {
-    const icons = gatewayIcons(gw);
-    return (
-      <label className={`flex items-center gap-3 px-4 py-3.5 text-sm cursor-pointer transition ${border ? 'border-t border-(--cocart-color-border)' : ''} ${selected ? 'bg-(--cocart-color-background-hover)' : 'bg-(--cocart-color-surface) hover:bg-(--cocart-color-background-hover)'}`}>
-        <input type="radio" name="payment_method" value={gw.id} defaultChecked={selected} className="h-4 w-4 shrink-0 accent-(--cocart-color-primary)" />
-        <div className="flex flex-col flex-1 min-w-0">
-          <span className="font-medium text-(--cocart-color-text)">{gw.label}</span>
-          {gw.description && <span className={helperClass}>{gw.description}</span>}
-        </div>
-        {gw.supports.includes('offline') && (
-          <span className="rounded-full bg-(--cocart-color-background-hover) px-2 py-0.5 text-xs text-(--cocart-color-text-muted) shrink-0">Offline</span>
-        )}
-        {icons.length > 0 && (
-          <span className="flex items-center gap-1 shrink-0">
-            {icons.map(key => <span key={key}>{Icons[key]}</span>)}
-          </span>
-        )}
-      </label>
-    );
+  const layoutProps: LayoutProps = {
+    gateways,
+    activeId,
+    onSelect: setActiveId,
+    paymentSection,
+    helperClass,
+    paymentContainerClass,
   };
 
   return (
@@ -140,27 +334,12 @@ export function PaymentMethods({
       <h2 className="mb-1 text-base font-bold text-(--cocart-color-text)">Payment</h2>
       <p className={`mb-4 ${helperClass}`}>All transactions are secure and encrypted.</p>
 
-      {gateways.length > 0 && (
-        <div className="mb-4 rounded-(--cocart-border-radius) border border-(--cocart-color-border) overflow-hidden">
-          {gateways.map((gw, i) => (
-            <GatewayRow key={gw.id} gw={gw} selected={gw.id === activeId} border={i > 0} />
-          ))}
-          {gateways.length === 1 && !gateways[0].supports.includes('offline') && paymentSection && (
-            <div className="border-t border-(--cocart-color-border) px-4 py-4">
-              <div className={theme.paymentContainerClassName ?? 'rounded-(--cocart-border-radius) border border-dashed border-(--cocart-color-border) bg-(--cocart-color-background-hover) p-4'}>
-                {paymentSection.fields.filter(f => !f.hidden).map(field => (
-                  <div key={field.name} className="flex items-center justify-center min-h-16">
-                    <span className={helperClass}>[{field.label}]</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-      )}
+      {gateways.length > 0 && layout === 'radio' && <RadioLayout {...layoutProps} />}
+      {gateways.length > 0 && layout === 'tabs' && <TabsLayout {...layoutProps} />}
+      {gateways.length > 0 && layout === 'accordion' && <AccordionLayout {...layoutProps} />}
 
       {gateways.length === 0 && paymentSection && (
-        <div className={`mb-4 ${theme.paymentContainerClassName ?? 'rounded-(--cocart-border-radius) border border-dashed border-(--cocart-color-border) bg-(--cocart-color-background-hover) p-4'}`}>
+        <div className={`mb-4 ${paymentContainerClass}`}>
           {paymentSection.fields.filter(f => !f.hidden).map(field => (
             <div key={field.name} className="flex items-center justify-center min-h-16">
               <span className={helperClass}>[{field.label}]</span>

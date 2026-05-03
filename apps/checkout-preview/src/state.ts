@@ -24,6 +24,7 @@ export interface FieldConfig {
 
 export interface BuilderState {
   containerLayout: 'two-column' | 'stacked';
+  paymentLayout: 'radio' | 'tabs' | 'accordion';
   collectShippingAddress: boolean;
   shippingSameAsBilling: boolean;
   includeNotes: boolean;
@@ -53,7 +54,7 @@ export const GATEWAY_CATALOG: GatewayConfig[] = [
   { id: 'stripe',         label: 'Stripe',                description: 'Card payments via Stripe Elements',         isExpress: false, isOffline: false, enabled: false },
   { id: 'paypal',         label: 'PayPal',                description: 'Smart Buttons & redirectless checkout',     isExpress: false, isOffline: false, enabled: false },
   { id: 'authorizenet',   label: 'Authorize.Net',         description: 'Accept.js card tokenization',               isExpress: false, isOffline: false, enabled: false },
-  { id: 'bacs',           label: 'Direct Bank Transfer',  description: 'Customer pays via bank transfer',           isExpress: false, isOffline: true,  enabled: false },
+  { id: 'bacs',           label: 'Direct Bank Transfer',  description: 'Make your payment directly into our bank account. Please use your Order ID as the payment reference. Your order will not be shipped until the funds have cleared in our account.',           isExpress: false, isOffline: true,  enabled: false },
   { id: 'cheque',         label: 'Check Payment',         description: 'Customer pays by check or money order',     isExpress: false, isOffline: true,  enabled: false },
   { id: 'cod',            label: 'Cash on Delivery',      description: 'Customer pays upon delivery',               isExpress: false, isOffline: true,  enabled: true },
 ];
@@ -64,6 +65,7 @@ const DEFAULT_MODERN_THEME   = createModernCheckoutTheme({ variables: { ...MODER
 function defaultState(): BuilderState {
   return {
     containerLayout: 'two-column',
+    paymentLayout: 'radio',
     collectShippingAddress: true,
     shippingSameAsBilling: false,
     includeNotes: false,

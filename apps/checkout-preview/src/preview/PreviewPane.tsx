@@ -153,6 +153,7 @@ function CheckoutPreview({ state, expressGateways, regularGateways, expressOnly,
         paymentSection={paymentSection}
         billingSection={billingSection}
         showBillingUnderPayment={showShipping}
+        layout={state.paymentLayout}
       />
       {state.includeTerms ? (
         <TermsAndConditions theme={theme}>
@@ -167,8 +168,8 @@ function CheckoutPreview({ state, expressGateways, regularGateways, expressOnly,
   // Modern theme: wrap sections with dividers and white bg.
   // Other themes: render content directly so their sectionClassName card styles drive layout.
   const leftCol = isModern
-    ? <div className="bg-(--cocart-color-background) text-(--cocart-color-text) *:py-4 *:border-b *:border-(--cocart-color-border) last:*:border-b-0">{leftContent}</div>
-    : <div className="grid gap-(--cocart-section-gap) py-4">{leftContent}</div>;
+    ? <div className="min-w-0 overflow-hidden bg-(--cocart-color-background) text-(--cocart-color-text) *:py-4 *:border-b *:border-(--cocart-color-border) last:*:border-b-0">{leftContent}</div>
+    : <div className="min-w-0 overflow-hidden grid gap-(--cocart-section-gap) py-4">{leftContent}</div>;
 
   if (layout === 'stacked') {
     return (
