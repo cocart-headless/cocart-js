@@ -20,6 +20,9 @@ import {
   ShippingMethods,
   PaymentMethods,
   OrderSummary,
+  OrderLineItems,
+  OrderTotals,
+  DiscountCode,
   PayButton,
 } from '@cocartheadless/checkout/react';
 ```
@@ -197,17 +200,108 @@ Returns `null` when `gateways` is empty and no `paymentSection` is supplied.
 
 ## `<OrderSummary>`
 
-Renders a static order summary panel with line items, subtotal, shipping, taxes, and total. Currently uses mock data — wire this up to `client.checkout.getCheckout()` response data when integrating.
+Composes `<OrderLineItems>`, `<DiscountCode>`, and `<OrderTotals>` into a single panel. Use this when you want the full summary in one component. Use the sub-components individually when you need to customise layout or data independently.
 
 ```tsx
 <OrderSummary theme={theme} />
+<OrderSummary theme={theme} mobileDrawer />
+```
+
+**Props**
+
+| Prop | Type | Default | Description |
+|---|---|---|---|
+| `theme` | `CheckoutTheme` | required | Controls `orderSummaryClassName` |
+| `mobileDrawer` | `boolean` | `false` | Renders as a bottom-sheet drawer with a toggle bar — use when the order summary sits below the form on mobile |
+| `loading` | `boolean` | `false` | Shows skeleton placeholders instead of content |
+| `onCouponsChange` | `(coupons: AppliedCoupon[]) => void` | — | Called when coupons are applied or removed — use to drive `freeShipping` state on `<ShippingMethods>` |
+
+---
+
+## `<OrderLineItems>`
+
+Renders the list of cart items — thumbnail placeholder, name, variant, quantity badge, and price.
+
+```tsx
+<OrderLineItems theme={theme} />
+<OrderLineItems theme={theme} items={lineItems} />
+```
+
+**Props**
+
+| Prop | Type | Default | Description |
+|---|---|---|---|
+| `theme` | `CheckoutTheme` | required | Theme reference (reserved for future className support) |
+| `items` | `OrderLineItem[]` | mock items | Line items to render. Wire to `client.checkout.getCheckout()` data when integrating |
+
+**`OrderLineItem`**
+
+```ts
+interface OrderLineItem {
+  name: string;
+  variant: string;
+  qty: number;
+  price: string;
+}
+```
+
+---
+
+## `<DiscountCode>`
+
+Renders a discount/gift card input with an Apply button and a list of applied coupons. Each coupon shows its code as a pill with a Remove link.
+
+```tsx
+<DiscountCode
+  theme={theme}
+  applied={coupons}
+  onApply={async (code) => {
+    const result = await applyDiscountCode(code);
+    return result ?? null;  // return AppliedCoupon on success, null on failure
+  }}
+  onRemove={(code) => removeCoupon(code)}
+/>
 ```
 
 **Props**
 
 | Prop | Type | Description |
 |---|---|---|
-| `theme` | `CheckoutTheme` | Controls `orderSummaryClassName` |
+| `theme` | `CheckoutTheme` | Controls `inputClassName` |
+| `applied` | `AppliedCoupon[]` | Currently applied coupons |
+| `onApply` | `(code: string) => Promise<AppliedCoupon \| null>` | Called when the customer clicks Apply. Return `AppliedCoupon` on success or `null` to show an invalid-code error |
+| `onRemove` | `(code: string) => void` | Called when the customer clicks Remove on an applied coupon |
+
+**`AppliedCoupon`**
+
+```ts
+interface AppliedCoupon {
+  code: string;
+  discount: string;       // human-readable label, e.g. "-$10.00"
+  discountCents: number;  // value in cents for total calculation
+  freeShipping?: boolean; // when true, shipping is shown as free
+}
+```
+
+---
+
+## `<OrderTotals>`
+
+Renders the subtotal, discount rows, shipping, taxes, and total. Discount rows are derived from the `coupons` prop — pass the same array you manage in state.
+
+```tsx
+<OrderTotals theme={theme} coupons={coupons} />
+<OrderTotals theme={theme} subtotalCents={9900} taxCents={990} coupons={coupons} />
+```
+
+**Props**
+
+| Prop | Type | Default | Description |
+|---|---|---|---|
+| `theme` | `CheckoutTheme` | required | Theme reference (reserved for future className support) |
+| `subtotalCents` | `number` | `8700` | Subtotal in cents. Wire to checkout data when integrating |
+| `taxCents` | `number` | `870` | Tax amount in cents |
+| `coupons` | `AppliedCoupon[]` | `[]` | Applied coupons — drives discount rows and free-shipping display |
 
 ---
 

@@ -59,7 +59,7 @@ function buildDataTab(store: StateStore): HTMLElement {
 
   panel.appendChild(makeToggleRow(
     'Order Summary',
-    'Show a live order summary section alongside the form.',
+    'Show the full order summary (line items, discount code, and totals) alongside the form.',
     state.includeOrderSummary,
     checked => store.update({ includeOrderSummary: checked }),
   ));
@@ -70,6 +70,27 @@ function buildDataTab(store: StateStore): HTMLElement {
       'On mobile, show the order summary as a bottom sheet drawer instead of inline.',
       state.mobileOrderSummaryDrawer,
       checked => store.update({ mobileOrderSummaryDrawer: checked }),
+    ));
+  }
+
+  if (!state.includeOrderSummary) {
+    panel.appendChild(makeToggleRow(
+      'Line Items',
+      'Show the list of cart items.',
+      state.showOrderLineItems,
+      checked => store.update({ showOrderLineItems: checked }),
+    ));
+    panel.appendChild(makeToggleRow(
+      'Discount Code',
+      'Show the discount / gift card input field.',
+      state.showDiscountCode,
+      checked => store.update({ showDiscountCode: checked }),
+    ));
+    panel.appendChild(makeToggleRow(
+      'Order Totals',
+      'Show subtotal, shipping, taxes, and order total.',
+      state.showOrderTotals,
+      checked => store.update({ showOrderTotals: checked }),
     ));
   }
 

@@ -4,7 +4,7 @@ import type { Root } from 'react-dom/client';
 import { CheckoutClient, resolveTheme } from '@cocartheadless/checkout';
 import type { CheckoutGatewayAdapter, CheckoutFormSection, CheckoutGatewayPresentation } from '@cocartheadless/checkout';
 import type { AppliedCoupon } from '@cocartheadless/checkout/react';
-import { CheckoutContainer, ExpressBar, Address, ShippingMethods, PaymentMethods, OrderSummary, PayButton, TermsAndConditions } from '@cocartheadless/checkout/react';
+import { CheckoutContainer, ExpressBar, Address, ShippingMethods, PaymentMethods, OrderSummary, OrderLineItems, DiscountCode, OrderTotals, PayButton, TermsAndConditions } from '@cocartheadless/checkout/react';
 import { mockCoCartClient } from '../mock-client.js';
 import type { BuilderState, GatewayConfig } from '../state.js';
 
@@ -53,6 +53,40 @@ interface PreviewProps {
   onFreeShippingChange?: (free: boolean) => void;
 }
 
+function OrderSummarySection({ state, onCouponsChange }: { state: BuilderState; onCouponsChange?: (free: boolean) => void }) {
+  const { theme, showOrderLineItems, showDiscountCode, showOrderTotals } = state;
+  const [coupons, setCoupons] = useState<AppliedCoupon[]>([]);
+
+  function handleCoupons(next: AppliedCoupon[]) {
+    setCoupons(next);
+    onCouponsChange?.(next.some(c => c.freeShipping));
+  }
+
+  const hasAny = showOrderLineItems || showDiscountCode || showOrderTotals;
+  if (!hasAny) return null;
+
+  return (
+    <div className={theme.orderSummaryClassName ?? ''}>
+      {showOrderLineItems && <OrderLineItems theme={theme} />}
+      {showDiscountCode && (
+        <div className={showOrderLineItems ? 'border-t border-(--cocart-color-border) mt-4 pt-4' : ''}>
+          <DiscountCode
+            theme={theme}
+            applied={coupons}
+            onApply={async () => null}
+            onRemove={code => handleCoupons(coupons.filter(c => c.code !== code))}
+          />
+        </div>
+      )}
+      {showOrderTotals && (
+        <div className={(showOrderLineItems || showDiscountCode) ? 'border-t border-(--cocart-color-border) mt-4 pt-4' : ''}>
+          <OrderTotals theme={theme} coupons={coupons} />
+        </div>
+      )}
+    </div>
+  );
+}
+
 function MobileScreen({ state, expressGateways, regularGateways, expressOnly, activeGatewayId, sections }: PreviewProps) {
   const { theme, includeOrderSummary, mobileOrderSummaryDrawer } = state;
   const [freeShipping, setFreeShipping] = useState(false);
@@ -77,6 +111,9 @@ function MobileScreen({ state, expressGateways, regularGateways, expressOnly, ac
         {includeOrderSummary && !mobileOrderSummaryDrawer && (
           <OrderSummary theme={theme} onCouponsChange={c => setFreeShipping(c.some(x => x.freeShipping))} />
         )}
+        {!includeOrderSummary && (
+          <OrderSummarySection state={state} onCouponsChange={setFreeShipping} />
+        )}
       </div>
 
       {/* Bottom bar + drawer — rendered outside scroll so bar never scrolls away */}
@@ -97,6 +134,10 @@ function CheckoutPreview({ state, expressGateways, regularGateways, expressOnly,
   const freeShipping = freeShippingProp ?? freeShippingLocal;
   function handleCouponsChange(coupons: AppliedCoupon[]) {
     const free = coupons.some(c => c.freeShipping);
+    setFreeShippingLocal(free);
+    onFreeShippingChange?.(free);
+  }
+  function handleFreeShippingChange(free: boolean) {
     setFreeShippingLocal(free);
     onFreeShippingChange?.(free);
   }
@@ -177,7 +218,10 @@ function CheckoutPreview({ state, expressGateways, regularGateways, expressOnly,
     <CheckoutContainer form={formDef} layout="two-column">
       {leftCol}
       <div className="self-stretch bg-(--cocart-color-background-alt)">
-        {includeOrderSummary && <OrderSummary theme={theme} onCouponsChange={handleCouponsChange} />}
+        {includeOrderSummary
+          ? <OrderSummary theme={theme} onCouponsChange={handleCouponsChange} />
+          : <OrderSummarySection state={state} onCouponsChange={handleFreeShippingChange} />
+        }
       </div>
     </CheckoutContainer>
   );

@@ -73,6 +73,21 @@ function buildPaymentsTab(store: StateStore): HTMLElement {
   });
   panel.appendChild(list);
 
+  // ── No gateway warning ────────────────────────────────────────────────
+  if (enabledGateways.length === 0) {
+    const warn = document.createElement('div');
+    warn.className = 'rounded-xl border border-amber-200 bg-amber-50 p-4';
+    const warnTitle = document.createElement('p');
+    warnTitle.className = 'text-xs font-semibold text-amber-800 mb-1';
+    warnTitle.textContent = 'No payment gateway enabled';
+    const warnDesc = document.createElement('p');
+    warnDesc.className = 'text-xs text-amber-700 leading-relaxed';
+    warnDesc.textContent = 'Enable at least one gateway so customers can complete their purchase. Without a gateway the checkout form will render without a payment method.';
+    warn.appendChild(warnTitle);
+    warn.appendChild(warnDesc);
+    panel.appendChild(warn);
+  }
+
   // ── Default gateway selector ───────────────────────────────────────────
   if (regularEnabled.length > 1) {
     panel.appendChild(buildDefaultGatewaySelector(regularEnabled, state.defaultGateway, store));
@@ -107,10 +122,12 @@ function buildGatewayRow(gw: GatewayConfig, idx: number, store: StateStore): HTM
   const toggle = makeSmallToggle(gw.enabled, checked => {
     const newGateways = [...store.get().gateways];
     newGateways[idx] = { ...newGateways[idx], enabled: checked };
-    // If disabled, clear defaultGateway if it was this one
     let defaultGateway = store.get().defaultGateway;
     if (!checked && defaultGateway === gw.id) defaultGateway = '';
     store.update({ gateways: newGateways, defaultGateway });
+    if (!checked && newGateways.every(g => !g.enabled)) {
+      showNoGatewayWarning();
+    }
   });
 
   const nameWrap = document.createElement('div');
@@ -193,6 +210,55 @@ function buildGatewayRow(gw: GatewayConfig, idx: number, store: StateStore): HTM
   }
 
   return card;
+}
+
+function showNoGatewayWarning(): void {
+  const overlay = document.createElement('div');
+  overlay.className = 'fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm';
+
+  const dialog = document.createElement('div');
+  dialog.className = 'bg-white rounded-2xl shadow-xl p-6 max-w-sm w-full mx-4 grid gap-4';
+
+  const iconRow = document.createElement('div');
+  iconRow.className = 'flex items-center gap-3';
+
+  const iconWrap = document.createElement('div');
+  iconWrap.className = 'flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-100';
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.setAttribute('viewBox', '0 0 20 20');
+  svg.setAttribute('fill', 'currentColor');
+  svg.style.cssText = 'width:20px;height:20px;color:#d97706';
+  const svgPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+  svgPath.setAttribute('fill-rule', 'evenodd');
+  svgPath.setAttribute('clip-rule', 'evenodd');
+  svgPath.setAttribute('d', 'M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 5a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 5zm0 9a1 1 0 100-2 1 1 0 000 2z');
+  svg.appendChild(svgPath);
+  iconWrap.appendChild(svg);
+
+  const titleEl = document.createElement('p');
+  titleEl.className = 'text-sm font-semibold text-slate-900';
+  titleEl.textContent = 'No payment gateway enabled';
+
+  iconRow.appendChild(iconWrap);
+  iconRow.appendChild(titleEl);
+
+  const body = document.createElement('p');
+  body.className = 'text-xs text-slate-500 leading-relaxed';
+  body.textContent = 'Without at least one gateway enabled, customers will not be able to complete their purchase. Enable a gateway to accept payments.';
+
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'w-full px-3.5 py-2 text-xs font-medium rounded-lg bg-amber-500 text-white hover:bg-amber-600 transition';
+  btn.textContent = 'Got it';
+  btn.addEventListener('click', () => overlay.remove());
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+
+  dialog.appendChild(iconRow);
+  dialog.appendChild(body);
+  dialog.appendChild(btn);
+  overlay.appendChild(dialog);
+  document.body.appendChild(overlay);
+  btn.focus();
 }
 
 function makeSmallToggle(checked: boolean, onChange: (v: boolean) => void): HTMLButtonElement {

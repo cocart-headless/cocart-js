@@ -25,13 +25,53 @@ const GATEWAY_SNIPPET: Record<string, string> = {
   'cod':            'createCashOnDeliveryGateway()',
 };
 
+type ClassNameKey = 'containerClassName' | 'sectionClassName' | 'fieldClassName' | 'inputClassName' | 'labelClassName' | 'helperTextClassName' | 'submitButtonClassName' | 'paymentContainerClassName' | 'orderSummaryClassName' | 'expressCheckoutBarClassName';
+
+const CLASS_NAME_KEYS: ClassNameKey[] = [
+  'containerClassName', 'sectionClassName', 'fieldClassName', 'inputClassName',
+  'labelClassName', 'helperTextClassName', 'submitButtonClassName',
+  'paymentContainerClassName', 'orderSummaryClassName', 'expressCheckoutBarClassName',
+];
+
+const PRESET_CLASS_DEFAULTS: Record<string, Partial<Record<ClassNameKey, string>>> = {
+  modern: {
+    containerClassName:  'mx-auto max-w-5xl grid lg:grid-cols-[1fr_380px]',
+    sectionClassName:    'px-4 lg:px-10',
+    orderSummaryClassName: 'px-4 py-4 lg:px-10 lg:py-8',
+  },
+  tailwind: {
+    containerClassName:    'mx-auto grid gap-6 lg:grid-cols-[1.2fr_0.8fr]',
+    sectionClassName:      'rounded-3xl border border-(--cocart-color-border) bg-(--cocart-color-surface) p-6 shadow-sm',
+    orderSummaryClassName: 'rounded-3xl border border-(--cocart-color-border) bg-(--cocart-color-text) p-6 text-(--cocart-color-surface)',
+    submitButtonClassName: 'inline-flex min-h-12 w-full items-center justify-center rounded-2xl bg-(--cocart-color-button) px-5 text-sm font-semibold text-(--cocart-color-button-text) transition hover:opacity-90',
+  },
+  shadcn: {
+    containerClassName:    'mx-auto grid gap-6 lg:grid-cols-[1.2fr_0.8fr]',
+    sectionClassName:      'rounded-xl border border-(--cocart-color-border) bg-(--cocart-color-surface) p-6 shadow-sm',
+    orderSummaryClassName: 'rounded-xl border border-(--cocart-color-border) bg-(--cocart-color-background) p-6',
+    submitButtonClassName: 'inline-flex h-10 w-full items-center justify-center rounded-(--cocart-border-radius) bg-(--cocart-color-button) px-4 text-sm font-medium text-(--cocart-color-button-text) transition hover:opacity-90',
+  },
+};
+
+function classNameOverrides(state: BuilderState, preset: string): Partial<Record<ClassNameKey, string>> {
+  const defaults = PRESET_CLASS_DEFAULTS[preset] ?? {};
+  const result: Partial<Record<ClassNameKey, string>> = {};
+  for (const key of CLASS_NAME_KEYS) {
+    const val = (state.theme as Record<string, unknown>)[key] as string | undefined;
+    if (val !== undefined && val !== (defaults[key] ?? '')) {
+      result[key] = val;
+    }
+  }
+  return result;
+}
+
 function themeExpression(state: BuilderState): string {
   const preset = state.themePreset as 'modern' | 'tailwind' | 'shadcn' | 'custom';
 
   if (preset === 'custom') {
-    // Emit full createCheckoutTheme call with all variables and rules
     const vars = state.theme.variables;
     const rules = state.theme.rules;
+    const classOverrides = classNameOverrides(state, 'custom');
     const parts: string[] = [];
     if (vars && Object.keys(vars).length > 0) {
       const entries = Object.entries(vars).map(([k, v]) => `    ${k}: '${v}'`).join(',\n');
@@ -46,28 +86,44 @@ function themeExpression(state: BuilderState): string {
         .join(',\n');
       parts.push(`  rules: {\n${ruleEntries},\n  }`);
     }
+    if (Object.keys(classOverrides).length > 0) {
+      const entries = Object.entries(classOverrides).map(([k, v]) => `  ${k}: '${v}'`).join(',\n');
+      parts.push(entries);
+    }
     if (parts.length === 0) return `createCheckoutTheme()`;
     return `createCheckoutTheme({\n${parts.join(',\n')},\n})`;
   }
 
-  // Named preset — only emit variables that differ from the preset defaults
+  // Named preset — diff variables and class names against preset defaults
   const presetVars = getPresetVariables(preset);
   const themeVars = state.theme.variables ?? {};
-  const overrides: Partial<CheckoutThemeVariables> = {};
+  const varOverrides: Partial<CheckoutThemeVariables> = {};
   for (const key of Object.keys(presetVars) as (keyof CheckoutThemeVariables)[]) {
     if (themeVars[key] !== undefined && themeVars[key] !== presetVars[key]) {
-      overrides[key] = themeVars[key];
+      varOverrides[key] = themeVars[key];
     }
   }
+  const classOverrides = classNameOverrides(state, preset);
 
   const presetFn = preset === 'modern' ? 'createModernCheckoutTheme'
     : preset === 'tailwind' ? 'createTailwindCheckoutTheme'
     : 'createShadcnCheckoutTheme';
 
-  if (Object.keys(overrides).length === 0) return `${presetFn}()`;
+  const hasVarOverrides   = Object.keys(varOverrides).length > 0;
+  const hasClassOverrides = Object.keys(classOverrides).length > 0;
 
-  const entries = Object.entries(overrides).map(([k, v]) => `    ${k}: '${v}'`).join(',\n');
-  return `${presetFn}({\n  variables: {\n${entries},\n  },\n})`;
+  if (!hasVarOverrides && !hasClassOverrides) return `${presetFn}()`;
+
+  const argParts: string[] = [];
+  if (hasVarOverrides) {
+    const entries = Object.entries(varOverrides).map(([k, v]) => `    ${k}: '${v}'`).join(',\n');
+    argParts.push(`  variables: {\n${entries},\n  }`);
+  }
+  if (hasClassOverrides) {
+    const entries = Object.entries(classOverrides).map(([k, v]) => `  ${k}: '${v}'`).join(',\n');
+    argParts.push(entries);
+  }
+  return `${presetFn}({\n${argParts.join(',\n')},\n})`;
 }
 
 function buildSetupCode(state: BuilderState): string {
@@ -144,6 +200,9 @@ function buildJsxCode(state: BuilderState): string {
     showShipping ? 'ShippingMethods' : null,
     regularGateways.length > 0 ? 'PaymentMethods' : null,
     state.includeOrderSummary ? 'OrderSummary' : null,
+    !state.includeOrderSummary && state.showOrderLineItems ? 'OrderLineItems' : null,
+    !state.includeOrderSummary && state.showDiscountCode  ? 'DiscountCode'  : null,
+    !state.includeOrderSummary && state.showOrderTotals   ? 'OrderTotals'   : null,
     state.includeTerms ? 'TermsAndConditions' : null,
     'PayButton',
   ].filter(Boolean) as string[];
@@ -182,6 +241,10 @@ function buildJsxCode(state: BuilderState): string {
   if (state.includeOrderSummary) {
     const drawerProp = state.mobileOrderSummaryDrawer ? ' mobileDrawer' : '';
     lines.push(`      <OrderSummary theme={form.theme}${drawerProp} />`);
+  } else {
+    if (state.showOrderLineItems) lines.push('      <OrderLineItems theme={form.theme} />');
+    if (state.showDiscountCode)   lines.push('      <DiscountCode theme={form.theme} applied={coupons} onApply={handleApplyCoupon} onRemove={handleRemoveCoupon} />');
+    if (state.showOrderTotals)    lines.push('      <OrderTotals theme={form.theme} coupons={coupons} />');
   }
 
   if (state.includeTerms) {
@@ -208,7 +271,13 @@ export function generateLLMPrompt(state: BuilderState): string {
   if (state.collectShippingAddress && !state.shippingSameAsBilling) sections.push('shipping');
   if (state.includeNotes) sections.push('notes');
   if (enabledGateways.length > 0) sections.push('payment');
-  if (state.includeOrderSummary) sections.push('order summary');
+  if (state.includeOrderSummary) {
+    sections.push('order summary');
+  } else {
+    if (state.showOrderLineItems) sections.push('line items');
+    if (state.showDiscountCode)   sections.push('discount code');
+    if (state.showOrderTotals)    sections.push('order totals');
+  }
 
   const descLines = [
     '// CoCart Checkout SDK — Builder Configuration',

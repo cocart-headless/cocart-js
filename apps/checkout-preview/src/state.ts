@@ -31,6 +31,9 @@ export interface BuilderState {
   includeTerms: boolean;
   includeOrderSummary: boolean;
   mobileOrderSummaryDrawer: boolean;
+  showOrderLineItems: boolean;
+  showDiscountCode: boolean;
+  showOrderTotals: boolean;
   successUrl: string;
   returnUrl: string;
   fields: {
@@ -72,6 +75,9 @@ function defaultState(): BuilderState {
     includeTerms: false,
     includeOrderSummary: true,
     mobileOrderSummaryDrawer: true,
+    showOrderLineItems: true,
+    showDiscountCode: true,
+    showOrderTotals: true,
     successUrl: '',
     returnUrl: '',
     fields: {

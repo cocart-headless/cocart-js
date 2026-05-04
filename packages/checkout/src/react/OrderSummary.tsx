@@ -92,6 +92,102 @@ export function DiscountCode({ theme, applied, onApply, onRemove }: DiscountCode
   );
 }
 
+// Mock data — real integrations replace these with API responses
+const MOCK_ITEMS = [
+  { name: 'Product One', variant: 'Default', qty: 1, price: '$49.00' },
+  { name: 'Product Two', variant: 'Size M / Black', qty: 2, price: '$38.00' },
+];
+
+const MOCK_COUPONS: Record<string, { discount: string; discountCents: number; freeShipping?: boolean }> = {
+  'SAVE10':   { discount: '-$10.00',       discountCents: 1000 },
+  'SUMMER15': { discount: '-$13.05 (15%)', discountCents: 1305 },
+  'FREESHIP': { discount: 'Free shipping', discountCents: 0, freeShipping: true },
+};
+
+export interface OrderLineItem {
+  name: string;
+  variant: string;
+  qty: number;
+  price: string;
+}
+
+export interface OrderLineItemsProps {
+  theme: CheckoutTheme;
+  items?: OrderLineItem[];
+}
+
+export function OrderLineItems({ theme: _theme, items = MOCK_ITEMS }: OrderLineItemsProps) {
+  return (
+    <div className="grid gap-4">
+      {items.map(item => (
+        <div key={item.name} className="flex items-center gap-3">
+          <div className="relative h-14 w-14 shrink-0 rounded-(--cocart-border-radius) border border-(--cocart-color-border) bg-(--cocart-color-surface) flex items-center justify-center">
+            <span className="text-xs text-(--cocart-color-text-muted)">img</span>
+            <span className="absolute -top-1.5 -right-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-(--cocart-color-text-muted) text-[10px] font-medium text-(--cocart-color-surface)">
+              {item.qty}
+            </span>
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium text-(--cocart-color-text) truncate">{item.name}</p>
+            <p className="text-xs text-(--cocart-color-text-muted)">{item.variant}</p>
+          </div>
+          <span className="text-sm font-medium text-(--cocart-color-text) shrink-0">{item.price}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+export interface OrderTotalsProps {
+  theme: CheckoutTheme;
+  subtotalCents?: number;
+  taxCents?: number;
+  coupons?: AppliedCoupon[];
+}
+
+export function OrderTotals({ theme: _theme, subtotalCents = 8700, taxCents = 870, coupons = [] }: OrderTotalsProps) {
+  const hasFreeShipping = coupons.some(c => c.freeShipping);
+  const totalDiscountCents = coupons.reduce((sum, c) => sum + (Number(c.discountCents) || 0), 0);
+  const totalCents = subtotalCents - totalDiscountCents + taxCents;
+  const fmt = (cents: number) => `$${(cents / 100).toFixed(2)}`;
+  const itemCount = 2;
+
+  return (
+    <div className="grid gap-2.5">
+      <div className="flex justify-between text-sm text-(--cocart-color-text)">
+        <span>Subtotal · {itemCount} items</span>
+        <span>{fmt(subtotalCents)}</span>
+      </div>
+      {coupons.filter(c => !c.freeShipping).map(coupon => (
+        <div key={coupon.code} className="flex justify-between text-sm">
+          <span className="text-green-600">Discount ({coupon.code})</span>
+          <span className="text-green-600 font-medium">-{fmt(coupon.discountCents)}</span>
+        </div>
+      ))}
+      {hasFreeShipping && (
+        <div className="flex justify-between text-sm">
+          <span className="text-green-600">Discount ({coupons.find(c => c.freeShipping)?.code})</span>
+          <span className="text-green-600 font-medium">Free</span>
+        </div>
+      )}
+      <div className="flex justify-between text-sm">
+        <span className="text-(--cocart-color-text)">Shipping</span>
+        <span className={hasFreeShipping ? 'line-through text-(--cocart-color-text-muted)' : 'text-(--cocart-color-text-muted)'}>
+          {hasFreeShipping ? 'Free' : 'Enter shipping address'}
+        </span>
+      </div>
+      <div className="flex justify-between text-sm text-(--cocart-color-text)">
+        <span>Taxes</span>
+        <span>{fmt(taxCents)}</span>
+      </div>
+      <div className="flex justify-between text-base font-semibold text-(--cocart-color-text) border-t border-(--cocart-color-border) pt-3 mt-1">
+        <span>Total</span>
+        <span>USD {fmt(totalCents)}</span>
+      </div>
+    </div>
+  );
+}
+
 interface OrderSummaryProps {
   theme: CheckoutTheme;
   mobileDrawer?: boolean;
@@ -101,18 +197,6 @@ interface OrderSummaryProps {
   onCouponsChange?: (coupons: AppliedCoupon[]) => void;
 }
 
-const MOCK_ITEMS = [
-  { name: 'Product One', variant: 'Default', qty: 1, price: '$49.00' },
-  { name: 'Product Two', variant: 'Size M / Black', qty: 2, price: '$38.00' },
-];
-
-// Mock coupons for preview — real integrations replace onApply with an API call
-const MOCK_COUPONS: Record<string, { discount: string; discountCents: number; freeShipping?: boolean }> = {
-  'SAVE10':   { discount: '-$10.00',       discountCents: 1000 },
-  'SUMMER15': { discount: '-$13.05 (15%)', discountCents: 1305 },
-  'FREESHIP': { discount: 'Free shipping', discountCents: 0, freeShipping: true },
-};
-
 function SummaryContent({ theme, onCouponsChange }: { theme: CheckoutTheme; onCouponsChange?: (coupons: AppliedCoupon[]) => void }) {
   const [coupons, setCoupons] = useState<AppliedCoupon[]>([]);
 
@@ -121,7 +205,7 @@ function SummaryContent({ theme, onCouponsChange }: { theme: CheckoutTheme; onCo
     onCouponsChange?.(next);
   }
 
-  async function handleApplyAndAdd(code: string): Promise<AppliedCoupon | null> {
+  async function handleApply(code: string): Promise<AppliedCoupon | null> {
     await new Promise(r => setTimeout(r, 600));
     const mock = MOCK_COUPONS[code];
     if (!mock) return null;
@@ -130,75 +214,19 @@ function SummaryContent({ theme, onCouponsChange }: { theme: CheckoutTheme; onCo
     return coupon;
   }
 
-  function handleRemove(code: string) {
-    updateCoupons(coupons.filter(c => c.code !== code));
-  }
-
-  const subtotalCents = 8700;
-  const taxCents = 870;
-  const hasFreeShipping = coupons.some(c => c.freeShipping);
-  const totalDiscountCents = coupons.reduce((sum, c) => sum + (Number(c.discountCents) || 0), 0);
-  const totalCents = subtotalCents - totalDiscountCents + taxCents;
-  const fmt = (cents: number) => `$${(cents / 100).toFixed(2)}`;
-
   return (
     <div className={theme.orderSummaryClassName ?? ''}>
-      <div className="grid gap-4 mb-6">
-        {MOCK_ITEMS.map(item => (
-          <div key={item.name} className="flex items-center gap-3">
-            <div className="relative h-14 w-14 shrink-0 rounded-(--cocart-border-radius) border border-(--cocart-color-border) bg-(--cocart-color-surface) flex items-center justify-center">
-              <span className="text-xs text-(--cocart-color-text-muted)">img</span>
-              <span className="absolute -top-1.5 -right-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-(--cocart-color-text-muted) text-[10px] font-medium text-(--cocart-color-surface)">
-                {item.qty}
-              </span>
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-(--cocart-color-text) truncate">{item.name}</p>
-              <p className="text-xs text-(--cocart-color-text-muted)">{item.variant}</p>
-            </div>
-            <span className="text-sm font-medium text-(--cocart-color-text) shrink-0">{item.price}</span>
-          </div>
-        ))}
+      <OrderLineItems theme={theme} />
+      <div className="border-t border-(--cocart-color-border) mt-4 pt-4">
+        <DiscountCode
+          theme={theme}
+          applied={coupons}
+          onApply={handleApply}
+          onRemove={code => updateCoupons(coupons.filter(c => c.code !== code))}
+        />
       </div>
-
-      <DiscountCode
-        theme={theme}
-        applied={coupons}
-        onApply={handleApplyAndAdd}
-        onRemove={handleRemove}
-      />
-
-      <div className="border-t border-(--cocart-color-border) pt-4 grid gap-2.5">
-        <div className="flex justify-between text-sm text-(--cocart-color-text)">
-          <span>Subtotal · 2 items</span>
-          <span>{fmt(subtotalCents)}</span>
-        </div>
-        {coupons.filter(c => !c.freeShipping).map(coupon => (
-          <div key={coupon.code} className="flex justify-between text-sm">
-            <span className="text-green-600">Discount ({coupon.code})</span>
-            <span className="text-green-600 font-medium">-{fmt(coupon.discountCents)}</span>
-          </div>
-        ))}
-        {hasFreeShipping && (
-          <div className="flex justify-between text-sm">
-            <span className="text-green-600">Discount ({coupons.find(c => c.freeShipping)?.code})</span>
-            <span className="text-green-600 font-medium">Free</span>
-          </div>
-        )}
-        <div className="flex justify-between text-sm">
-          <span className="text-(--cocart-color-text)">Shipping</span>
-          <span className={hasFreeShipping ? 'line-through text-(--cocart-color-text-muted)' : 'text-(--cocart-color-text-muted)'}>
-            {hasFreeShipping ? 'Free' : 'Enter shipping address'}
-          </span>
-        </div>
-        <div className="flex justify-between text-sm text-(--cocart-color-text)">
-          <span>Taxes</span>
-          <span>{fmt(taxCents)}</span>
-        </div>
-        <div className="flex justify-between text-base font-semibold text-(--cocart-color-text) border-t border-(--cocart-color-border) pt-3 mt-1">
-          <span>Total</span>
-          <span>USD {fmt(totalCents)}</span>
-        </div>
+      <div className="border-t border-(--cocart-color-border) mt-4 pt-4">
+        <OrderTotals theme={theme} coupons={coupons} />
       </div>
     </div>
   );
