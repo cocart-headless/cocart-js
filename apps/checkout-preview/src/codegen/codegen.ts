@@ -80,44 +80,53 @@ function buildSetupCode(state: BuilderState): string {
     : preset === 'shadcn' ? 'createShadcnCheckoutTheme'
     : 'createCheckoutTheme';
 
-  const baseImports = ['createCheckout', themeImport];
+  // Only emit defaultTheme when it differs from the SDK default (modern preset, no overrides)
+  const themeExpr = themeExpression(state);
+  const isDefaultTheme = themeExpr === 'createModernCheckoutTheme()';
+
+  const baseImports = isDefaultTheme ? ['createCheckout'] : ['createCheckout', themeImport];
   const gatewayFns = enabledGateways.map(g => GATEWAY_IMPORT_MAP[g.id]).filter(Boolean);
   const allImports = [...new Set([...baseImports, ...gatewayFns])];
 
   lines.push(`import {\n  ${allImports.join(',\n  ')},\n} from '@cocartheadless/checkout';`);
   lines.push('');
-  lines.push('const checkout = createCheckout({');
-  if (state.successUrl) lines.push(`  successUrl: '${state.successUrl}',`);
-  if (state.returnUrl)  lines.push(`  returnUrl: '${state.returnUrl}',`);
-  if (!state.collectShippingAddress) lines.push('  collectShippingAddress: false,');
-  if (state.shippingSameAsBilling)   lines.push('  shippingSameAsBilling: true,');
-  lines.push(`  defaultTheme: ${themeExpression(state)},`);
+  const checkoutOptions: string[] = [];
+  if (state.successUrl) checkoutOptions.push(`  successUrl: '${state.successUrl}',`);
+  if (state.returnUrl)  checkoutOptions.push(`  returnUrl: '${state.returnUrl}',`);
+  if (!state.collectShippingAddress) checkoutOptions.push('  collectShippingAddress: false,');
+  if (state.shippingSameAsBilling)   checkoutOptions.push('  shippingSameAsBilling: true,');
+  if (!isDefaultTheme) checkoutOptions.push(`  defaultTheme: ${themeExpr},`);
   const regularGateways = enabledGateways.filter(g => !g.isExpress);
   const defaultId = state.defaultGateway || regularGateways[0]?.id;
   const sortedGateways = [...enabledGateways].sort((a, b) =>
     a.id === defaultId ? -1 : b.id === defaultId ? 1 : 0
   );
   if (enabledGateways.length > 0) {
-    lines.push('  gatewayAdapters: [');
+    const gatewayLines: string[] = [];
     sortedGateways.forEach(gw => {
       const base = CATALOG_DEFAULTS[gw.id];
-      const labelOverride    = base && gw.label       !== base.label       ? `label: '${gw.label}', `       : '';
-      const descOverride     = base && gw.description !== base.description ? `description: '${gw.description}', ` : '';
-      const baseSnippet      = GATEWAY_SNIPPET[gw.id] ?? `/* ${gw.id} */`;
+      const labelOverride = base && gw.label       !== base.label       ? `label: '${gw.label}', `       : '';
+      const descOverride  = base && gw.description !== base.description ? `description: '${gw.description}', ` : '';
+      const baseSnippet   = GATEWAY_SNIPPET[gw.id] ?? `/* ${gw.id} */`;
       if (labelOverride || descOverride) {
-        const overrideObj = `{ ${labelOverride}${descOverride}}`;
-        // Inject into existing arg object if present, otherwise add as new arg
         const injected = baseSnippet.includes('({')
           ? baseSnippet.replace(/\(\{/, `({ ${labelOverride}${descOverride}`)
-          : baseSnippet.replace(/\(\)/, `(${overrideObj})`);
-        lines.push(`    ${injected},`);
+          : baseSnippet.replace(/\(\)/, `({ ${labelOverride}${descOverride}})`);
+        gatewayLines.push(`    ${injected},`);
       } else {
-        lines.push(`    ${baseSnippet},`);
+        gatewayLines.push(`    ${baseSnippet},`);
       }
     });
-    lines.push('  ],');
+    checkoutOptions.push(`  gatewayAdapters: [\n${gatewayLines.join('\n')}\n  ],`);
   }
-  lines.push('});');
+
+  if (checkoutOptions.length === 0) {
+    lines.push('const checkout = createCheckout();');
+  } else {
+    lines.push('const checkout = createCheckout({');
+    checkoutOptions.forEach(o => lines.push(o));
+    lines.push('});');
+  }
 
   return lines.join('\n');
 }
@@ -126,11 +135,13 @@ function buildJsxCode(state: BuilderState): string {
   const enabledGateways = state.gateways.filter(g => g.enabled);
   const regularGateways = enabledGateways.filter(g => !g.isExpress);
   const expressGateways = enabledGateways.filter(g => g.isExpress);
+  const showShipping = state.collectShippingAddress && !state.shippingSameAsBilling;
 
   const componentImports = [
     'CheckoutContainer',
     expressGateways.length > 0 ? 'ExpressBar' : null,
     'Address',
+    showShipping ? 'ShippingMethods' : null,
     regularGateways.length > 0 ? 'PaymentMethods' : null,
     state.includeOrderSummary ? 'OrderSummary' : null,
     state.includeTerms ? 'TermsAndConditions' : null,
@@ -138,32 +149,34 @@ function buildJsxCode(state: BuilderState): string {
   ].filter(Boolean) as string[];
 
   const lines: string[] = [];
-  lines.push(`import { ${componentImports.join(', ')} } from './components/checkout';`);
+  lines.push(`import { ${componentImports.join(', ')} } from '@cocartheadless/checkout/react';`);
   lines.push('');
-  lines.push('export function CheckoutForm({ form }) {');
+  lines.push('export function CheckoutForm({ form, expressGateways, regularGateways }) {');
   lines.push('  return (');
-  const layoutProp = state.containerLayout === 'stacked' ? 'stacked' : 'two-column';
-  lines.push(`    <CheckoutContainer form={form} layout="${layoutProp}">`);
+  const layoutProp = state.containerLayout === 'stacked' ? ' layout="stacked"' : '';
+  lines.push(`    <CheckoutContainer form={form}${layoutProp}>`);
 
   if (expressGateways.length > 0) {
-    lines.push('      <ExpressBar gateways={expressBar.gateways} theme={form.theme} />');
+    lines.push('      <ExpressBar gateways={expressGateways} theme={form.theme} />');
   }
 
-  const sections: Array<{ type: 'contact' | 'billing' | 'shipping'; id: string }> = [
-    { type: 'contact', id: 'contact' },
-    { type: 'billing', id: 'billing' },
-  ];
-  if (state.collectShippingAddress && !state.shippingSameAsBilling) {
-    sections.push({ type: 'shipping', id: 'shipping' });
+  lines.push('      <Address type="contact" section={form.sections.find(s => s.id === \'contact\')!} theme={form.theme} />');
+
+  if (showShipping) {
+    lines.push('      <Address type="shipping" section={form.sections.find(s => s.id === \'shipping\')!} theme={form.theme} />');
+    lines.push('      <ShippingMethods theme={form.theme} />');
+  } else {
+    lines.push('      <Address type="billing" section={form.sections.find(s => s.id === \'billing\')!} theme={form.theme} />');
   }
 
-  sections.forEach(({ type, id }) => {
-    lines.push(`      <Address type="${type}" section={form.sections.find(s => s.id === '${id}')!} theme={form.theme} />`);
-  });
+  if (state.includeNotes) {
+    lines.push('      <Address type="contact" section={form.sections.find(s => s.id === \'notes\')!} theme={form.theme} />');
+  }
 
   if (regularGateways.length > 0) {
     const paymentLayoutProp = state.paymentLayout !== 'radio' ? ` layout="${state.paymentLayout}"` : '';
-    lines.push(`      <PaymentMethods gateways={gateways} theme={form.theme}${paymentLayoutProp} />`);
+    const billingProp = showShipping ? ' showBillingUnderPayment' : '';
+    lines.push(`      <PaymentMethods gateways={regularGateways} theme={form.theme}${paymentLayoutProp}${billingProp} />`);
   }
 
   if (state.includeOrderSummary) {
@@ -173,10 +186,10 @@ function buildJsxCode(state: BuilderState): string {
 
   if (state.includeTerms) {
     lines.push('      <TermsAndConditions theme={form.theme} termsUrl="/terms" privacyUrl="/privacy">');
-    lines.push('        <PayButton theme={form.theme} label="Pay now" />');
+    lines.push('        <PayButton theme={form.theme} />');
     lines.push('      </TermsAndConditions>');
   } else {
-    lines.push('      <PayButton theme={form.theme} label="Pay now" />');
+    lines.push('      <PayButton theme={form.theme} />');
   }
   lines.push('    </CheckoutContainer>');
   lines.push('  );');

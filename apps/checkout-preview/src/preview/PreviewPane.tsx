@@ -58,12 +58,12 @@ function MobileScreen({ state, expressGateways, regularGateways, expressOnly, ac
   const [freeShipping, setFreeShipping] = useState(false);
 
   return (
-    <div className="relative overflow-hidden rounded-[38px] bg-(--cocart-color-background)">
+    <div className="relative overflow-hidden rounded-[38px] bg-(--cocart-color-background) min-h-160 flex flex-col">
       {/* Status bar spacer */}
       <div className="h-10 bg-(--cocart-color-background)" />
 
       {/* Scrollable form content */}
-      <div className="overflow-y-auto max-h-180">
+      <div className={`overflow-y-auto max-h-180${expressOnly ? ' px-4 pb-8' : ''}`}>
         <CheckoutPreview
           state={state}
           expressGateways={expressGateways}
@@ -115,21 +115,13 @@ function CheckoutPreview({ state, expressGateways, regularGateways, expressOnly,
     : theme.containerClassName;
   const formDef = { theme: { ...theme, containerClassName: previewContainerClass }, sections, gatewayId: activeGatewayId };
 
-  if (expressOnly) {
-    return (
-      <CheckoutContainer form={formDef} layout="stacked">
-        <ExpressBar gateways={expressGateways} theme={theme} expressOnly />
-      </CheckoutContainer>
-    );
-  }
-
   const isModern = state.themePreset === 'modern';
 
   // Left column content — shared between stacked and two-column
   const leftContent = (
     <>
       {expressGateways.length > 0 && (
-        <ExpressBar gateways={expressGateways} theme={theme} />
+        <ExpressBar gateways={expressGateways} theme={theme} expressOnly={expressOnly} />
       )}
       {contactSection && (
         <Address type="contact" section={contactSection} theme={theme} />
@@ -146,15 +138,17 @@ function CheckoutPreview({ state, expressGateways, regularGateways, expressOnly,
       {notesSection && state.includeNotes && (
         <Address type="contact" section={notesSection} theme={theme} />
       )}
-      <PaymentMethods
-        gateways={regularGateways}
-        activeGatewayId={activeGatewayId}
-        theme={theme}
-        paymentSection={paymentSection}
-        billingSection={billingSection}
-        showBillingUnderPayment={showShipping}
-        layout={state.paymentLayout}
-      />
+      {!expressOnly && (
+        <PaymentMethods
+          gateways={regularGateways}
+          activeGatewayId={activeGatewayId}
+          theme={theme}
+          paymentSection={paymentSection}
+          billingSection={billingSection}
+          showBillingUnderPayment={showShipping}
+          layout={state.paymentLayout}
+        />
+      )}
       {state.includeTerms ? (
         <TermsAndConditions theme={theme}>
           <PayButton theme={theme} />
