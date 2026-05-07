@@ -195,11 +195,12 @@ let activePopover: HTMLElement | null = null;
 function resolveColorToHex(val: string): string {
   if (/^#[0-9a-fA-F]{6}$/.test(val)) return val;
   if (/^#[0-9a-fA-F]{3}$/.test(val)) return toHex(val);
-  // For CSS values (hsl, oklch, var(...)) resolve via canvas
+  // Append inside the preview root so shadcn-vars / data-theme CSS tokens resolve correctly
   try {
     const tmp = document.createElement('div');
     tmp.style.cssText = `position:absolute;width:1px;height:1px;opacity:0;background:${val}`;
-    document.body.appendChild(tmp);
+    const scope = document.getElementById('checkout-preview-root') ?? document.body;
+    scope.appendChild(tmp);
     const computed = getComputedStyle(tmp).backgroundColor;
     tmp.remove();
     const m = computed.match(/\d+/g);

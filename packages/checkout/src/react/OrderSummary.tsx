@@ -61,7 +61,7 @@ export function DiscountCode({ theme, applied, onApply, onRemove }: DiscountCode
           onChange={e => { setCode(e.target.value); setError(''); }}
           onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); void handleApply(); } }}
           placeholder="Discount code or gift card"
-          className={`${inputClass}${error ? ' border-red-400' : ''}`}
+          className={`${inputClass}${error ? ' border-(--cocart-color-error)' : ''}`}
           disabled={loading}
         />
         <button
@@ -73,7 +73,7 @@ export function DiscountCode({ theme, applied, onApply, onRemove }: DiscountCode
           {loading ? '…' : 'Apply'}
         </button>
       </div>
-      {error && <p className="text-xs text-red-500">{error}</p>}
+      {error && <p className="text-xs" style={{ color: 'var(--cocart-color-error)' }}>{error}</p>}
       {applied.map(coupon => (
         <div key={coupon.code} className="flex items-center justify-between gap-2 text-sm">
           <span className="inline-flex items-center rounded-full bg-green-50 border border-green-200 px-2.5 py-0.5 font-mono text-xs font-medium text-green-700 uppercase">

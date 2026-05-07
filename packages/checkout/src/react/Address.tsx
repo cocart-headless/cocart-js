@@ -126,9 +126,9 @@ function EmailInput({ field, inputClass, helperClass }: { field: CheckoutFormFie
         placeholder={field.placeholder ?? field.label}
         value={value}
         onChange={e => { setValue(e.target.value); if (showError && isValid) setShowError(false); }}
-        className={`${inputClass}${showError ? ' border-red-400 focus:border-red-400' : ''}`}
+        className={`${inputClass}${showError ? ' border-(--cocart-color-error) focus:border-(--cocart-color-error)' : ''}`}
       />
-      {showError && <p className="text-xs text-red-500 mt-1">Please enter a valid email address.</p>}
+      {showError && <p className="text-xs mt-1" style={{ color: 'var(--cocart-color-error)' }}>Please enter a valid email address.</p>}
       {!showError && field.description && <p className={helperClass}>{field.description}</p>}
     </>
   );
