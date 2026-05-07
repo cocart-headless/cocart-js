@@ -143,9 +143,10 @@ export interface OrderTotalsProps {
   subtotalCents?: number;
   taxCents?: number;
   coupons?: AppliedCoupon[];
+  showShipping?: boolean;
 }
 
-export function OrderTotals({ theme: _theme, subtotalCents = 8700, taxCents = 870, coupons = [] }: OrderTotalsProps) {
+export function OrderTotals({ theme: _theme, subtotalCents = 8700, taxCents = 870, coupons = [], showShipping = true }: OrderTotalsProps) {
   const hasFreeShipping = coupons.some(c => c.freeShipping);
   const totalDiscountCents = coupons.reduce((sum, c) => sum + (Number(c.discountCents) || 0), 0);
   const totalCents = subtotalCents - totalDiscountCents + taxCents;
@@ -170,12 +171,14 @@ export function OrderTotals({ theme: _theme, subtotalCents = 8700, taxCents = 87
           <span className="text-green-600 font-medium">Free</span>
         </div>
       )}
-      <div className="flex justify-between text-sm">
-        <span className="text-(--cocart-color-text)">Shipping</span>
-        <span className={hasFreeShipping ? 'line-through text-(--cocart-color-text-muted)' : 'text-(--cocart-color-text-muted)'}>
-          {hasFreeShipping ? 'Free' : 'Enter shipping address'}
-        </span>
-      </div>
+      {showShipping && (
+        <div className="flex justify-between text-sm">
+          <span className="text-(--cocart-color-text)">Shipping</span>
+          <span className={hasFreeShipping ? 'line-through text-(--cocart-color-text-muted)' : 'text-(--cocart-color-text-muted)'}>
+            {hasFreeShipping ? 'Free' : 'Enter shipping address'}
+          </span>
+        </div>
+      )}
       <div className="flex justify-between text-sm text-(--cocart-color-text)">
         <span>Taxes</span>
         <span>{fmt(taxCents)}</span>
@@ -194,10 +197,11 @@ interface OrderSummaryProps {
   loading?: boolean;
   total?: string;
   currency?: string;
+  showShipping?: boolean;
   onCouponsChange?: (coupons: AppliedCoupon[]) => void;
 }
 
-function SummaryContent({ theme, onCouponsChange }: { theme: CheckoutTheme; onCouponsChange?: (coupons: AppliedCoupon[]) => void }) {
+function SummaryContent({ theme, showShipping = true, onCouponsChange }: { theme: CheckoutTheme; showShipping?: boolean; onCouponsChange?: (coupons: AppliedCoupon[]) => void }) {
   const [coupons, setCoupons] = useState<AppliedCoupon[]>([]);
 
   function updateCoupons(next: AppliedCoupon[]) {
@@ -226,13 +230,13 @@ function SummaryContent({ theme, onCouponsChange }: { theme: CheckoutTheme; onCo
         />
       </div>
       <div className="border-t border-(--cocart-color-border) mt-4 pt-4">
-        <OrderTotals theme={theme} coupons={coupons} />
+        <OrderTotals theme={theme} coupons={coupons} showShipping={showShipping} />
       </div>
     </div>
   );
 }
 
-export function OrderSummary({ theme, mobileDrawer = false, loading = false, total = 'USD $95.70', currency: _currency, onCouponsChange }: OrderSummaryProps) {
+export function OrderSummary({ theme, mobileDrawer = false, loading = false, total = 'USD $95.70', currency: _currency, showShipping = true, onCouponsChange }: OrderSummaryProps) {
   const [drawerOpen, setDrawerOpen] = useState(false);
 
   if (loading) {
@@ -277,7 +281,7 @@ export function OrderSummary({ theme, mobileDrawer = false, loading = false, tot
   }
 
   if (!mobileDrawer) {
-    return <SummaryContent theme={theme} onCouponsChange={onCouponsChange} />;
+    return <SummaryContent theme={theme} showShipping={showShipping} onCouponsChange={onCouponsChange} />;
   }
 
   return (

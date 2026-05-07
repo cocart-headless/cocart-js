@@ -1,0 +1,28 @@
+/* Explicit CSS for classes Tailwind v4 doesn't generate from scanned files.
+   Imported directly in main.tsx so Tailwind doesn't process/discard these. */
+
+/* Two-column checkout layout */
+.grid-cols-\[1fr_380px\] { grid-template-columns: 1fr 380px; }
+.grid-cols-\[380px_1fr\] { grid-template-columns: 380px 1fr; }
+
+/* CSS custom property gap (arbitrary value) */
+.gap-\(--cocart-section-gap\) { gap: var(--cocart-section-gap); }
+
+/* Mobile phone frame sizing */
+.max-h-180 { max-height: 45rem; }
+.min-h-160 { min-height: 40rem; }
+.max-h-4\/5 { max-height: 80%; }
+.max-h-3\/5 { max-height: 60%; }
+.rounded-\[38px\] { border-radius: 38px; }
+.rounded-\[48px\] { border-radius: 48px; }
+.w-97\.5 { width: 24.375rem; }
+
+/* Modern theme section dividers */
+.modern-sections > * {
+  padding-top: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--cocart-color-border);
+}
+.modern-sections > *:last-child {
+  border-bottom: none;
+}

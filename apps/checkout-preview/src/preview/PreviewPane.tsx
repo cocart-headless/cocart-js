@@ -55,6 +55,7 @@ interface PreviewProps {
 
 function OrderSummarySection({ state, onCouponsChange }: { state: BuilderState; onCouponsChange?: (free: boolean) => void }) {
   const { theme, showOrderLineItems, showDiscountCode, showOrderTotals } = state;
+  const showShipping = state.collectShippingAddress && !state.shippingSameAsBilling;
   const [coupons, setCoupons] = useState<AppliedCoupon[]>([]);
 
   function handleCoupons(next: AppliedCoupon[]) {
@@ -80,7 +81,7 @@ function OrderSummarySection({ state, onCouponsChange }: { state: BuilderState; 
       )}
       {showOrderTotals && (
         <div className={(showOrderLineItems || showDiscountCode) ? 'border-t border-(--cocart-color-border) mt-4 pt-4' : ''}>
-          <OrderTotals theme={theme} coupons={coupons} />
+          <OrderTotals theme={theme} coupons={coupons} showShipping={showShipping} />
         </div>
       )}
     </div>
@@ -89,6 +90,7 @@ function OrderSummarySection({ state, onCouponsChange }: { state: BuilderState; 
 
 function MobileScreen({ state, expressGateways, regularGateways, expressOnly, activeGatewayId, sections }: PreviewProps) {
   const { theme, includeOrderSummary, mobileOrderSummaryDrawer } = state;
+  const showShipping = state.collectShippingAddress && !state.shippingSameAsBilling;
   const [freeShipping, setFreeShipping] = useState(false);
 
   return (
@@ -109,7 +111,7 @@ function MobileScreen({ state, expressGateways, regularGateways, expressOnly, ac
           onFreeShippingChange={setFreeShipping}
         />
         {includeOrderSummary && !mobileOrderSummaryDrawer && (
-          <OrderSummary theme={theme} onCouponsChange={c => setFreeShipping(c.some(x => x.freeShipping))} />
+          <OrderSummary theme={theme} showShipping={showShipping} onCouponsChange={c => setFreeShipping(c.some(x => x.freeShipping))} />
         )}
         {!includeOrderSummary && (
           <OrderSummarySection state={state} onCouponsChange={setFreeShipping} />
@@ -118,7 +120,7 @@ function MobileScreen({ state, expressGateways, regularGateways, expressOnly, ac
 
       {/* Bottom bar + drawer — rendered outside scroll so bar never scrolls away */}
       {includeOrderSummary && mobileOrderSummaryDrawer && (
-        <OrderSummary theme={theme} mobileDrawer onCouponsChange={c => setFreeShipping(c.some(x => x.freeShipping))} />
+        <OrderSummary theme={theme} mobileDrawer showShipping={showShipping} onCouponsChange={c => setFreeShipping(c.some(x => x.freeShipping))} />
       )}
 
       {/* Home indicator */}
@@ -203,7 +205,7 @@ function CheckoutPreview({ state, expressGateways, regularGateways, expressOnly,
   // Modern theme: wrap sections with dividers and white bg.
   // Other themes: render content directly so their sectionClassName card styles drive layout.
   const leftCol = isModern
-    ? <div className="min-w-0 overflow-hidden bg-(--cocart-color-background) text-(--cocart-color-text) *:py-4 *:border-b *:border-(--cocart-color-border) last:*:border-b-0">{leftContent}</div>
+    ? <div className="min-w-0 overflow-hidden bg-(--cocart-color-background) text-(--cocart-color-text) modern-sections">{leftContent}</div>
     : <div className="min-w-0 overflow-hidden grid gap-(--cocart-section-gap) py-4">{leftContent}</div>;
 
   if (layout === 'stacked') {
@@ -219,7 +221,7 @@ function CheckoutPreview({ state, expressGateways, regularGateways, expressOnly,
       {leftCol}
       <div className="self-stretch bg-(--cocart-color-background-alt)">
         {includeOrderSummary
-          ? <OrderSummary theme={theme} onCouponsChange={handleCouponsChange} />
+          ? <OrderSummary theme={theme} showShipping={showShipping} onCouponsChange={handleCouponsChange} />
           : <OrderSummarySection state={state} onCouponsChange={handleFreeShippingChange} />
         }
       </div>

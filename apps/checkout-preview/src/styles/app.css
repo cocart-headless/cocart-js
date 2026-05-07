@@ -1,8 +1,8 @@
 @import "tailwindcss";
 @plugin "daisyui";
 
-@source "../../packages/checkout/src/presets.ts";
-@source inline("bg-(--cocart-color-background-alt) bg-(--cocart-color-background-hover) bg-(--cocart-color-button) text-(--cocart-color-button-text) line-through text-red-500 text-green-500 text-green-600 border-red-400 focus:border-red-400 scrollbar-none");
+@source "../../../../packages/checkout/src/**/*.ts";
+@source "../../../../packages/checkout/src/**/*.tsx";
 
 @theme {
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
@@ -82,3 +82,4 @@
   from { opacity: 0; transform: translateY(4px); }
   to   { opacity: 1; transform: translateY(0); }
 }
+

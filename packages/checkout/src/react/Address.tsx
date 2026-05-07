@@ -253,7 +253,7 @@ export function Address({ type, section, theme, loading = false, isAuthorized = 
   const visibleFields = section.fields.filter(f => !f.hidden);
   const showSignIn = isContact && !isAuthorized;
   const inputClass = theme.inputClassName ?? DEFAULT_INPUT;
-  const btnClass = 'h-(--cocart-input-height) w-full rounded-(--cocart-border-radius) bg-(--cocart-color-button) px-4 text-[length:var(--cocart-font-size-base)] font-medium text-(--cocart-color-button-text) transition hover:opacity-90';
+  const btnClass = 'h-(--cocart-input-height) w-full rounded-(--cocart-border-radius-full) bg-(--cocart-color-button) px-4 text-[length:var(--cocart-font-size-base)] font-medium text-(--cocart-color-button-text) transition hover:opacity-90';
 
   // Sign-in form: replaces contact fields entirely while open
   if (showSignIn && signInOpen && !loggedIn) {
