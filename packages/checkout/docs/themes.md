@@ -56,7 +56,7 @@ const theme = createModernCheckoutTheme({
 
 ### `createTailwindCheckoutTheme(overrides?)`
 
-Slate-palette card layout. Each section is a rounded card with a border. Matches Tailwind's default design system aesthetic.
+Card layout powered by **daisyUI v5** tokens. Each section is a rounded card (`card` class). The active `data-theme` on an ancestor element controls colours — drop in any daisyUI theme and the checkout adapts automatically.
 
 ```ts
 import { createTailwindCheckoutTheme } from '@cocartheadless/checkout';
@@ -66,7 +66,9 @@ const theme = createTailwindCheckoutTheme();
 
 ### `createShadcnCheckoutTheme(overrides?)`
 
-Maps to shadcn/ui's HSL CSS variable palette. Border radius, spacing, and colours match shadcn component conventions. Use this when your app already has shadcn set up.
+Bordered card layout that reads colours directly from **shadcn/ui CSS variables** (`--primary`, `--background`, `--border`, etc.). If your app already has shadcn set up, the checkout inherits your brand with zero configuration. Dark mode is handled by your own `.dark` class toggling shadcn's tokens.
+
+Input fields use shadcn's `--input` border token and `--ring` for focus rings, matching shadcn component conventions exactly.
 
 ```ts
 import { createShadcnCheckoutTheme } from '@cocartheadless/checkout';
@@ -134,23 +136,23 @@ interface CheckoutThemeVariables {
 
 | Variable | modern | tailwind | shadcn |
 |---|---|---|---|
-| `colorPrimary` | `#1a1a1a` | `var(--color-primary)` ¹ | `hsl(222.2 47.4% 11.2%)` |
-| `colorBackground` | `#ffffff` | `var(--color-base-100)` ¹ | `hsl(0 0% 100%)` |
-| `colorBackgroundAlt` | `#f6f6f1` | `var(--color-base-200)` ¹ | `hsl(210 40% 96.1%)` |
-| `colorBackgroundHover` | `#f5f5f5` | `var(--color-base-200)` ¹ | `hsl(210 40% 96.1%)` |
-| `colorSurface` | `#ffffff` | `var(--color-base-100)` ¹ | `hsl(0 0% 100%)` |
-| `colorText` | `#1a1a1a` | `var(--color-base-content)` ¹ | `hsl(222.2 84% 4.9%)` |
-| `colorTextMuted` | `#6b6b6b` | `color-mix(…base-content 50%)` ¹ | `hsl(215.4 16.3% 46.9%)` |
-| `colorBorder` | `#d9d9d9` | `var(--color-base-300)` ¹ | `hsl(214.3 31.8% 91.4%)` |
-| `colorError` | `#dc2626` | `var(--color-error)` ¹ | `hsl(0 84.2% 60.2%)` |
-| `colorButton` | `#1a1a1a` | `var(--color-primary)` ¹ | `hsl(222.2 47.4% 11.2%)` |
-| `colorButtonText` | `#ffffff` | `var(--color-primary-content)` ¹ | `hsl(0 0% 100%)` |
-| `borderRadius` | `8px` | `12px` | `6px` |
-| `borderRadiusFull` | `9999px` | `16px` | `6px` |
-| `inputHeight` | `48px` | `44px` | `40px` |
+| `colorPrimary` | `#1a1a1a` | `var(--color-primary)` ¹ | `hsl(var(--primary))` ² |
+| `colorBackground` | `#ffffff` | `var(--color-base-100)` ¹ | `hsl(var(--background))` ² |
+| `colorBackgroundAlt` | `#f6f6f1` | `var(--color-base-200)` ¹ | `hsl(var(--muted))` ² |
+| `colorBackgroundHover` | `#f5f5f5` | `var(--color-base-200)` ¹ | `hsl(var(--muted))` ² |
+| `colorSurface` | `#ffffff` | `var(--color-base-100)` ¹ | `hsl(var(--card))` ² |
+| `colorText` | `#1a1a1a` | `var(--color-base-content)` ¹ | `hsl(var(--foreground))` ² |
+| `colorTextMuted` | `#6b6b6b` | `color-mix(…base-content 50%)` ¹ | `hsl(var(--muted-foreground))` ² |
+| `colorBorder` | `#d9d9d9` | `var(--color-base-300)` ¹ | `hsl(var(--border))` ² |
+| `colorError` | `#dc2626` | `var(--color-error)` ¹ | `hsl(var(--destructive))` ² |
+| `colorButton` | `#1a1a1a` | `var(--color-primary)` ¹ | `hsl(var(--primary))` ² |
+| `colorButtonText` | `#ffffff` | `var(--color-primary-content)` ¹ | `hsl(var(--primary-foreground))` ² |
+| `borderRadius` | `8px` | `12px` | `var(--radius)` ² |
+| `borderRadiusFull` | `9999px` | `16px` | `calc(var(--radius) * 2)` ² |
+| `inputHeight` | `48px` | `44px` | `36px` |
 | `sectionGap` | `0px` | `24px` | `16px` |
 
-¹ The `tailwind` preset defers colours to **daisyUI v5 CSS tokens** — the active `data-theme` on an ancestor element determines the resolved colour. To supply explicit hex values (e.g. for codegen output or non-daisyUI projects), override `variables` with real hex values:
+¹ The `tailwind` preset defers colours to **daisyUI v5 CSS tokens** — the active `data-theme` on an ancestor element determines the resolved colour. To supply explicit hex values (e.g. for non-daisyUI projects), override `variables` with real hex values:
 
 ```ts
 const theme = createTailwindCheckoutTheme({
@@ -158,6 +160,18 @@ const theme = createTailwindCheckoutTheme({
     colorPrimary:    '#7c3aed',
     colorBackground: '#ffffff',
     colorButton:     '#7c3aed',
+    colorButtonText: '#ffffff',
+  },
+});
+```
+
+² The `shadcn` preset defers colours to **shadcn/ui CSS variables** — the standard `--primary`, `--background`, `--border` etc. from your `globals.css` are used automatically, so the checkout inherits your app's brand with zero configuration. Dark mode is handled by your own `.dark` class toggling shadcn's tokens. To supply explicit values, override `variables`:
+
+```ts
+const theme = createShadcnCheckoutTheme({
+  variables: {
+    colorPrimary:    'hsl(263 70% 50%)',
+    colorButton:     'hsl(263 70% 50%)',
     colorButtonText: '#ffffff',
   },
 });
@@ -262,10 +276,28 @@ interface CheckoutTheme {
 Use class names for Tailwind utilities, shadcn component classes, or any design system that doesn't map cleanly to the variable model:
 
 ```ts
+// shadcn preset — the factory already sets these; override only what you need
 const theme = createShadcnCheckoutTheme({
-  submitButtonClassName: 'inline-flex h-10 w-full items-center justify-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90',
+  submitButtonClassName: 'inline-flex h-10 w-full items-center justify-center rounded-full bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90',
+});
+
+// daisyUI preset — the factory already sets daisyUI component classes
+const theme = createTailwindCheckoutTheme({
+  submitButtonClassName: 'btn btn-secondary btn-block mt-2',
 });
 ```
+
+### Default class names by preset
+
+| Property | modern | tailwind | shadcn |
+|---|---|---|---|
+| `containerClassName` | `mx-auto max-w-5xl grid lg:grid-cols-[1fr_380px]` | `mx-auto max-w-5xl grid gap-6 lg:grid-cols-[1.2fr_0.8fr]` | `mx-auto max-w-5xl grid gap-6 lg:grid-cols-[1.2fr_0.8fr]` |
+| `sectionClassName` | `px-4 lg:px-10` | `card bg-base-100 shadow-sm p-6` | `rounded-lg border border-(--cocart-color-border) bg-(--cocart-color-surface) p-6 shadow-xs` |
+| `orderSummaryClassName` | `px-4 py-4 lg:px-10 lg:py-8` | `card p-6` | `rounded-lg border border-(--cocart-color-border) bg-(--cocart-color-surface) p-6 shadow-xs` |
+| `inputClassName` | _(default styles)_ | `input input-bordered w-full h-(--cocart-input-height) text-sm` | `flex h-(--cocart-input-height) w-full rounded-md border border-[hsl(var(--input))] bg-(--cocart-color-background) px-3 py-1 text-sm shadow-xs outline-none placeholder:text-(--cocart-color-text-muted) focus-visible:ring-2 focus-visible:ring-[hsl(var(--ring))] focus-visible:ring-offset-2 transition-colors` |
+| `labelClassName` | _(default styles)_ | _(default styles)_ | `text-sm font-medium leading-none text-(--cocart-color-text)` |
+| `helperTextClassName` | _(default styles)_ | `text-xs text-base-content/50 mt-0.5` | `text-xs text-(--cocart-color-text-muted) mt-1` |
+| `submitButtonClassName` | _(default styles)_ | `btn btn-primary btn-block mt-2` | `inline-flex h-10 w-full items-center justify-center rounded-[--cocart-border-radius-full] bg-(--cocart-color-button) px-4 text-sm font-medium text-(--cocart-color-button-text) shadow-xs transition hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--ring))] focus-visible:ring-offset-2` |
 
 ---
 

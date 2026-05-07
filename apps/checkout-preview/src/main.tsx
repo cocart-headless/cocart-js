@@ -122,8 +122,14 @@ function main(): void {
       || (state.colorScheme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
     const daisyTheme = state.themePreset === 'tailwind' ? state.daisyTheme : null;
 
-    previewOuter.setAttribute('data-theme', daisyTheme ?? (isDark ? 'dark' : 'light'));
-    previewOuter.className = `flex flex-1 flex-col overflow-hidden transition-colors ${isDark ? 'bg-zinc-950' : 'bg-slate-100'}`;
+    // Only set data-theme on the outer wrapper for daisyUI — shadcn manages its own data-theme on the inner wrapper
+    if (state.themePreset === 'tailwind') {
+      previewOuter.setAttribute('data-theme', daisyTheme ?? 'light');
+    } else {
+      previewOuter.removeAttribute('data-theme');
+    }
+    const previewBg = isDark ? 'bg-zinc-950' : (state.themePreset === 'shadcn' ? 'bg-white' : 'bg-slate-100');
+    previewOuter.className = `flex flex-1 flex-col overflow-hidden transition-colors ${previewBg}`;
     previewLabel.className = `flex items-center justify-between border-b px-4 py-2 text-xs font-medium shrink-0 transition-colors ${
       isDark ? 'border-zinc-800 bg-zinc-900 text-zinc-400' : 'border-slate-200 bg-white text-slate-500'
     }`;

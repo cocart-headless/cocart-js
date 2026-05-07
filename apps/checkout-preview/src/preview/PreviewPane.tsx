@@ -3,7 +3,7 @@ import { createRoot } from 'react-dom/client';
 import type { Root } from 'react-dom/client';
 import { CheckoutClient, resolveTheme } from '@cocartheadless/checkout';
 import type { CheckoutTheme, CheckoutGatewayAdapter, CheckoutFormSection, CheckoutGatewayPresentation } from '@cocartheadless/checkout';
-import { MODERN_VARIABLES_DARK, SHADCN_VARIABLES_DARK } from '@cocartheadless/checkout';
+import { MODERN_VARIABLES_DARK } from '@cocartheadless/checkout';
 import type { AppliedCoupon } from '@cocartheadless/checkout/react';
 import { CheckoutContainer, ExpressBar, Address, ShippingMethods, PaymentMethods, OrderSummary, OrderLineItems, DiscountCode, OrderTotals, PayButton, TermsAndConditions } from '@cocartheadless/checkout/react';
 import { mockCoCartClient } from '../mock-client.js';
@@ -23,9 +23,8 @@ function applyTheme(state: BuilderState): void {
   const isDark = resolveEffectiveDark(state.colorScheme);
   let theme: CheckoutTheme = state.theme;
 
-  if (isDark && state.themePreset !== 'tailwind') {
-    const darkVars = state.themePreset === 'shadcn' ? SHADCN_VARIABLES_DARK : MODERN_VARIABLES_DARK;
-    theme = { ...state.theme, variables: darkVars };
+  if (isDark && state.themePreset === 'modern') {
+    theme = { ...state.theme, variables: MODERN_VARIABLES_DARK };
   }
 
   themeStyleEl?.remove();
@@ -304,14 +303,15 @@ export class PreviewPane {
       includeSummary: false,
     });
 
-    const effectiveDaisyTheme = state.themePreset === 'tailwind'
-      ? state.daisyTheme
-      : undefined;
+    const isDark = resolveEffectiveDark(state.colorScheme);
+    const effectiveDaisyTheme = state.themePreset === 'tailwind' ? state.daisyTheme : undefined;
+    const effectiveShadcnTheme = state.themePreset === 'shadcn' ? (isDark ? 'dark' : 'light') : undefined;
+    const dataTheme = effectiveDaisyTheme ?? effectiveShadcnTheme;
 
     const wrapperClass = `bg-(--cocart-color-background) min-h-full${state.themePreset === 'shadcn' ? ' shadcn-vars' : ''}`;
 
     this.root.render(
-      <div className={wrapperClass} {...(effectiveDaisyTheme ? { 'data-theme': effectiveDaisyTheme } : {})}>
+      <div className={wrapperClass} {...(dataTheme ? { 'data-theme': dataTheme } : {})}>
         {state.previewViewport === 'mobile' ? (
           <div className="flex items-start justify-center py-8">
             <div className="relative w-97.5 rounded-[48px] bg-slate-900 p-3 shadow-2xl ring-1 ring-slate-700">

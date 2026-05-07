@@ -51,26 +51,27 @@ const TAILWIND_VARIABLES: CheckoutThemeVariables = {
   sectionGap:       '24px',
 };
 
+// Maps cocart variables to shadcn/ui semantic tokens — adapts to the user's own globals.css automatically
 const SHADCN_VARIABLES: CheckoutThemeVariables = {
-  colorPrimary:         'hsl(222.2 47.4% 11.2%)',
-  colorBackground:      'hsl(0 0% 100%)',
-  colorBackgroundAlt:   'hsl(210 40% 96.1%)',
-  colorBackgroundHover: 'hsl(210 40% 96.1%)',
-  colorSurface:         'hsl(0 0% 100%)',
-  colorText:            'hsl(222.2 84% 4.9%)',
-  colorTextMuted:       'hsl(215.4 16.3% 46.9%)',
-  colorBorder:          'hsl(214.3 31.8% 91.4%)',
-  colorError:           'hsl(0 84.2% 60.2%)',
-  colorButton:          'hsl(222.2 47.4% 11.2%)',
-  colorButtonText:      'hsl(0 0% 100%)',
+  colorPrimary:         'hsl(var(--primary))',
+  colorBackground:      'hsl(var(--background))',
+  colorBackgroundAlt:   'hsl(var(--muted))',
+  colorBackgroundHover: 'hsl(var(--muted))',
+  colorSurface:         'hsl(var(--card))',
+  colorText:            'hsl(var(--foreground))',
+  colorTextMuted:       'hsl(var(--muted-foreground))',
+  colorBorder:          'hsl(var(--border))',
+  colorError:           'hsl(var(--destructive))',
+  colorButton:          'hsl(var(--primary))',
+  colorButtonText:      'hsl(var(--primary-foreground))',
   fontFamily:      "ui-sans-serif, system-ui, sans-serif",
   fontSizeBase:    '14px',
   fontWeightNormal: '400',
   fontWeightMedium: '500',
   fontWeightBold:   '600',
-  borderRadius:     '6px',
-  borderRadiusFull: '6px',
-  inputHeight:      '40px',
+  borderRadius:     'var(--radius)',
+  borderRadiusFull: 'calc(var(--radius) * 2)',
+  inputHeight:      '36px',
   spacingUnit:      '4px',
   fieldGap:         '6px',
   sectionGap:       '16px',
@@ -104,30 +105,8 @@ const MODERN_VARIABLES_DARK: CheckoutThemeVariables = {
 // daisyUI tokens are self-adapting — no separate dark variant needed
 const TAILWIND_VARIABLES_DARK = TAILWIND_VARIABLES;
 
-const SHADCN_VARIABLES_DARK: CheckoutThemeVariables = {
-  colorPrimary:         'hsl(210 40% 98%)',
-  colorBackground:      'hsl(222.2 84% 4.9%)',
-  colorBackgroundAlt:   'hsl(217.2 32.6% 17.5%)',
-  colorBackgroundHover: 'hsl(217.2 32.6% 17.5%)',
-  colorSurface:         'hsl(222.2 84% 4.9%)',
-  colorText:            'hsl(210 40% 98%)',
-  colorTextMuted:       'hsl(215 20.2% 65.1%)',
-  colorBorder:          'hsl(217.2 32.6% 17.5%)',
-  colorError:           'hsl(0 62.8% 30.6%)',
-  colorButton:          'hsl(210 40% 98%)',
-  colorButtonText:      'hsl(222.2 47.4% 11.2%)',
-  fontFamily:      "ui-sans-serif, system-ui, sans-serif",
-  fontSizeBase:    '14px',
-  fontWeightNormal: '400',
-  fontWeightMedium: '500',
-  fontWeightBold:   '600',
-  borderRadius:     '6px',
-  borderRadiusFull: '6px',
-  inputHeight:      '40px',
-  spacingUnit:      '4px',
-  fieldGap:         '6px',
-  sectionGap:       '16px',
-};
+// shadcn tokens self-adapt via data-theme="dark" on the wrapper — no separate variable set needed
+const SHADCN_VARIABLES_DARK = SHADCN_VARIABLES;
 
 const PRESET_VARIABLES: Record<string, CheckoutThemeVariables> = {
   modern:  MODERN_VARIABLES,

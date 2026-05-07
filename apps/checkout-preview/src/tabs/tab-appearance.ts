@@ -159,6 +159,37 @@ function hasManuallyCustomisedDaisyColors(store: StateStore): boolean {
   return colorKeys.some(k => k in vars && vars[k] !== expected[k]);
 }
 
+// Hardcoded hex equivalents of the .shadcn-vars slate defaults — used to populate the preview color pickers
+// Hex equivalents of shadcn/ui "Neutral" theme tokens (matches shadcn/ui Create page)
+const SHADCN_LIGHT_HEX: Partial<import('@cocartheadless/checkout').CheckoutThemeVariables> = {
+  colorPrimary:         '#171717',  // --primary: 0 0% 9%
+  colorBackground:      '#ffffff',  // --background: 0 0% 100%
+  colorBackgroundAlt:   '#f5f5f5',  // --muted: 0 0% 96.1% (subtle panel)
+  colorBackgroundHover: '#f5f5f5',  // --muted
+  colorSurface:         '#ffffff',  // --card: 0 0% 100%
+  colorText:            '#171717',  // --foreground: 0 0% 9%
+  colorTextMuted:       '#737373',  // --muted-foreground: 0 0% 45.1%
+  colorBorder:          '#e5e5e5',  // --border: 0 0% 89.8%
+  colorError:           '#ef4444',  // --destructive: 0 84.2% 60.2%
+  colorButton:          '#171717',  // --primary
+  colorButtonText:      '#fafafa',  // --primary-foreground: 0 0% 98%
+};
+
+// Dark: --background: 0 0% 9% = #171717
+const SHADCN_DARK_HEX: Partial<import('@cocartheadless/checkout').CheckoutThemeVariables> = {
+  colorPrimary:         '#fafafa',  // --primary: 0 0% 98%
+  colorBackground:      '#171717',  // --background: 0 0% 9%
+  colorBackgroundAlt:   '#262626',  // --muted: 0 0% 14.9%
+  colorBackgroundHover: '#262626',  // --muted
+  colorSurface:         '#171717',  // --card: 0 0% 9%
+  colorText:            '#fafafa',  // --foreground: 0 0% 98%
+  colorTextMuted:       '#a3a3a3',  // --muted-foreground: 0 0% 63.9%
+  colorBorder:          '#262626',  // --border: 0 0% 14.9%
+  colorError:           '#7f1d1d',  // --destructive
+  colorButton:          '#fafafa',  // --primary
+  colorButtonText:      '#171717',  // --primary-foreground
+};
+
 let activePopover: HTMLElement | null = null;
 
 function resolveColorToHex(val: string): string {
@@ -183,10 +214,12 @@ function resolveColorToHex(val: string): string {
 const PALETTE_HUES = [0,15,30,45,60,75,90,105,120,135,150,165,180,195,210,225,240,255,270,285,300,315,330,345];
 const PALETTE_LIGHTS = [97,93,87,80,70,60,50,40,30,20,13,8];
 
-function buildColorPopover(initialHex: string, onChange: (hex: string) => void, _anchorEl: HTMLElement): HTMLElement {
+function buildColorPopover(initialHex: string, label: string, onCommit: (hex: string) => void, _anchorEl: HTMLElement): HTMLElement {
   // Full-screen backdrop — the returned element IS the backdrop
   const backdrop = document.createElement('div');
   backdrop.className = 'fixed inset-0 z-50 flex items-center justify-center bg-black/20';
+
+  let stagedHex = toHex(initialHex);
 
   backdrop.addEventListener('click', () => { backdrop.remove(); if (activePopover === backdrop) activePopover = null; });
 
@@ -203,8 +236,8 @@ function buildColorPopover(initialHex: string, onChange: (hex: string) => void, 
 
   function emit(hex: string): void {
     currentHex = hex;
+    stagedHex = hex;
     [ch, cs, cl] = hexToHsl(hex);
-    onChange(hex);
     updatePreview(hex);
     syncSliders();
     if (hexInput) hexInput.value = hex;
@@ -212,12 +245,16 @@ function buildColorPopover(initialHex: string, onChange: (hex: string) => void, 
 
   // ── Header ────────────────────────────────────────────────────────────────
   const header = document.createElement('div');
-  header.className = 'flex items-center justify-between px-4 py-3 border-b border-slate-100';
+  header.className = 'flex items-center gap-3 px-4 py-3 border-b border-slate-100';
 
   const preview = document.createElement('div');
   preview.style.cssText = 'width:36px;height:36px;border-radius:10px;border:1px solid rgba(0,0,0,0.12);flex-shrink:0;';
   preview.style.backgroundColor = currentHex;
   function updatePreview(hex: string): void { preview.style.backgroundColor = hex; }
+
+  const labelEl = document.createElement('span');
+  labelEl.style.cssText = 'flex:1;font-size:12px;font-weight:500;color:#334155;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
+  labelEl.textContent = label;
 
   function closeModal(): void {
     backdrop.remove();
@@ -259,6 +296,7 @@ function buildColorPopover(initialHex: string, onChange: (hex: string) => void, 
   tabBar.appendChild(makeTab('Palette', 'palette'));
   tabBar.appendChild(makeTab('Picker', 'picker'));
   header.appendChild(preview);
+  header.appendChild(labelEl);
   header.appendChild(tabBar);
   header.appendChild(closeBtn);
   modal.appendChild(header);
@@ -373,7 +411,7 @@ function buildColorPopover(initialHex: string, onChange: (hex: string) => void, 
   doneBtn.type = 'button';
   doneBtn.textContent = 'Done';
   doneBtn.style.cssText = 'flex-shrink:0;height:32px;padding:0 14px;border-radius:8px;border:none;background:#7c3aed;color:#fff;font-size:12px;font-weight:500;cursor:pointer;';
-  doneBtn.addEventListener('click', e => { e.stopPropagation(); closeModal(); });
+  doneBtn.addEventListener('click', e => { e.stopPropagation(); onCommit(stagedHex); closeModal(); });
 
   footer.appendChild(hexLabel);
   footer.appendChild(hexInput);
@@ -467,13 +505,13 @@ function buildColorRow({ label, varKey, value, onChange }: ColorRowOptions): HTM
   right.className = 'flex items-center gap-2 shrink-0 relative';
 
   const swatch = document.createElement('div');
-  swatch.className = 'h-6 w-6 rounded-md border border-slate-200 cursor-pointer shrink-0';
+  swatch.className = 'h-6 w-6 rounded-md border border-slate-200 shrink-0 cursor-pointer';
   swatch.style.backgroundColor = value;
   swatch.dataset['varSwatch'] = varKey;
 
   const hexDisplay = document.createElement('span');
   hexDisplay.className = 'text-xs font-mono text-slate-500 w-16 truncate';
-  hexDisplay.textContent = value.startsWith('var(') ? '—' : value;
+  hexDisplay.textContent = value;
   hexDisplay.dataset['varDisplay'] = varKey;
 
   let popoverEl: HTMLElement | null = null;
@@ -483,8 +521,11 @@ function buildColorRow({ label, varKey, value, onChange }: ColorRowOptions): HTM
     if (popoverEl) { popoverEl.remove(); popoverEl = null; activePopover = null; return; }
     if (activePopover) { activePopover.remove(); activePopover = null; }
 
-    const currentHex = resolveColorToHex(value);
-    popoverEl = buildColorPopover(currentHex, (hex) => {
+    const liveValue = hexDisplay.dataset['varDisplay']
+      ? (hexDisplay.textContent ?? value)
+      : value;
+    const currentHex = resolveColorToHex(liveValue);
+    popoverEl = buildColorPopover(currentHex, label, (hex) => {
       swatch.style.backgroundColor = hex;
       hexDisplay.textContent = hex;
       value = hex;
@@ -690,10 +731,12 @@ function syncPresetCards(panel: HTMLElement, activePreset: string): void {
   if (sgRow) sgRow.hidden = activePreset === 'modern';
   const daisyRow = panel.querySelector<HTMLElement>('[data-daisy-theme-row]');
   if (daisyRow) daisyRow.hidden = activePreset !== 'tailwind';
+  const colorSection = panel.querySelector<HTMLElement>('[data-color-section]');
+  if (colorSection) colorSection.hidden = false;
   const typoSection = panel.querySelector<HTMLElement>('[data-typo-section]');
   if (typoSection) typoSection.hidden = activePreset === 'tailwind';
   const shapeSection = panel.querySelector<HTMLElement>('[data-shape-section]');
-  if (shapeSection) shapeSection.hidden = activePreset === 'tailwind';
+  if (shapeSection) shapeSection.hidden = activePreset === 'tailwind' || activePreset === 'shadcn';
 }
 
 function syncDaisyThemeSelect(panel: HTMLElement, daisyTheme: string): void {
@@ -711,10 +754,11 @@ function syncVariableControls(panel: HTMLElement, theme: { preset?: string; vari
   panel.querySelectorAll<HTMLElement>('[data-var-swatch]').forEach(swatch => {
     const key = swatch.dataset['varSwatch'] as keyof CheckoutThemeVariables;
     const val = (vars[key] as string) ?? '';
-    swatch.style.backgroundColor = val.startsWith('var(') ? '' : val;
+    const isCssToken = val.includes('var(');
+    swatch.style.backgroundColor = isCssToken ? '' : val;
     const display = swatch.nextElementSibling as HTMLElement | null;
     if (display && display.dataset['varDisplay']) {
-      display.textContent = val.startsWith('var(') ? '—' : val;
+      display.textContent = isCssToken ? '—' : val;
     }
   });
 }
@@ -878,6 +922,10 @@ function buildAppearanceTab(store: StateStore): HTMLElement {
           const daisyEntry = DAISY_THEMES.find(t => t.name === store.get().daisyTheme) ?? DAISY_THEMES[0];
           newTheme.variables = { ...newTheme.variables, ...daisyThemeVariables(daisyEntry) };
         }
+        if (preset.id === 'shadcn') {
+          const isDark = store.get().colorScheme === 'dark';
+          newTheme.variables = { ...newTheme.variables, ...(isDark ? SHADCN_DARK_HEX : SHADCN_LIGHT_HEX) };
+        }
         store.update({ themePreset: preset.id, themeClassesEdited: false, theme: newTheme });
         syncVariableControls(panel, newTheme);
         syncClassInputs(panel, newTheme);
@@ -958,7 +1006,10 @@ function buildAppearanceTab(store: StateStore): HTMLElement {
   panel.appendChild(daisyRow);
 
   // ── Colors ────────────────────────────────────────────────────────────────
-  panel.appendChild(buildSectionHeading('Colors'));
+  const colorSection = document.createElement('div');
+  colorSection.dataset['colorSection'] = '';
+  colorSection.hidden = false;
+  colorSection.appendChild(buildSectionHeading('Colors'));
 
   const colorGrid = document.createElement('div');
   colorGrid.className = 'grid gap-2';
@@ -993,7 +1044,8 @@ function buildAppearanceTab(store: StateStore): HTMLElement {
     }));
   });
 
-  panel.appendChild(colorGrid);
+  colorSection.appendChild(colorGrid);
+  panel.appendChild(colorSection);
 
   // ── Typography ────────────────────────────────────────────────────────────
   const typoSection = document.createElement('div');
@@ -1008,10 +1060,19 @@ function buildAppearanceTab(store: StateStore): HTMLElement {
     label: 'Font family',
     value: (vars.fontFamily as string | undefined) ?? "'Inter', system-ui, sans-serif",
     options: [
-      { value: "'Inter', system-ui, sans-serif",       label: 'Inter (default)' },
-      { value: 'system-ui, sans-serif',                label: 'System UI' },
-      { value: "'Georgia', 'Times New Roman', serif",  label: 'Georgia (serif)' },
-      { value: "'ui-monospace', 'Courier New', monospace", label: 'Monospace' },
+      { value: "'Geist', ui-sans-serif, system-ui, sans-serif",       label: 'Geist' },
+      { value: "'Inter', ui-sans-serif, system-ui, sans-serif",       label: 'Inter' },
+      { value: "'Noto Sans', ui-sans-serif, system-ui, sans-serif",   label: 'Noto Sans' },
+      { value: "'Nunito Sans', ui-sans-serif, system-ui, sans-serif", label: 'Nunito Sans' },
+      { value: "'Figtree', ui-sans-serif, system-ui, sans-serif",     label: 'Figtree' },
+      { value: "'Roboto', ui-sans-serif, system-ui, sans-serif",      label: 'Roboto' },
+      { value: "'Raleway', ui-sans-serif, system-ui, sans-serif",     label: 'Raleway' },
+      { value: "'DM Sans', ui-sans-serif, system-ui, sans-serif",     label: 'DM Sans' },
+      { value: "'Public Sans', ui-sans-serif, system-ui, sans-serif", label: 'Public Sans' },
+      { value: "'Outfit', ui-sans-serif, system-ui, sans-serif",      label: 'Outfit' },
+      { value: 'ui-sans-serif, system-ui, sans-serif',                label: 'System UI' },
+      { value: "'Georgia', 'Times New Roman', serif",                 label: 'Georgia (serif)' },
+      { value: "'ui-monospace', 'Courier New', monospace",            label: 'Monospace' },
     ],
     onChange: (val) => {
       const merged: Partial<CheckoutThemeVariables> = { ...(store.get().theme.variables ?? {}), fontFamily: val };
@@ -1033,7 +1094,7 @@ function buildAppearanceTab(store: StateStore): HTMLElement {
       store.update({ theme: { ...store.get().theme, variables: merged } });
     },
   });
-  typoGrid.appendChild(fontSizeRow);
+  if (state.themePreset !== 'shadcn') typoGrid.appendChild(fontSizeRow);
 
   typoSection.appendChild(typoGrid);
   panel.appendChild(typoSection);
@@ -1041,7 +1102,7 @@ function buildAppearanceTab(store: StateStore): HTMLElement {
   // ── Shape ─────────────────────────────────────────────────────────────────
   const shapeSection = document.createElement('div');
   shapeSection.dataset['shapeSection'] = '';
-  shapeSection.hidden = state.themePreset === 'tailwind';
+  shapeSection.hidden = state.themePreset === 'tailwind' || state.themePreset === 'shadcn';
   shapeSection.appendChild(buildSectionHeading('Shape'));
 
   const shapeGrid = document.createElement('div');

@@ -32,9 +32,12 @@ export function createShadcnCheckoutTheme(overrides: Partial<CheckoutTheme> = {}
   return {
     preset: 'shadcn',
     containerClassName: 'mx-auto max-w-5xl grid gap-6 lg:grid-cols-[1.2fr_0.8fr]',
-    sectionClassName: 'rounded-xl border border-(--cocart-color-border) bg-(--cocart-color-surface) p-6 shadow-sm',
-    orderSummaryClassName: 'rounded-xl border border-(--cocart-color-border) bg-(--cocart-color-background-alt) p-6',
-    submitButtonClassName: 'inline-flex h-10 w-full items-center justify-center rounded-(--cocart-border-radius) bg-(--cocart-color-button) px-4 text-sm font-medium text-(--cocart-color-button-text) transition hover:opacity-90',
+    sectionClassName: 'rounded-lg border border-(--cocart-color-border) bg-(--cocart-color-surface) p-6 shadow-xs',
+    orderSummaryClassName: 'rounded-lg border border-(--cocart-color-border) bg-(--cocart-color-surface) p-6 shadow-xs',
+    inputClassName: 'flex h-(--cocart-input-height) w-full rounded-md border border-[hsl(var(--input))] bg-(--cocart-color-background) px-3 py-1 text-sm shadow-xs outline-none placeholder:text-(--cocart-color-text-muted) focus-visible:ring-2 focus-visible:ring-[hsl(var(--ring))] focus-visible:ring-offset-2 transition-colors',
+    labelClassName: 'text-sm font-medium leading-none text-(--cocart-color-text)',
+    helperTextClassName: 'text-xs text-(--cocart-color-text-muted) mt-1',
+    submitButtonClassName: 'inline-flex h-10 w-full items-center justify-center rounded-[--cocart-border-radius-full] bg-(--cocart-color-button) px-4 text-sm font-medium text-(--cocart-color-button-text) shadow-xs transition hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--ring))] focus-visible:ring-offset-2',
     ...overrides,
   };
 }
