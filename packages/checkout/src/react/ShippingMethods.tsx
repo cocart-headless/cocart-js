@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import type { CheckoutTheme } from '../index.js';
 import { Sk } from './skeleton.js';
 
@@ -13,6 +14,8 @@ const MOCK_RATES = [
 ];
 
 export function ShippingMethods({ theme, loading = false, freeShipping = false }: ShippingMethodsProps) {
+  const [selectedId, setSelectedId] = useState(MOCK_RATES[0].id);
+
   if (loading) {
     return (
       <div className={theme.sectionClassName ?? ''}>
@@ -37,16 +40,19 @@ export function ShippingMethods({ theme, loading = false, freeShipping = false }
     <div className={theme.sectionClassName ?? ''}>
       <h2 className="mb-4 text-base font-bold text-(--cocart-color-text)">Shipping method</h2>
       <div className="grid gap-(--cocart-field-gap)">
-        {MOCK_RATES.map((rate, i) => (
+        {MOCK_RATES.map((rate) => {
+          const selected = rate.id === selectedId;
+          return (
           <label
             key={rate.id}
-            className="flex items-center gap-3 cursor-pointer rounded-(--cocart-border-radius) border border-(--cocart-color-border) px-4 py-3.5 text-sm transition hover:bg-(--cocart-color-background-hover)"
+            className={`flex items-center gap-3 cursor-pointer rounded-(--cocart-border-radius) border border-(--cocart-color-border) px-4 py-3.5 text-sm transition ${selected ? 'bg-(--cocart-color-background-hover)' : 'hover:bg-(--cocart-color-background-hover)'}`}
           >
             <input
               type="radio"
               name="shipping_method"
               value={rate.id}
-              defaultChecked={i === 0}
+              checked={selected}
+              onChange={() => setSelectedId(rate.id)}
               className="h-4 w-4 shrink-0 accent-(--cocart-color-primary)"
             />
             <div className="flex flex-col flex-1 min-w-0">
@@ -64,7 +70,7 @@ export function ShippingMethods({ theme, loading = false, freeShipping = false }
               )}
             </span>
           </label>
-        ))}
+        );})}
       </div>
     </div>
   );

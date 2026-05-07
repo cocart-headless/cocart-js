@@ -54,7 +54,7 @@ function CountrySelect({ field, inputClass }: { field: CheckoutFormField; inputC
             <button
               key={opt.value}
               type="button"
-              className={`w-full px-3.5 py-2.5 text-left text-sm transition hover:bg-(--cocart-color-background-hover) ${selected.value === opt.value ? 'bg-(--cocart-color-background-hover) font-medium' : ''}`}
+              className={`w-full px-3.5 py-2.5 text-left text-sm text-(--cocart-color-text) transition hover:bg-(--cocart-color-background-hover) ${selected.value === opt.value ? 'bg-(--cocart-color-background-hover) font-medium' : ''}`}
               onClick={() => { setSelected(opt); setOpen(false); }}
             >
               {opt.label}

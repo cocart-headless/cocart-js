@@ -24,6 +24,7 @@ import {
   OrderTotals,
   DiscountCode,
   PayButton,
+  TermsAndConditions,
 } from '@cocartheadless/checkout/react';
 ```
 
@@ -152,17 +153,20 @@ renderExpressField={({ field }) => {
 
 ## `<ShippingMethods>`
 
-Renders a radio group of shipping rate options. Currently uses mock data — wire up to `client.checkout.getShippingMethods()` and replace `MOCK_RATES` with live data when integrating.
+Renders a radio group of shipping rate options. The selected row is highlighted with `colorBackgroundHover`. Currently uses mock data — wire up to `client.checkout.getShippingMethods()` and replace `MOCK_RATES` with live data when integrating.
 
 ```tsx
 <ShippingMethods theme={theme} />
+<ShippingMethods theme={theme} freeShipping />
 ```
 
 **Props**
 
-| Prop | Type | Description |
-|---|---|---|
-| `theme` | `CheckoutTheme` | Controls `sectionClassName` |
+| Prop | Type | Default | Description |
+|---|---|---|---|
+| `theme` | `CheckoutTheme` | required | Controls `sectionClassName` |
+| `loading` | `boolean` | `false` | Shows skeleton placeholders |
+| `freeShipping` | `boolean` | `false` | Strikes through paid rates and shows "Free" |
 
 ---
 
@@ -320,6 +324,28 @@ Renders a full-width `<button type="submit">` styled with the theme's button var
 |---|---|---|---|
 | `label` | `string` | `'Pay now'` | Button text |
 | `theme` | `CheckoutTheme` | required | Controls `submitButtonClassName` |
+
+---
+
+## `<TermsAndConditions>`
+
+Wraps a `<PayButton>` (or any children) with a checkbox gate. The wrapped content is rendered at reduced opacity with pointer events disabled until the customer checks the box.
+
+```tsx
+<TermsAndConditions theme={theme} termsUrl="/terms" privacyUrl="/privacy">
+  <PayButton theme={theme} />
+</TermsAndConditions>
+```
+
+**Props**
+
+| Prop | Type | Default | Description |
+|---|---|---|---|
+| `theme` | `CheckoutTheme` | required | Theme reference |
+| `termsUrl` | `string` | — | Link inserted into the label for terms of service |
+| `privacyUrl` | `string` | — | Link inserted into the label for privacy policy |
+| `label` | `string` | built-in | Override the full checkbox label text |
+| `children` | `React.ReactNode` | — | Content gated behind the checkbox (typically `<PayButton>`) |
 
 ---
 

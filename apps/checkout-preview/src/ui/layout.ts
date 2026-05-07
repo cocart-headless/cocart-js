@@ -5,6 +5,8 @@ export interface LayoutParts {
   tabBar: HTMLElement;
   tabContent: HTMLElement;
   previewContainer: HTMLElement;
+  previewOuter: HTMLElement;
+  previewLabel: HTMLElement;
   codeContainer: HTMLElement;
 }
 
@@ -36,6 +38,44 @@ export function buildLayout(root: HTMLElement, store: StateStore): LayoutParts {
 
   const headerRight = document.createElement('div');
   headerRight.className = 'flex items-center gap-2';
+
+  // Color scheme toggle
+  const schemeToggle = document.createElement('div');
+  schemeToggle.className = 'flex items-center rounded-lg border border-slate-200 bg-slate-50 p-0.5';
+
+  const lightBtn = document.createElement('button');
+  lightBtn.type = 'button';
+  lightBtn.title = 'Light mode';
+
+  const darkBtn = document.createElement('button');
+  darkBtn.type = 'button';
+  darkBtn.title = 'Dark mode';
+
+  const systemBtn = document.createElement('button');
+  systemBtn.type = 'button';
+  systemBtn.title = 'System preference';
+
+  // Sun icon
+  lightBtn.appendChild(makeIcon('M12 3v1m0 16v1m8.66-13l-.87.5M4.21 16.5l-.87.5M19.79 16.5l.87.5M4.21 7.5l.87.5M21 12h-1M4 12H3m15.36-5.64l-.7.7M6.34 17.66l-.7.7M17.66 17.66l.7.7M6.34 6.36l.7.7M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8z', 16));
+  // Moon icon
+  darkBtn.appendChild(makeIcon('M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z', 16));
+  // Monitor/system icon
+  systemBtn.appendChild(makeIcon('M9 17H5a2 2 0 0 0-2 2M15 17h4a2 2 0 0 1 2 2M12 17v2m-7-7h14M3 7h18a1 1 0 0 1 1 1v7H2V8a1 1 0 0 1 1-1z', 16));
+
+  schemeToggle.appendChild(lightBtn);
+  schemeToggle.appendChild(darkBtn);
+  schemeToggle.appendChild(systemBtn);
+
+  const schemeBase = 'flex items-center justify-center rounded-md px-2 py-1.5 transition';
+  function syncSchemeButtons(scheme: 'light' | 'dark' | 'system') {
+    lightBtn.className  = `${schemeBase} ${scheme === 'light'   ? 'bg-white shadow-sm text-slate-900' : 'text-slate-400'}`;
+    darkBtn.className   = `${schemeBase} ${scheme === 'dark'    ? 'bg-white shadow-sm text-slate-900' : 'text-slate-400'}`;
+    systemBtn.className = `${schemeBase} ${scheme === 'system'  ? 'bg-white shadow-sm text-slate-900' : 'text-slate-400'}`;
+  }
+
+  lightBtn.addEventListener('click', () => { store.update({ colorScheme: 'light' }); syncSchemeButtons('light'); });
+  darkBtn.addEventListener('click', () => { store.update({ colorScheme: 'dark' }); syncSchemeButtons('dark'); });
+  systemBtn.addEventListener('click', () => { store.update({ colorScheme: 'system' }); syncSchemeButtons('system'); });
 
   // Viewport toggle
   const viewportToggle = document.createElement('div');
@@ -70,6 +110,7 @@ export function buildLayout(root: HTMLElement, store: StateStore): LayoutParts {
       desktopBtn.className = desktopBtn.className.replace(activeClass, inactiveClass);
     }
   }
+  syncSchemeButtons('light');
   syncViewportButtons('desktop');
 
   desktopBtn.addEventListener('click', () => {
@@ -88,6 +129,7 @@ export function buildLayout(root: HTMLElement, store: StateStore): LayoutParts {
   docsLink.className = 'inline-flex items-center gap-1 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 transition';
   docsLink.textContent = 'Docs ↗';
 
+  headerRight.appendChild(schemeToggle);
   headerRight.appendChild(viewportToggle);
   headerRight.appendChild(docsLink);
   header.appendChild(brand);
@@ -146,7 +188,7 @@ export function buildLayout(root: HTMLElement, store: StateStore): LayoutParts {
   root.appendChild(main);
   root.appendChild(codePanel);
 
-  return { builderPanel, tabBar, tabContent, previewContainer, codeContainer };
+  return { builderPanel, tabBar, tabContent, previewContainer, previewOuter, previewLabel, codeContainer };
 }
 
 function makeIcon(pathD: string, size: number): SVGSVGElement {

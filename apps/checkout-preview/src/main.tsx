@@ -19,7 +19,7 @@ function main(): void {
   const appEl = document.getElementById('app');
   if (!appEl) throw new Error('Missing #app element');
 
-  const { tabBar, tabContent, previewContainer, codeContainer } = buildLayout(appEl, store);
+  const { tabBar, tabContent, previewContainer, previewOuter, previewLabel, codeContainer } = buildLayout(appEl, store);
 
   // ── Tab bar ────────────────────────────────────────────────────────────
   const tabButtons = new Map<string, HTMLButtonElement>();
@@ -116,6 +116,17 @@ function main(): void {
     syncTabButtons(state.activeTab);
     preview.render(state);
     codeHighlightContainer.replaceChildren(highlightCode(generateCode(state)));
+
+    // Apply dark mode and daisyUI theme to the whole preview area
+    const isDark = state.colorScheme === 'dark'
+      || (state.colorScheme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    const daisyTheme = state.themePreset === 'tailwind' ? state.daisyTheme : null;
+
+    previewOuter.setAttribute('data-theme', daisyTheme ?? (isDark ? 'dark' : 'light'));
+    previewOuter.className = `flex flex-1 flex-col overflow-hidden transition-colors ${isDark ? 'bg-zinc-950' : 'bg-slate-100'}`;
+    previewLabel.className = `flex items-center justify-between border-b px-4 py-2 text-xs font-medium shrink-0 transition-colors ${
+      isDark ? 'border-zinc-800 bg-zinc-900 text-zinc-400' : 'border-slate-200 bg-white text-slate-500'
+    }`;
   });
 
   store.update({});

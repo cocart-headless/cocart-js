@@ -134,21 +134,34 @@ interface CheckoutThemeVariables {
 
 | Variable | modern | tailwind | shadcn |
 |---|---|---|---|
-| `colorPrimary` | `#1a1a1a` | `#0f172a` | `hsl(222.2 47.4% 11.2%)` |
-| `colorBackground` | `#ffffff` | `#f8fafc` | `hsl(0 0% 100%)` |
-| `colorBackgroundAlt` | `#f6f6f1` | `#f1f5f9` | `hsl(210 40% 96.1%)` |
-| `colorBackgroundHover` | `#f5f5f5` | `#f1f5f9` | `hsl(210 40% 96.1%)` |
-| `colorSurface` | `#ffffff` | `#ffffff` | `hsl(0 0% 100%)` |
-| `colorText` | `#1a1a1a` | `#0f172a` | `hsl(222.2 84% 4.9%)` |
-| `colorTextMuted` | `#6b6b6b` | `#64748b` | `hsl(215.4 16.3% 46.9%)` |
-| `colorBorder` | `#d9d9d9` | `#cbd5e1` | `hsl(214.3 31.8% 91.4%)` |
-| `colorError` | `#dc2626` | `#ef4444` | `hsl(0 84.2% 60.2%)` |
-| `colorButton` | `#1a1a1a` | `#0f172a` | `hsl(222.2 47.4% 11.2%)` |
-| `colorButtonText` | `#ffffff` | `#ffffff` | `hsl(0 0% 100%)` |
+| `colorPrimary` | `#1a1a1a` | `var(--color-primary)` ¹ | `hsl(222.2 47.4% 11.2%)` |
+| `colorBackground` | `#ffffff` | `var(--color-base-100)` ¹ | `hsl(0 0% 100%)` |
+| `colorBackgroundAlt` | `#f6f6f1` | `var(--color-base-200)` ¹ | `hsl(210 40% 96.1%)` |
+| `colorBackgroundHover` | `#f5f5f5` | `var(--color-base-200)` ¹ | `hsl(210 40% 96.1%)` |
+| `colorSurface` | `#ffffff` | `var(--color-base-100)` ¹ | `hsl(0 0% 100%)` |
+| `colorText` | `#1a1a1a` | `var(--color-base-content)` ¹ | `hsl(222.2 84% 4.9%)` |
+| `colorTextMuted` | `#6b6b6b` | `color-mix(…base-content 50%)` ¹ | `hsl(215.4 16.3% 46.9%)` |
+| `colorBorder` | `#d9d9d9` | `var(--color-base-300)` ¹ | `hsl(214.3 31.8% 91.4%)` |
+| `colorError` | `#dc2626` | `var(--color-error)` ¹ | `hsl(0 84.2% 60.2%)` |
+| `colorButton` | `#1a1a1a` | `var(--color-primary)` ¹ | `hsl(222.2 47.4% 11.2%)` |
+| `colorButtonText` | `#ffffff` | `var(--color-primary-content)` ¹ | `hsl(0 0% 100%)` |
 | `borderRadius` | `8px` | `12px` | `6px` |
 | `borderRadiusFull` | `9999px` | `16px` | `6px` |
 | `inputHeight` | `48px` | `44px` | `40px` |
 | `sectionGap` | `0px` | `24px` | `16px` |
+
+¹ The `tailwind` preset defers colours to **daisyUI v5 CSS tokens** — the active `data-theme` on an ancestor element determines the resolved colour. To supply explicit hex values (e.g. for codegen output or non-daisyUI projects), override `variables` with real hex values:
+
+```ts
+const theme = createTailwindCheckoutTheme({
+  variables: {
+    colorPrimary:    '#7c3aed',
+    colorBackground: '#ffffff',
+    colorButton:     '#7c3aed',
+    colorButtonText: '#ffffff',
+  },
+});
+```
 
 ---
 

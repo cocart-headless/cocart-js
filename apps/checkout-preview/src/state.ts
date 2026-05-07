@@ -1,5 +1,5 @@
 import type { CheckoutFieldType, CheckoutTheme } from '@cocartheadless/checkout';
-import { createModernCheckoutTheme, createTailwindCheckoutTheme, MODERN_VARIABLES, TAILWIND_VARIABLES, SHADCN_VARIABLES } from '@cocartheadless/checkout';
+import { createModernCheckoutTheme, createTailwindCheckoutTheme, MODERN_VARIABLES, TAILWIND_VARIABLES, SHADCN_VARIABLES, MODERN_VARIABLES_DARK, TAILWIND_VARIABLES_DARK, SHADCN_VARIABLES_DARK } from '@cocartheadless/checkout';
 import type { CheckoutThemeVariables } from '@cocartheadless/checkout';
 
 export interface GatewayConfig {
@@ -49,6 +49,8 @@ export interface BuilderState {
   gateways: GatewayConfig[];
   defaultGateway: string;
   previewViewport: 'desktop' | 'mobile';
+  colorScheme: 'light' | 'dark' | 'system';
+  daisyTheme: string;
   activeTab: 'data' | 'appearance' | 'payments';
 }
 
@@ -116,6 +118,8 @@ function defaultState(): BuilderState {
     gateways: GATEWAY_CATALOG.map(g => ({ ...g })),
     defaultGateway: '',
     previewViewport: 'desktop',
+    colorScheme: 'light',
+    daisyTheme: 'light',
     activeTab: 'data',
   };
 }
@@ -147,5 +151,5 @@ class StateStore {
 
 export const store = new StateStore();
 export { DEFAULT_TAILWIND_THEME, DEFAULT_MODERN_THEME };
-export { MODERN_VARIABLES, TAILWIND_VARIABLES, SHADCN_VARIABLES };
+export { MODERN_VARIABLES, TAILWIND_VARIABLES, SHADCN_VARIABLES, MODERN_VARIABLES_DARK, TAILWIND_VARIABLES_DARK, SHADCN_VARIABLES_DARK };
 export type { CheckoutThemeVariables };

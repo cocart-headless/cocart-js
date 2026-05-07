@@ -25,18 +25,19 @@ const MODERN_VARIABLES: CheckoutThemeVariables = {
   sectionGap:       '0px',
 };
 
+// Maps cocart variables to daisyUI semantic tokens — adapts to any data-theme automatically
 const TAILWIND_VARIABLES: CheckoutThemeVariables = {
-  colorPrimary:         '#0f172a',
-  colorBackground:      '#f8fafc',
-  colorBackgroundAlt:   '#f1f5f9',
-  colorBackgroundHover: '#f1f5f9',
-  colorSurface:         '#ffffff',
-  colorText:            '#0f172a',
-  colorTextMuted:       '#64748b',
-  colorBorder:          '#cbd5e1',
-  colorError:           '#ef4444',
-  colorButton:          '#0f172a',
-  colorButtonText:      '#ffffff',
+  colorPrimary:         'var(--color-primary)',
+  colorBackground:      'var(--color-base-100)',
+  colorBackgroundAlt:   'var(--color-base-200)',
+  colorBackgroundHover: 'var(--color-base-200)',
+  colorSurface:         'var(--color-base-100)',
+  colorText:            'var(--color-base-content)',
+  colorTextMuted:       'color-mix(in oklab, var(--color-base-content) 50%, transparent)',
+  colorBorder:          'var(--color-base-300)',
+  colorError:           'var(--color-error)',
+  colorButton:          'var(--color-primary)',
+  colorButtonText:      'var(--color-primary-content)',
   fontFamily:      "ui-sans-serif, system-ui, sans-serif",
   fontSizeBase:    '14px',
   fontWeightNormal: '400',
@@ -62,6 +63,59 @@ const SHADCN_VARIABLES: CheckoutThemeVariables = {
   colorError:           'hsl(0 84.2% 60.2%)',
   colorButton:          'hsl(222.2 47.4% 11.2%)',
   colorButtonText:      'hsl(0 0% 100%)',
+  fontFamily:      "ui-sans-serif, system-ui, sans-serif",
+  fontSizeBase:    '14px',
+  fontWeightNormal: '400',
+  fontWeightMedium: '500',
+  fontWeightBold:   '600',
+  borderRadius:     '6px',
+  borderRadiusFull: '6px',
+  inputHeight:      '40px',
+  spacingUnit:      '4px',
+  fieldGap:         '6px',
+  sectionGap:       '16px',
+};
+
+const MODERN_VARIABLES_DARK: CheckoutThemeVariables = {
+  colorPrimary:          '#ffffff',
+  colorBackground:       '#111111',
+  colorBackgroundAlt:    '#111111',
+  colorBackgroundHover:  '#252525',
+  colorSurface:          '#1a1a1a',
+  colorText:             '#f5f5f5',
+  colorTextMuted:        '#999999',
+  colorBorder:           '#333333',
+  colorError:            '#f87171',
+  colorButton:           '#ffffff',
+  colorButtonText:       '#111111',
+  fontFamily:      "'Inter', system-ui, sans-serif",
+  fontSizeBase:    '14px',
+  fontWeightNormal: '400',
+  fontWeightMedium: '500',
+  fontWeightBold:   '700',
+  borderRadius:     '8px',
+  borderRadiusFull: '9999px',
+  inputHeight:      '48px',
+  spacingUnit:      '4px',
+  fieldGap:         '8px',
+  sectionGap:       '0px',
+};
+
+// daisyUI tokens are self-adapting — no separate dark variant needed
+const TAILWIND_VARIABLES_DARK = TAILWIND_VARIABLES;
+
+const SHADCN_VARIABLES_DARK: CheckoutThemeVariables = {
+  colorPrimary:         'hsl(210 40% 98%)',
+  colorBackground:      'hsl(222.2 84% 4.9%)',
+  colorBackgroundAlt:   'hsl(217.2 32.6% 17.5%)',
+  colorBackgroundHover: 'hsl(217.2 32.6% 17.5%)',
+  colorSurface:         'hsl(222.2 84% 4.9%)',
+  colorText:            'hsl(210 40% 98%)',
+  colorTextMuted:       'hsl(215 20.2% 65.1%)',
+  colorBorder:          'hsl(217.2 32.6% 17.5%)',
+  colorError:           'hsl(0 62.8% 30.6%)',
+  colorButton:          'hsl(210 40% 98%)',
+  colorButtonText:      'hsl(222.2 47.4% 11.2%)',
   fontFamily:      "ui-sans-serif, system-ui, sans-serif",
   fontSizeBase:    '14px',
   fontWeightNormal: '400',
@@ -117,4 +171,4 @@ export function getPresetVariables(preset: 'modern' | 'tailwind' | 'shadcn'): Ch
   return { ...(PRESET_VARIABLES[preset] ?? MODERN_VARIABLES) };
 }
 
-export { MODERN_VARIABLES, TAILWIND_VARIABLES, SHADCN_VARIABLES };
+export { MODERN_VARIABLES, TAILWIND_VARIABLES, SHADCN_VARIABLES, MODERN_VARIABLES_DARK, TAILWIND_VARIABLES_DARK, SHADCN_VARIABLES_DARK };

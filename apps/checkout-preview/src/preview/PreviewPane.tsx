@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import type { Root } from 'react-dom/client';
 import { CheckoutClient, resolveTheme } from '@cocartheadless/checkout';
-import type { CheckoutGatewayAdapter, CheckoutFormSection, CheckoutGatewayPresentation } from '@cocartheadless/checkout';
+import type { CheckoutTheme, CheckoutGatewayAdapter, CheckoutFormSection, CheckoutGatewayPresentation } from '@cocartheadless/checkout';
+import { MODERN_VARIABLES_DARK, SHADCN_VARIABLES_DARK } from '@cocartheadless/checkout';
 import type { AppliedCoupon } from '@cocartheadless/checkout/react';
 import { CheckoutContainer, ExpressBar, Address, ShippingMethods, PaymentMethods, OrderSummary, OrderLineItems, DiscountCode, OrderTotals, PayButton, TermsAndConditions } from '@cocartheadless/checkout/react';
 import { mockCoCartClient } from '../mock-client.js';
@@ -12,11 +13,25 @@ const SCOPE = '#checkout-preview-root';
 let themeStyleEl: HTMLStyleElement | null = null;
 let customStyleEl: HTMLStyleElement | null = null;
 
+function resolveEffectiveDark(colorScheme: BuilderState['colorScheme']): boolean {
+  if (colorScheme === 'dark') return true;
+  if (colorScheme === 'system') return window.matchMedia('(prefers-color-scheme: dark)').matches;
+  return false;
+}
+
 function applyTheme(state: BuilderState): void {
+  const isDark = resolveEffectiveDark(state.colorScheme);
+  let theme: CheckoutTheme = state.theme;
+
+  if (isDark && state.themePreset !== 'tailwind') {
+    const darkVars = state.themePreset === 'shadcn' ? SHADCN_VARIABLES_DARK : MODERN_VARIABLES_DARK;
+    theme = { ...state.theme, variables: darkVars };
+  }
+
   themeStyleEl?.remove();
   themeStyleEl = document.createElement('style');
   themeStyleEl.id = 'checkout-preview-theme';
-  themeStyleEl.textContent = resolveTheme(state.theme, SCOPE);
+  themeStyleEl.textContent = resolveTheme(theme, SCOPE);
   document.head.appendChild(themeStyleEl);
 }
 
@@ -51,6 +66,7 @@ interface PreviewProps {
   sections: CheckoutFormSection[];
   freeShipping?: boolean;
   onFreeShippingChange?: (free: boolean) => void;
+  suppressOrderSummary?: boolean;
 }
 
 function OrderSummarySection({ state, onCouponsChange }: { state: BuilderState; onCouponsChange?: (free: boolean) => void }) {
@@ -109,6 +125,7 @@ function MobileScreen({ state, expressGateways, regularGateways, expressOnly, ac
           sections={sections}
           freeShipping={freeShipping}
           onFreeShippingChange={setFreeShipping}
+          suppressOrderSummary
         />
         {includeOrderSummary && !mobileOrderSummaryDrawer && (
           <OrderSummary theme={theme} showShipping={showShipping} onCouponsChange={c => setFreeShipping(c.some(x => x.freeShipping))} />
@@ -131,7 +148,7 @@ function MobileScreen({ state, expressGateways, regularGateways, expressOnly, ac
   );
 }
 
-function CheckoutPreview({ state, expressGateways, regularGateways, expressOnly, activeGatewayId, sections, freeShipping: freeShippingProp, onFreeShippingChange }: PreviewProps) {
+function CheckoutPreview({ state, expressGateways, regularGateways, expressOnly, activeGatewayId, sections, freeShipping: freeShippingProp, onFreeShippingChange, suppressOrderSummary }: PreviewProps) {
   const [freeShippingLocal, setFreeShippingLocal] = useState(false);
   const freeShipping = freeShippingProp ?? freeShippingLocal;
   function handleCouponsChange(coupons: AppliedCoupon[]) {
@@ -211,6 +228,14 @@ function CheckoutPreview({ state, expressGateways, regularGateways, expressOnly,
   if (layout === 'stacked') {
     return (
       <CheckoutContainer form={formDef} layout="stacked">
+        {!suppressOrderSummary && (
+          <div className="bg-(--cocart-color-background-alt)">
+            {includeOrderSummary
+              ? <OrderSummary theme={theme} showShipping={showShipping} onCouponsChange={handleCouponsChange} />
+              : <OrderSummarySection state={state} onCouponsChange={handleFreeShippingChange} />
+            }
+          </div>
+        )}
         {leftCol}
       </CheckoutContainer>
     );
@@ -279,10 +304,14 @@ export class PreviewPane {
       includeSummary: false,
     });
 
+    const effectiveDaisyTheme = state.themePreset === 'tailwind'
+      ? state.daisyTheme
+      : undefined;
+
     const wrapperClass = `bg-(--cocart-color-background) min-h-full${state.themePreset === 'shadcn' ? ' shadcn-vars' : ''}`;
 
     this.root.render(
-      <div className={wrapperClass}>
+      <div className={wrapperClass} {...(effectiveDaisyTheme ? { 'data-theme': effectiveDaisyTheme } : {})}>
         {state.previewViewport === 'mobile' ? (
           <div className="flex items-start justify-center py-8">
             <div className="relative w-97.5 rounded-[48px] bg-slate-900 p-3 shadow-2xl ring-1 ring-slate-700">

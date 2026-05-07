@@ -18,7 +18,7 @@ export {
   TAILWIND_VARIABLES,
   SHADCN_VARIABLES,
 } from './presets.js';
-export { resolveTheme, getPresetVariables } from './theme-engine.js';
+export { resolveTheme, getPresetVariables, MODERN_VARIABLES_DARK, TAILWIND_VARIABLES_DARK, SHADCN_VARIABLES_DARK } from './theme-engine.js';
 
 export type {
   AuthorizeNetGatewayOptions,

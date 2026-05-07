@@ -109,6 +109,343 @@ function showResetModal(presetName: string, onConfirm: () => void): void {
   document.body.appendChild(overlay);
 }
 
+// ── Color picker ──────────────────────────────────────────────────────────────
+
+function toHex(val: string): string {
+  if (/^#[0-9a-fA-F]{6}$/.test(val)) return val;
+  if (/^#[0-9a-fA-F]{3}$/.test(val)) {
+    const [, r, g, b] = val;
+    return `#${r}${r}${g}${g}${b}${b}`;
+  }
+  return '#000000';
+}
+
+
+function hexLuminance(hex: string): number {
+  const r = parseInt(hex.slice(1,3),16)/255, g = parseInt(hex.slice(3,5),16)/255, b = parseInt(hex.slice(5,7),16)/255;
+  const lin = (c: number) => c <= 0.04045 ? c/12.92 : Math.pow((c+0.055)/1.055, 2.4);
+  return 0.2126*lin(r) + 0.7152*lin(g) + 0.0722*lin(b);
+}
+
+function contrastHex(bg: string): string {
+  return hexLuminance(bg) > 0.35 ? '#1a1a1a' : '#ffffff';
+}
+
+function daisyThemeVariables(t: { bg: string; p: string; s: string; a: string }): Partial<import('@cocartheadless/checkout').CheckoutThemeVariables> {
+  return {
+    colorBackground:      t.bg,
+    colorBackgroundAlt:   t.bg,
+    colorBackgroundHover: t.bg,
+    colorSurface:         t.bg,
+    colorPrimary:         t.p,
+    colorButton:          t.p,
+    colorButtonText:      contrastHex(t.p),
+    colorText:            contrastHex(t.bg),
+    colorTextMuted:       contrastHex(t.bg) === '#ffffff' ? '#999999' : '#6b6b6b',
+    colorBorder:          contrastHex(t.bg) === '#ffffff' ? '#333333' : '#d9d9d9',
+  };
+}
+
+function hasManuallyCustomisedDaisyColors(store: StateStore): boolean {
+  const state = store.get();
+  const vars = state.theme.variables ?? {};
+  const colorKeys = ['colorBackground','colorPrimary','colorButton','colorText','colorBorder'] as const;
+  // If none of the tracked keys are set as hex values, no manual customisation
+  if (!colorKeys.some(k => /^#[0-9a-fA-F]{6}$/.test(vars[k] ?? ''))) return false;
+  // Compare against what the current daisyTheme entry would inject
+  const entry = DAISY_THEMES.find(t => t.name === state.daisyTheme);
+  if (!entry) return false;
+  const expected = daisyThemeVariables(entry);
+  return colorKeys.some(k => k in vars && vars[k] !== expected[k]);
+}
+
+let activePopover: HTMLElement | null = null;
+
+function resolveColorToHex(val: string): string {
+  if (/^#[0-9a-fA-F]{6}$/.test(val)) return val;
+  if (/^#[0-9a-fA-F]{3}$/.test(val)) return toHex(val);
+  // For CSS values (hsl, oklch, var(...)) resolve via canvas
+  try {
+    const tmp = document.createElement('div');
+    tmp.style.cssText = `position:absolute;width:1px;height:1px;opacity:0;background:${val}`;
+    document.body.appendChild(tmp);
+    const computed = getComputedStyle(tmp).backgroundColor;
+    tmp.remove();
+    const m = computed.match(/\d+/g);
+    if (m && m.length >= 3) {
+      return '#' + m.slice(0, 3).map(n => parseInt(n).toString(16).padStart(2, '0')).join('');
+    }
+  } catch { /* ignore */ }
+  return '#808080';
+}
+
+// Palette: lightness steps × hue steps dot grid (matches daisyUI theme generator style)
+const PALETTE_HUES = [0,15,30,45,60,75,90,105,120,135,150,165,180,195,210,225,240,255,270,285,300,315,330,345];
+const PALETTE_LIGHTS = [97,93,87,80,70,60,50,40,30,20,13,8];
+
+function buildColorPopover(initialHex: string, onChange: (hex: string) => void, _anchorEl: HTMLElement): HTMLElement {
+  // Full-screen backdrop — the returned element IS the backdrop
+  const backdrop = document.createElement('div');
+  backdrop.className = 'fixed inset-0 z-50 flex items-center justify-center bg-black/20';
+
+  backdrop.addEventListener('click', () => { backdrop.remove(); if (activePopover === backdrop) activePopover = null; });
+
+  const modal = document.createElement('div');
+  modal.className = 'rounded-2xl border border-slate-200 bg-white shadow-2xl overflow-hidden';
+  modal.style.width = '550px';
+  modal.addEventListener('click', e => e.stopPropagation());
+
+  let currentHex = toHex(initialHex);
+  let [ch, cs, cl] = hexToHsl(currentHex);
+
+  // ── Shared hex input ref (declared early, assigned below) ─────────────────
+  let hexInput: HTMLInputElement;
+
+  function emit(hex: string): void {
+    currentHex = hex;
+    [ch, cs, cl] = hexToHsl(hex);
+    onChange(hex);
+    updatePreview(hex);
+    syncSliders();
+    if (hexInput) hexInput.value = hex;
+  }
+
+  // ── Header ────────────────────────────────────────────────────────────────
+  const header = document.createElement('div');
+  header.className = 'flex items-center justify-between px-4 py-3 border-b border-slate-100';
+
+  const preview = document.createElement('div');
+  preview.style.cssText = 'width:36px;height:36px;border-radius:10px;border:1px solid rgba(0,0,0,0.12);flex-shrink:0;';
+  preview.style.backgroundColor = currentHex;
+  function updatePreview(hex: string): void { preview.style.backgroundColor = hex; }
+
+  function closeModal(): void {
+    backdrop.remove();
+    if (activePopover === backdrop) activePopover = null;
+  }
+
+  const closeBtn = document.createElement('button');
+  closeBtn.type = 'button';
+  closeBtn.style.cssText = 'width:28px;height:28px;border-radius:8px;border:none;background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#94a3b8;flex-shrink:0;';
+  closeBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="2" y1="2" x2="12" y2="12"/><line x1="12" y1="2" x2="2" y2="12"/></svg>';
+  closeBtn.addEventListener('click', e => { e.stopPropagation(); closeModal(); });
+
+  const tabBar = document.createElement('div');
+  tabBar.className = 'flex items-center gap-1 rounded-lg bg-slate-100 p-0.5';
+
+  let activeTab: 'palette' | 'picker' = 'palette';
+  const palettePane = document.createElement('div');
+  const pickerPane  = document.createElement('div');
+
+  const tabSyncs: (() => void)[] = [];
+  function syncTabs(): void { tabSyncs.forEach(fn => fn()); }
+
+  function makeTab(label: string, id: 'palette' | 'picker'): HTMLButtonElement {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.textContent = label;
+    function sync(): void {
+      btn.className = `px-3 py-1 rounded-md text-xs font-medium transition ${
+        activeTab === id ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+      }`;
+      palettePane.style.display = activeTab === 'palette' ? 'block' : 'none';
+      pickerPane.style.display  = activeTab === 'picker'  ? 'block' : 'none';
+    }
+    btn.addEventListener('click', e => { e.stopPropagation(); activeTab = id; syncTabs(); });
+    tabSyncs.push(sync);
+    return btn;
+  }
+
+  tabBar.appendChild(makeTab('Palette', 'palette'));
+  tabBar.appendChild(makeTab('Picker', 'picker'));
+  header.appendChild(preview);
+  header.appendChild(tabBar);
+  header.appendChild(closeBtn);
+  modal.appendChild(header);
+
+  // ── Palette tab ───────────────────────────────────────────────────────────
+  palettePane.style.cssText = 'padding:12px;';
+
+  const greyRow = document.createElement('div');
+  greyRow.style.cssText = 'display:flex;gap:4px;margin-bottom:4px;flex-wrap:wrap;';
+  const greySteps = [100,97,93,87,80,70,60,50,40,30,20,13,8,3,0];
+  greySteps.forEach(l => {
+    const hex = hslToHex(0, 0, l);
+    const dot = makeDot(hex);
+    dot.addEventListener('click', e => { e.stopPropagation(); emit(hex); });
+    greyRow.appendChild(dot);
+  });
+  palettePane.appendChild(greyRow);
+
+  const grid = document.createElement('div');
+  grid.style.cssText = `display:grid;grid-template-columns:repeat(${PALETTE_HUES.length},1fr);gap:4px;`;
+  PALETTE_LIGHTS.forEach(l => {
+    PALETTE_HUES.forEach(hue => {
+      const hex = hslToHex(hue, 100, l);
+      const dot = makeDot(hex);
+      dot.addEventListener('click', e => { e.stopPropagation(); emit(hex); });
+      grid.appendChild(dot);
+    });
+  });
+  palettePane.appendChild(grid);
+  modal.appendChild(palettePane);
+
+  // ── Picker tab ────────────────────────────────────────────────────────────
+  pickerPane.style.cssText = 'padding:16px;display:none;';
+
+  const hueTrack  = makeSliderTrack();
+  const satTrack  = makeSliderTrack();
+  const lightTrack = makeSliderTrack();
+
+  hueTrack.style.background = 'linear-gradient(to right,#f00,#ff0,#0f0,#0ff,#00f,#f0f,#f00)';
+
+  function syncSliders(): void {
+    satTrack.style.background  = `linear-gradient(to right,hsl(${ch} 0% ${cl}%),hsl(${ch} 100% ${cl}%))`;
+    lightTrack.style.background = `linear-gradient(to right,hsl(${ch} ${cs}% 0%),hsl(${ch} ${cs}% 50%),hsl(${ch} ${cs}% 100%))`;
+    setThumb(hueTrack,   ch / 360);
+    setThumb(satTrack,   cs / 100);
+    setThumb(lightTrack, cl / 100);
+    updateSliderLabels();
+  }
+
+  function buildSliderRow(label: string, track: HTMLElement, valId: string): HTMLElement {
+    const row = document.createElement('div');
+    row.style.cssText = 'display:grid;gap:6px;margin-bottom:12px;';
+    const top = document.createElement('div');
+    top.style.cssText = 'display:flex;justify-content:space-between;align-items:center;';
+    const lbl = document.createElement('span');
+    lbl.style.cssText = 'font-size:11px;color:#64748b;';
+    lbl.textContent = label;
+    const valEl = document.createElement('span');
+    valEl.id = valId;
+    valEl.style.cssText = 'font-size:11px;font-family:monospace;color:#334155;';
+    top.appendChild(lbl); top.appendChild(valEl);
+    row.appendChild(top); row.appendChild(track);
+    return row;
+  }
+
+  function updateSliderLabels(): void {
+    const hEl = pickerPane.querySelector<HTMLElement>('#sl-h');
+    const sEl = pickerPane.querySelector<HTMLElement>('#sl-s');
+    const lEl = pickerPane.querySelector<HTMLElement>('#sl-l');
+    if (hEl) hEl.textContent = String(ch);
+    if (sEl) sEl.textContent = `${cs}%`;
+    if (lEl) lEl.textContent = `${cl}%`;
+  }
+
+  wireSlider(hueTrack,   (pct) => { ch = Math.round(pct * 360); emit(hslToHex(ch, cs, cl)); syncSliders(); });
+  wireSlider(satTrack,   (pct) => { cs = Math.round(pct * 100); emit(hslToHex(ch, cs, cl)); syncSliders(); });
+  wireSlider(lightTrack, (pct) => { cl = Math.round(pct * 100); emit(hslToHex(ch, cs, cl)); syncSliders(); });
+
+  pickerPane.appendChild(buildSliderRow('Hue',        hueTrack,   'sl-h'));
+  pickerPane.appendChild(buildSliderRow('Saturation', satTrack,   'sl-s'));
+  pickerPane.appendChild(buildSliderRow('Lightness',  lightTrack, 'sl-l'));
+  modal.appendChild(pickerPane);
+
+  // ── Hex input (shared footer) ─────────────────────────────────────────────
+  const footer = document.createElement('div');
+  footer.style.cssText = 'display:flex;align-items:center;gap:8px;padding:10px 16px 14px;border-top:1px solid #f1f5f9;';
+
+  const hexLabel = document.createElement('span');
+  hexLabel.style.cssText = 'font-size:10px;font-family:monospace;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;flex-shrink:0;';
+  hexLabel.textContent = 'Hex';
+
+  hexInput = document.createElement('input');
+  hexInput.type = 'text';
+  hexInput.value = currentHex;
+  hexInput.className = 'flex-1 h-8 rounded-lg border border-slate-200 bg-slate-50 px-2.5 text-xs font-mono text-slate-800 outline-none focus:border-violet-500';
+  hexInput.spellcheck = false;
+  hexInput.maxLength = 7;
+
+  let hexDebounce: ReturnType<typeof setTimeout>;
+  hexInput.addEventListener('input', () => {
+    clearTimeout(hexDebounce);
+    hexDebounce = setTimeout(() => {
+      const raw = hexInput.value.trim();
+      const full = toHex(raw.startsWith('#') ? raw : `#${raw}`);
+      if (!/^#[0-9a-fA-F]{6}$/.test(full)) return;
+      emit(full);
+    }, 250);
+  });
+  hexInput.addEventListener('click', e => e.stopPropagation());
+
+  const doneBtn = document.createElement('button');
+  doneBtn.type = 'button';
+  doneBtn.textContent = 'Done';
+  doneBtn.style.cssText = 'flex-shrink:0;height:32px;padding:0 14px;border-radius:8px;border:none;background:#7c3aed;color:#fff;font-size:12px;font-weight:500;cursor:pointer;';
+  doneBtn.addEventListener('click', e => { e.stopPropagation(); closeModal(); });
+
+  footer.appendChild(hexLabel);
+  footer.appendChild(hexInput);
+  footer.appendChild(doneBtn);
+  modal.appendChild(footer);
+
+  backdrop.appendChild(modal);
+
+  requestAnimationFrame(() => { syncTabs(); syncSliders(); });
+
+  return backdrop;
+}
+
+function makeDot(hex: string): HTMLButtonElement {
+  const dot = document.createElement('button');
+  dot.type = 'button';
+  dot.title = hex;
+  dot.style.cssText = `width:18px;height:18px;border-radius:50%;background:${hex};border:1px solid rgba(0,0,0,0.08);cursor:pointer;flex-shrink:0;transition:transform 0.1s;`;
+  dot.addEventListener('mouseenter', () => { dot.style.transform = 'scale(1.25)'; });
+  dot.addEventListener('mouseleave', () => { dot.style.transform = ''; });
+  return dot;
+}
+
+function makeSliderTrack(): HTMLElement {
+  const track = document.createElement('div');
+  track.style.cssText = 'position:relative;height:14px;border-radius:7px;cursor:pointer;';
+  const thumb = document.createElement('div');
+  thumb.style.cssText = 'position:absolute;top:50%;width:18px;height:18px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,0.25);transform:translate(-50%,-50%);pointer-events:none;';
+  track.appendChild(thumb);
+  return track;
+}
+
+function setThumb(track: HTMLElement, pct: number): void {
+  const thumb = track.querySelector<HTMLElement>('div');
+  if (thumb) thumb.style.left = `${Math.max(0, Math.min(100, pct * 100))}%`;
+}
+
+function wireSlider(track: HTMLElement, onPct: (pct: number) => void): void {
+  let dragging = false;
+  function handle(clientX: number): void {
+    const rect = track.getBoundingClientRect();
+    onPct(Math.max(0, Math.min(1, (clientX - rect.left) / rect.width)));
+  }
+  track.addEventListener('mousedown', e => { e.stopPropagation(); dragging = true; handle(e.clientX); });
+  document.addEventListener('mousemove', e => { if (dragging) handle(e.clientX); });
+  document.addEventListener('mouseup', () => { dragging = false; });
+}
+
+// HSL helpers
+function hexToHsl(hex: string): [number, number, number] {
+  const r = parseInt(hex.slice(1,3),16)/255, g = parseInt(hex.slice(3,5),16)/255, b = parseInt(hex.slice(5,7),16)/255;
+  const max = Math.max(r,g,b), min = Math.min(r,g,b), l = (max+min)/2;
+  if (max === min) return [0, 0, Math.round(l*100)];
+  const d = max - min, s = l > 0.5 ? d/(2-max-min) : d/(max+min);
+  let h = 0;
+  if (max === r) h = ((g-b)/d + (g<b?6:0))/6;
+  else if (max === g) h = ((b-r)/d + 2)/6;
+  else h = ((r-g)/d + 4)/6;
+  return [Math.round(h*360), Math.round(s*100), Math.round(l*100)];
+}
+
+function hslToHex(h: number, s: number, l: number): string {
+  const sl = s/100, ll = l/100;
+  const a = sl * Math.min(ll, 1-ll);
+  function f(n: number): string {
+    const k = (n + h/30) % 12;
+    const color = ll - a * Math.max(-1, Math.min(k-3, 9-k, 1));
+    return Math.round(color*255).toString(16).padStart(2,'0');
+  }
+  return `#${f(0)}${f(8)}${f(4)}`;
+}
+
 // ── Color picker row ──────────────────────────────────────────────────────────
 
 interface ColorRowOptions {
@@ -118,7 +455,7 @@ interface ColorRowOptions {
   onChange: (val: string) => void;
 }
 
-function buildColorRow({ label, value, onChange }: ColorRowOptions): HTMLElement {
+function buildColorRow({ label, varKey, value, onChange }: ColorRowOptions): HTMLElement {
   const row = document.createElement('div');
   row.className = 'flex items-center justify-between gap-3';
 
@@ -127,58 +464,50 @@ function buildColorRow({ label, value, onChange }: ColorRowOptions): HTMLElement
   labelEl.textContent = label;
 
   const right = document.createElement('div');
-  right.className = 'flex items-center gap-2 shrink-0';
+  right.className = 'flex items-center gap-2 shrink-0 relative';
 
   const swatch = document.createElement('div');
-  swatch.className = 'h-6 w-6 rounded-md border border-slate-200 cursor-pointer overflow-hidden';
+  swatch.className = 'h-6 w-6 rounded-md border border-slate-200 cursor-pointer shrink-0';
   swatch.style.backgroundColor = value;
+  swatch.dataset['varSwatch'] = varKey;
 
-  const colorInput = document.createElement('input');
-  colorInput.type = 'color';
-  colorInput.value = toHex(value);
-  colorInput.className = 'absolute opacity-0 w-0 h-0 pointer-events-none';
+  const hexDisplay = document.createElement('span');
+  hexDisplay.className = 'text-xs font-mono text-slate-500 w-16 truncate';
+  hexDisplay.textContent = value.startsWith('var(') ? '—' : value;
+  hexDisplay.dataset['varDisplay'] = varKey;
 
-  const hexInput = document.createElement('input');
-  hexInput.type = 'text';
-  hexInput.value = value;
-  hexInput.className = 'h-6 w-40 rounded border border-slate-200 bg-slate-50 px-2 text-xs font-mono text-slate-800 outline-none focus:border-violet-500';
-  hexInput.spellcheck = false;
+  let popoverEl: HTMLElement | null = null;
 
-  swatch.addEventListener('click', () => colorInput.click());
+  swatch.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (popoverEl) { popoverEl.remove(); popoverEl = null; activePopover = null; return; }
+    if (activePopover) { activePopover.remove(); activePopover = null; }
 
-  colorInput.addEventListener('input', () => {
-    const hex = colorInput.value;
-    swatch.style.backgroundColor = hex;
-    hexInput.value = hex;
-    onChange(hex);
+    const currentHex = resolveColorToHex(value);
+    popoverEl = buildColorPopover(currentHex, (hex) => {
+      swatch.style.backgroundColor = hex;
+      hexDisplay.textContent = hex;
+      value = hex;
+      onChange(hex);
+    }, swatch);
+    document.body.appendChild(popoverEl);
+    activePopover = popoverEl;
   });
 
-  let hexDebounce: ReturnType<typeof setTimeout>;
-  hexInput.addEventListener('input', () => {
-    clearTimeout(hexDebounce);
-    hexDebounce = setTimeout(() => {
-      const v = hexInput.value.trim();
-      swatch.style.backgroundColor = v;
-      colorInput.value = toHex(v);
-      onChange(v);
-    }, 300);
+  document.addEventListener('click', () => {
+    if (popoverEl) {
+      const el = popoverEl;
+      popoverEl = null;
+      el.remove();
+      if (activePopover === el) activePopover = null;
+    }
   });
 
-  right.appendChild(colorInput);
   right.appendChild(swatch);
-  right.appendChild(hexInput);
+  right.appendChild(hexDisplay);
   row.appendChild(labelEl);
   row.appendChild(right);
   return row;
-}
-
-function toHex(val: string): string {
-  if (/^#[0-9a-fA-F]{6}$/.test(val)) return val;
-  if (/^#[0-9a-fA-F]{3}$/.test(val)) {
-    const [, r, g, b] = val;
-    return `#${r}${r}${g}${g}${b}${b}`;
-  }
-  return '#000000';
 }
 
 // ── Slider row ────────────────────────────────────────────────────────────────
@@ -281,28 +610,72 @@ function buildSectionHeading(text: string): HTMLElement {
 export function renderAppearanceTab(container: HTMLElement, store: StateStore): void {
   let el: HTMLElement | null = null;
   let lastPreset = '';
+  let lastDaisyTheme = '';
 
   store.subscribe(state => {
     if (state.activeTab !== 'appearance') {
       el?.remove();
       el = null;
       lastPreset = '';
+      lastDaisyTheme = '';
       return;
     }
     if (!el) {
       el = buildAppearanceTab(store);
       lastPreset = state.themePreset;
+      lastDaisyTheme = state.daisyTheme;
       container.appendChild(el);
     } else {
       syncPresetCards(el, state.themePreset);
-      if (state.themePreset !== lastPreset) {
+      syncDaisyThemeSelect(el, state.daisyTheme);
+      if (state.themePreset !== lastPreset || state.daisyTheme !== lastDaisyTheme) {
         syncVariableControls(el, state.theme);
         syncClassInputs(el, state.theme);
         lastPreset = state.themePreset;
+        lastDaisyTheme = state.daisyTheme;
       }
     }
   });
 }
+
+// bg / primary / secondary / accent swatches for each daisyUI theme
+const DAISY_THEMES: { name: string; bg: string; p: string; s: string; a: string }[] = [
+  { name: 'light',      bg: '#ffffff', p: '#4506cb', s: '#1bb2af', a: '#c148ac' },
+  { name: 'dark',       bg: '#1d232a', p: '#1eb854', s: '#d99330', a: '#d99330' },
+  { name: 'cupcake',    bg: '#faf7f5', p: '#65c3c8', s: '#ef9fbc', a: '#eeaf3a' },
+  { name: 'bumblebee',  bg: '#ffffff', p: '#e0a82e', s: '#f9d72f', a: '#181830' },
+  { name: 'emerald',    bg: '#ffffff', p: '#66cc8a', s: '#377cfb', a: '#f68067' },
+  { name: 'corporate',  bg: '#ffffff', p: '#4b6bfb', s: '#7b92b2', a: '#67cba0' },
+  { name: 'synthwave',  bg: '#1a1033', p: '#e779c1', s: '#58c7f3', a: '#f3cc30' },
+  { name: 'retro',      bg: '#e4d8b4', p: '#ef9995', s: '#a4cbb4', a: '#ebdc99' },
+  { name: 'cyberpunk',  bg: '#ffee00', p: '#ff7598', s: '#75d1f0', a: '#c07eec' },
+  { name: 'valentine',  bg: '#fae8e8', p: '#e96d7b', s: '#a991f7', a: '#70acc7' },
+  { name: 'halloween',  bg: '#212121', p: '#f28c18', s: '#6d3a9c', a: '#51a800' },
+  { name: 'garden',     bg: '#e9e7e7', p: '#5c7f67', s: '#ecf4e7', a: '#fc7f7f' },
+  { name: 'forest',     bg: '#171212', p: '#1eb854', s: '#1fd65f', a: '#d99330' },
+  { name: 'aqua',       bg: '#345da7', p: '#09ecf3', s: '#966fb3', a: '#ffe999' },
+  { name: 'lofi',       bg: '#ffffff', p: '#0d0d0d', s: '#1a1a1a', a: '#262626' },
+  { name: 'pastel',     bg: '#ffffff', p: '#d1c1d7', s: '#f6cbd1', a: '#b4e9d6' },
+  { name: 'fantasy',    bg: '#ffffff', p: '#6e0b75', s: '#007ebd', a: '#f15b26' },
+  { name: 'wireframe',  bg: '#ffffff', p: '#b8b8b8', s: '#b8b8b8', a: '#b8b8b8' },
+  { name: 'black',      bg: '#000000', p: '#343232', s: '#343232', a: '#343232' },
+  { name: 'luxury',     bg: '#09090b', p: '#ffffff', s: '#152747', a: '#513448' },
+  { name: 'dracula',    bg: '#282a36', p: '#ff79c6', s: '#bd93f9', a: '#ffb86c' },
+  { name: 'cmyk',       bg: '#ffffff', p: '#45aeee', s: '#e8488a', a: '#f6d860' },
+  { name: 'autumn',     bg: '#f1e2c9', p: '#8c0327', s: '#d85251', a: '#d59b6a' },
+  { name: 'business',   bg: '#1b1b1b', p: '#1c4f82', s: '#7c909a', a: '#e4d308' },
+  { name: 'acid',       bg: '#d0fb84', p: '#ff00f4', s: '#ff7400', a: '#00e8ff' },
+  { name: 'lemonade',   bg: '#ffffff', p: '#519903', s: '#e9e92e', a: '#e9e92e' },
+  { name: 'night',      bg: '#0f1729', p: '#38bdf8', s: '#818cf8', a: '#f471b5' },
+  { name: 'coffee',     bg: '#20161f', p: '#db924b', s: '#263e3f', a: '#10576d' },
+  { name: 'winter',     bg: '#ffffff', p: '#047aed', s: '#463aa1', a: '#c148ac' },
+  { name: 'dim',        bg: '#2a303c', p: '#9ca3af', s: '#6d28d9', a: '#d97706' },
+  { name: 'nord',       bg: '#e5e9f0', p: '#5e81ac', s: '#81a1c1', a: '#b48ead' },
+  { name: 'sunset',     bg: '#1a1109', p: '#fd5f00', s: '#d8872b', a: '#b45a05' },
+  { name: 'caramellatte', bg: '#f6e7d5', p: '#8c5a2e', s: '#c4855a', a: '#7c9b6e' },
+  { name: 'abyss',      bg: '#030712', p: '#3b82f6', s: '#1d4ed8', a: '#7c3aed' },
+  { name: 'silk',       bg: '#f5f0eb', p: '#8b6f4e', s: '#b08d72', a: '#7a9e87' },
+];
 
 function syncPresetCards(panel: HTMLElement, activePreset: string): void {
   panel.querySelectorAll<HTMLButtonElement>('[data-preset-id]').forEach(card => {
@@ -315,20 +688,33 @@ function syncPresetCards(panel: HTMLElement, activePreset: string): void {
   });
   const sgRow = panel.querySelector<HTMLElement>('[data-section-gap-row]');
   if (sgRow) sgRow.hidden = activePreset === 'modern';
+  const daisyRow = panel.querySelector<HTMLElement>('[data-daisy-theme-row]');
+  if (daisyRow) daisyRow.hidden = activePreset !== 'tailwind';
+  const typoSection = panel.querySelector<HTMLElement>('[data-typo-section]');
+  if (typoSection) typoSection.hidden = activePreset === 'tailwind';
+  const shapeSection = panel.querySelector<HTMLElement>('[data-shape-section]');
+  if (shapeSection) shapeSection.hidden = activePreset === 'tailwind';
+}
+
+function syncDaisyThemeSelect(panel: HTMLElement, daisyTheme: string): void {
+  panel.querySelectorAll<HTMLButtonElement>('[data-daisy-theme]').forEach(btn => {
+    const active = btn.dataset['daisyTheme'] === daisyTheme;
+    btn.style.outline = active ? '2px solid #7c3aed' : 'none';
+    btn.style.outlineOffset = '2px';
+  });
 }
 
 function syncVariableControls(panel: HTMLElement, theme: { preset?: string; variables?: Partial<CheckoutThemeVariables> }): void {
   const basePreset = (theme.preset === 'custom' || !theme.preset ? 'modern' : theme.preset) as 'modern' | 'tailwind' | 'shadcn';
   const vars: CheckoutThemeVariables = { ...getPresetVariables(basePreset), ...theme.variables };
 
-  panel.querySelectorAll<HTMLInputElement>('[data-var-key]').forEach(input => {
-    const key = input.dataset['varKey'] as keyof CheckoutThemeVariables;
-    const val = vars[key] ?? '';
-    input.value = val;
-    // Update swatch — the div immediately before the hex text input
-    const swatch = input.previousElementSibling as HTMLElement | null;
-    if (swatch && swatch.tagName === 'DIV') {
-      swatch.style.backgroundColor = val;
+  panel.querySelectorAll<HTMLElement>('[data-var-swatch]').forEach(swatch => {
+    const key = swatch.dataset['varSwatch'] as keyof CheckoutThemeVariables;
+    const val = (vars[key] as string) ?? '';
+    swatch.style.backgroundColor = val.startsWith('var(') ? '' : val;
+    const display = swatch.nextElementSibling as HTMLElement | null;
+    if (display && display.dataset['varDisplay']) {
+      display.textContent = val.startsWith('var(') ? '—' : val;
     }
   });
 }
@@ -488,6 +874,10 @@ function buildAppearanceTab(store: StateStore): HTMLElement {
 
       const doSwitch = (): void => {
         const newTheme = presetTheme(preset.id);
+        if (preset.id === 'tailwind') {
+          const daisyEntry = DAISY_THEMES.find(t => t.name === store.get().daisyTheme) ?? DAISY_THEMES[0];
+          newTheme.variables = { ...newTheme.variables, ...daisyThemeVariables(daisyEntry) };
+        }
         store.update({ themePreset: preset.id, themeClassesEdited: false, theme: newTheme });
         syncVariableControls(panel, newTheme);
         syncClassInputs(panel, newTheme);
@@ -504,6 +894,68 @@ function buildAppearanceTab(store: StateStore): HTMLElement {
   });
 
   panel.appendChild(presetGrid);
+
+  // ── daisyUI theme picker ──────────────────────────────────────────────────
+  const daisyRow = document.createElement('div');
+  daisyRow.dataset['daisyThemeRow'] = '';
+  daisyRow.hidden = state.themePreset !== 'tailwind';
+  daisyRow.className = 'grid gap-2';
+
+  const daisyHeading = buildSectionHeading('daisyUI Theme');
+  daisyRow.appendChild(daisyHeading);
+
+  const daisyGrid = document.createElement('div');
+  daisyGrid.className = 'grid grid-cols-4 gap-1.5';
+
+  DAISY_THEMES.forEach(t => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.title = t.name;
+    btn.dataset['daisyTheme'] = t.name;
+    btn.className = 'rounded-lg overflow-hidden border border-slate-200 cursor-pointer transition hover:scale-105';
+    if (t.name === state.daisyTheme) {
+      btn.style.outline = '2px solid #7c3aed';
+      btn.style.outlineOffset = '2px';
+    }
+
+    // Swatch block
+    const swatch = document.createElement('div');
+    swatch.style.backgroundColor = t.bg;
+    swatch.style.padding = '4px 5px 3px';
+    swatch.className = 'flex gap-0.5';
+
+    (['p', 's', 'a'] as const).forEach(key => {
+      const dot = document.createElement('div');
+      dot.style.cssText = `width:7px;height:7px;border-radius:50%;background:${t[key]}`;
+      swatch.appendChild(dot);
+    });
+
+    // Label
+    const label = document.createElement('div');
+    label.style.backgroundColor = t.bg;
+    label.style.color = t.p;
+    label.style.borderTop = '1px solid rgba(0,0,0,0.08)';
+    label.className = 'text-[9px] font-medium px-1 pb-1 truncate';
+    label.textContent = t.name;
+
+    btn.appendChild(swatch);
+    btn.appendChild(label);
+    btn.addEventListener('click', () => {
+      const doApply = (): void => {
+        const newVars = daisyThemeVariables(t);
+        store.update({ daisyTheme: t.name, theme: { ...store.get().theme, variables: newVars } });
+      };
+      if (hasManuallyCustomisedDaisyColors(store)) {
+        showResetModal(`the ${t.name} theme`, doApply);
+      } else {
+        doApply();
+      }
+    });
+    daisyGrid.appendChild(btn);
+  });
+
+  daisyRow.appendChild(daisyGrid);
+  panel.appendChild(daisyRow);
 
   // ── Colors ────────────────────────────────────────────────────────────────
   panel.appendChild(buildSectionHeading('Colors'));
@@ -530,7 +982,7 @@ function buildAppearanceTab(store: StateStore): HTMLElement {
 
   colorFields.forEach(({ label, key }) => {
     const value = (vars[key] as string | undefined) ?? '#000000';
-    const row = buildColorRow({
+    colorGrid.appendChild(buildColorRow({
       label,
       varKey: key,
       value,
@@ -538,17 +990,16 @@ function buildAppearanceTab(store: StateStore): HTMLElement {
         const merged: Partial<CheckoutThemeVariables> = { ...(store.get().theme.variables ?? {}), [key]: val };
         store.update({ theme: { ...store.get().theme, variables: merged } });
       },
-    });
-    // Tag the hex input for sync
-    const hexInput = row.querySelector<HTMLInputElement>('input[type="text"]');
-    if (hexInput) hexInput.dataset['varKey'] = key;
-    colorGrid.appendChild(row);
+    }));
   });
 
   panel.appendChild(colorGrid);
 
   // ── Typography ────────────────────────────────────────────────────────────
-  panel.appendChild(buildSectionHeading('Typography'));
+  const typoSection = document.createElement('div');
+  typoSection.dataset['typoSection'] = '';
+  typoSection.hidden = state.themePreset === 'tailwind';
+  typoSection.appendChild(buildSectionHeading('Typography'));
 
   const typoGrid = document.createElement('div');
   typoGrid.className = 'grid gap-3';
@@ -584,10 +1035,14 @@ function buildAppearanceTab(store: StateStore): HTMLElement {
   });
   typoGrid.appendChild(fontSizeRow);
 
-  panel.appendChild(typoGrid);
+  typoSection.appendChild(typoGrid);
+  panel.appendChild(typoSection);
 
   // ── Shape ─────────────────────────────────────────────────────────────────
-  panel.appendChild(buildSectionHeading('Shape'));
+  const shapeSection = document.createElement('div');
+  shapeSection.dataset['shapeSection'] = '';
+  shapeSection.hidden = state.themePreset === 'tailwind';
+  shapeSection.appendChild(buildSectionHeading('Shape'));
 
   const shapeGrid = document.createElement('div');
   shapeGrid.className = 'grid gap-3';
@@ -623,7 +1078,8 @@ function buildAppearanceTab(store: StateStore): HTMLElement {
   });
   shapeGrid.appendChild(inputHeightRow);
 
-  panel.appendChild(shapeGrid);
+  shapeSection.appendChild(shapeGrid);
+  panel.appendChild(shapeSection);
 
   // ── Spacing ───────────────────────────────────────────────────────────────
   panel.appendChild(buildSectionHeading('Spacing'));

@@ -18,10 +18,12 @@ export function createModernCheckoutTheme(overrides: Partial<CheckoutTheme> = {}
 export function createTailwindCheckoutTheme(overrides: Partial<CheckoutTheme> = {}): CheckoutTheme {
   return {
     preset: 'tailwind',
-    containerClassName: 'mx-auto grid gap-6 lg:grid-cols-[1.2fr_0.8fr]',
-    sectionClassName: 'rounded-3xl border border-(--cocart-color-border) bg-(--cocart-color-surface) p-6 shadow-sm',
-    orderSummaryClassName: 'rounded-3xl border border-(--cocart-color-border) bg-(--cocart-color-text) p-6 text-(--cocart-color-surface)',
-    submitButtonClassName: 'inline-flex min-h-12 w-full items-center justify-center rounded-2xl bg-(--cocart-color-button) px-5 text-sm font-semibold text-(--cocart-color-button-text) transition hover:opacity-90',
+    containerClassName: 'mx-auto max-w-5xl grid gap-6 lg:grid-cols-[1.2fr_0.8fr]',
+    sectionClassName: 'card bg-base-100 shadow-sm p-6',
+    orderSummaryClassName: 'card p-6',
+    inputClassName: 'input input-bordered w-full h-(--cocart-input-height) text-sm',
+    submitButtonClassName: 'btn btn-primary btn-block mt-2',
+    helperTextClassName: 'text-xs text-base-content/50 mt-0.5',
     ...overrides,
   };
 }
@@ -29,9 +31,9 @@ export function createTailwindCheckoutTheme(overrides: Partial<CheckoutTheme> = 
 export function createShadcnCheckoutTheme(overrides: Partial<CheckoutTheme> = {}): CheckoutTheme {
   return {
     preset: 'shadcn',
-    containerClassName: 'mx-auto grid gap-6 lg:grid-cols-[1.2fr_0.8fr]',
+    containerClassName: 'mx-auto max-w-5xl grid gap-6 lg:grid-cols-[1.2fr_0.8fr]',
     sectionClassName: 'rounded-xl border border-(--cocart-color-border) bg-(--cocart-color-surface) p-6 shadow-sm',
-    orderSummaryClassName: 'rounded-xl border border-(--cocart-color-border) bg-(--cocart-color-background) p-6',
+    orderSummaryClassName: 'rounded-xl border border-(--cocart-color-border) bg-(--cocart-color-background-alt) p-6',
     submitButtonClassName: 'inline-flex h-10 w-full items-center justify-center rounded-(--cocart-border-radius) bg-(--cocart-color-button) px-4 text-sm font-medium text-(--cocart-color-button-text) transition hover:opacity-90',
     ...overrides,
   };

@@ -16,10 +16,13 @@ Import from the `/react` sub-path:
 import {
   CheckoutContainer,
   Address,
-  PaymentMethods,
-  ShippingMethods,
-  OrderSummary,
   ExpressBar,
+  ShippingMethods,
+  PaymentMethods,
+  OrderSummary,
+  OrderLineItems,
+  OrderTotals,
+  DiscountCode,
   PayButton,
   TermsAndConditions,
 } from '@cocartheadless/checkout/react';
@@ -113,7 +116,7 @@ Gateway icons are resolved automatically from `gw.id` / `gw.provider`:
 
 ### `<ShippingMethods>`
 
-Renders selectable shipping rate rows.
+Renders selectable shipping rate rows. The selected row is highlighted with the theme's `colorBackgroundHover`.
 
 | Prop | Type | Default |
 |------|------|---------|
