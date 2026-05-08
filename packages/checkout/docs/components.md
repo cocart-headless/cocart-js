@@ -65,11 +65,13 @@ import { Address } from '@cocartheadless/checkout/react';
 
 **Props**
 
-| Prop | Type | Description |
-|---|---|---|
-| `type` | `'contact' \| 'billing' \| 'shipping'` | Controls grid layout (`billing`/`shipping` → 2-column) |
-| `section` | `CheckoutFormSection` | Section definition from `form.sections` |
-| `theme` | `CheckoutTheme` | Controls `inputClassName`, `helperTextClassName`, `sectionClassName` |
+| Prop | Type | Default | Description |
+|---|---|---|---|
+| `type` | `'contact' \| 'billing' \| 'shipping'` | required | Controls grid layout (`billing`/`shipping` → 2-column) |
+| `section` | `CheckoutFormSection` | required | Section definition from `form.sections` |
+| `theme` | `CheckoutTheme` | required | Controls `inputClassName`, `helperTextClassName`, `sectionClassName` |
+| `loading` | `boolean` | `false` | Shows skeleton placeholders |
+| `isAuthorized` | `boolean` | `false` | When `true` and `type="contact"`, hides the Sign in toggle and shows a Sign out link instead |
 
 `section` comes from the form definition returned by `client.checkout.createForm()`. Fields with `hidden: true` are automatically skipped.
 
@@ -153,11 +155,12 @@ renderExpressField={({ field }) => {
 
 ## `<ShippingMethods>`
 
-Renders a radio group of shipping rate options. The selected row is highlighted with `colorBackgroundHover`. Currently uses mock data — wire up to `client.checkout.getShippingMethods()` and replace `MOCK_RATES` with live data when integrating.
+Renders a radio group of shipping rate options. The selected row is highlighted with `colorBackgroundHover`. Pass `placeholder` when no shipping address has been entered yet — it renders an informational message instead of the rate list.
 
 ```tsx
-<ShippingMethods theme={theme} />
-<ShippingMethods theme={theme} freeShipping />
+<ShippingMethods theme={theme} rates={rates} onRateChange={setSelectedRate} />
+<ShippingMethods theme={theme} rates={rates} freeShipping />
+<ShippingMethods theme={theme} rates={[]} placeholder />
 ```
 
 **Props**
@@ -165,8 +168,22 @@ Renders a radio group of shipping rate options. The selected row is highlighted 
 | Prop | Type | Default | Description |
 |---|---|---|---|
 | `theme` | `CheckoutTheme` | required | Controls `sectionClassName` |
+| `rates` | `ShippingRate[]` | required | Shipping rate options to render. Wire to `client.checkout.getShippingMethods()` |
 | `loading` | `boolean` | `false` | Shows skeleton placeholders |
 | `freeShipping` | `boolean` | `false` | Strikes through paid rates and shows "Free" |
+| `placeholder` | `boolean` | `false` | Renders a prompt to enter a shipping address instead of the rate list |
+| `onRateChange` | `(rate: ShippingRate) => void` | — | Called when the customer selects a different rate |
+
+**`ShippingRate`**
+
+```ts
+interface ShippingRate {
+  id: string;
+  label: string;   // e.g. "Standard shipping"
+  meta: string;    // e.g. "5–7 business days"
+  price: string;   // formatted string, e.g. "$12.00" or "Free"
+}
+```
 
 ---
 
@@ -197,6 +214,8 @@ The billing address toggle ("Use shipping address as billing address") renders b
 | `paymentSection` | `CheckoutFormSection` | — | Gateway element fields (from `form.sections`) |
 | `billingSection` | `CheckoutFormSection` | — | Billing address section for the toggle |
 | `showBillingUnderPayment` | `boolean` | `true` | Show the billing address toggle and form |
+| `loading` | `boolean` | `false` | Shows skeleton placeholders |
+| `layout` | `'radio' \| 'tabs' \| 'accordion'` | `'radio'` | Visual layout for the gateway selector |
 
 Returns `null` when `gateways` is empty and no `paymentSection` is supplied.
 
@@ -207,8 +226,14 @@ Returns `null` when `gateways` is empty and no `paymentSection` is supplied.
 Composes `<OrderLineItems>`, `<DiscountCode>`, and `<OrderTotals>` into a single panel. Use this when you want the full summary in one component. Use the sub-components individually when you need to customise layout or data independently.
 
 ```tsx
-<OrderSummary theme={theme} />
-<OrderSummary theme={theme} mobileDrawer />
+<OrderSummary
+  theme={theme}
+  items={lineItems}
+  subtotalCents={8700}
+  taxCents={870}
+  onApply={async (code) => validateCoupon(code)}
+/>
+<OrderSummary theme={theme} items={lineItems} subtotalCents={8700} taxCents={870} onApply={onApply} mobileDrawer total="USD $95.70" />
 ```
 
 **Props**
@@ -216,8 +241,15 @@ Composes `<OrderLineItems>`, `<DiscountCode>`, and `<OrderTotals>` into a single
 | Prop | Type | Default | Description |
 |---|---|---|---|
 | `theme` | `CheckoutTheme` | required | Controls `orderSummaryClassName` |
+| `items` | `OrderLineItem[]` | required | Line items to display |
+| `subtotalCents` | `number` | required | Subtotal in cents |
+| `taxCents` | `number` | required | Tax in cents |
+| `onApply` | `(code: string) => Promise<AppliedCoupon \| null>` | required | Coupon validation callback — return `AppliedCoupon` on success or `null` to show an error |
 | `mobileDrawer` | `boolean` | `false` | Renders as a bottom-sheet drawer with a toggle bar — use when the order summary sits below the form on mobile |
 | `loading` | `boolean` | `false` | Shows skeleton placeholders instead of content |
+| `showShipping` | `boolean` | `true` | Show the shipping row in the totals |
+| `shippingCostCents` | `number` | — | Shipping cost in cents. Omit to show "Enter shipping address"; pass `0` for free |
+| `total` | `string` | — | Formatted total string shown in the mobile drawer toggle bar (e.g. `"USD $95.70"`) |
 | `onCouponsChange` | `(coupons: AppliedCoupon[]) => void` | — | Called when coupons are applied or removed — use to drive `freeShipping` state on `<ShippingMethods>` |
 
 ---
@@ -227,7 +259,6 @@ Composes `<OrderLineItems>`, `<DiscountCode>`, and `<OrderTotals>` into a single
 Renders the list of cart items — thumbnail placeholder, name, variant, quantity badge, and price.
 
 ```tsx
-<OrderLineItems theme={theme} />
 <OrderLineItems theme={theme} items={lineItems} />
 ```
 
@@ -236,7 +267,7 @@ Renders the list of cart items — thumbnail placeholder, name, variant, quantit
 | Prop | Type | Default | Description |
 |---|---|---|---|
 | `theme` | `CheckoutTheme` | required | Theme reference (reserved for future className support) |
-| `items` | `OrderLineItem[]` | mock items | Line items to render. Wire to `client.checkout.getCheckout()` data when integrating |
+| `items` | `OrderLineItem[]` | required | Line items to render. Wire to `client.checkout.getCheckout()` data |
 
 **`OrderLineItem`**
 
@@ -294,8 +325,8 @@ interface AppliedCoupon {
 Renders the subtotal, discount rows, shipping, taxes, and total. Discount rows are derived from the `coupons` prop — pass the same array you manage in state.
 
 ```tsx
-<OrderTotals theme={theme} coupons={coupons} />
-<OrderTotals theme={theme} subtotalCents={9900} taxCents={990} coupons={coupons} />
+<OrderTotals theme={theme} subtotalCents={8700} taxCents={870} coupons={coupons} />
+<OrderTotals theme={theme} subtotalCents={8700} taxCents={870} coupons={coupons} shippingCostCents={1200} />
 ```
 
 **Props**
@@ -303,9 +334,11 @@ Renders the subtotal, discount rows, shipping, taxes, and total. Discount rows a
 | Prop | Type | Default | Description |
 |---|---|---|---|
 | `theme` | `CheckoutTheme` | required | Theme reference (reserved for future className support) |
-| `subtotalCents` | `number` | `8700` | Subtotal in cents. Wire to checkout data when integrating |
-| `taxCents` | `number` | `870` | Tax amount in cents |
+| `subtotalCents` | `number` | required | Subtotal in cents |
+| `taxCents` | `number` | required | Tax amount in cents |
 | `coupons` | `AppliedCoupon[]` | `[]` | Applied coupons — drives discount rows and free-shipping display |
+| `showShipping` | `boolean` | `true` | Show the shipping row |
+| `shippingCostCents` | `number` | — | Shipping cost in cents. Omit to show "Enter shipping address"; pass `0` for free |
 
 ---
 
@@ -375,6 +408,10 @@ const expressGateways = client.checkout.listExpressGateways();
 const regularGateways = client.checkout.listGateways();
 
 export function CheckoutPage() {
+  const [rates, setRates] = useState<ShippingRate[]>([]);
+  const [shippingCostCents, setShippingCostCents] = useState<number | undefined>();
+  const lineItems: OrderLineItem[] = checkout.items.map(i => ({ name: i.name, variant: i.variant, qty: i.quantity, price: i.price }));
+
   return (
     <CheckoutContainer form={form} layout="two-column">
       <div>
@@ -387,7 +424,12 @@ export function CheckoutPage() {
         {shippingSection && (
           <Address type="shipping" section={shippingSection} theme={theme} />
         )}
-        <ShippingMethods theme={theme} />
+        <ShippingMethods
+          theme={theme}
+          rates={rates}
+          placeholder={rates.length === 0}
+          onRateChange={rate => setShippingCostCents(/* rate cost in cents */)}
+        />
         <PaymentMethods
           gateways={regularGateways}
           theme={theme}
@@ -397,7 +439,14 @@ export function CheckoutPage() {
         <PayButton theme={theme} />
       </div>
       <div>
-        <OrderSummary theme={theme} />
+        <OrderSummary
+          theme={theme}
+          items={lineItems}
+          subtotalCents={checkout.subtotalCents}
+          taxCents={checkout.taxCents}
+          shippingCostCents={shippingCostCents}
+          onApply={async (code) => client.checkout.applyCoupon(code)}
+        />
       </div>
     </CheckoutContainer>
   );

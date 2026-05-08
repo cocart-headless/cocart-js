@@ -125,10 +125,13 @@ Renders selectable shipping rate rows. The selected row is highlighted with the 
 | Prop | Type | Default |
 |------|------|---------|
 | `theme` | `CheckoutTheme` | required |
+| `rates` | `ShippingRate[]` | required |
 | `loading` | `boolean` | `false` |
 | `freeShipping` | `boolean` | `false` |
+| `placeholder` | `boolean` | `false` |
+| `onRateChange` | `(rate: ShippingRate) => void` | — |
 
-When `freeShipping=true`, paid rates show a strikethrough price with a green "Free" label.
+When `freeShipping=true`, paid rates show a strikethrough price with a green "Free" label. When `placeholder=true`, a prompt to enter a shipping address is shown instead of the rate list.
 
 ---
 
