@@ -116,6 +116,7 @@ function main(): void {
     codePanel.style.maxHeight = codeVisible ? '540px' : '160px';
   });
 
+  codePanel.classList.add('code-panel-animated');
   codePanel.style.maxHeight = '160px';
 
   // ── Reactive subscriptions ─────────────────────────────────────────────

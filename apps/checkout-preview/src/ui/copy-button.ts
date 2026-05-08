@@ -23,7 +23,11 @@ export function makeCopyButton(label: string, getText: () => string, extraClass 
     try {
       await navigator.clipboard.writeText(getText());
       btn.replaceChildren(buildButtonContent(CHECK_ICON, 'Copied!'));
-      setTimeout(() => { btn.replaceChildren(buildButtonContent(COPY_ICON, label)); }, 1800);
+      btn.classList.add('copy-success');
+      setTimeout(() => {
+        btn.replaceChildren(buildButtonContent(COPY_ICON, label));
+        btn.classList.remove('copy-success');
+      }, 1800);
     } catch {
       // clipboard access denied — silent fail
     }

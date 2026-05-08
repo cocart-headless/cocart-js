@@ -18,10 +18,10 @@ function makeIconCopyButton(getText: () => string): HTMLButtonElement {
     try {
       await navigator.clipboard.writeText(getText());
       btn.replaceChildren(makeIcon(CHECK_PATH, 14));
-      btn.classList.add('text-emerald-400');
+      btn.classList.add('text-emerald-400', 'copy-success');
       setTimeout(() => {
         btn.replaceChildren(makeIcon(CLIPBOARD_PATH, 14));
-        btn.classList.remove('text-emerald-400');
+        btn.classList.remove('text-emerald-400', 'copy-success');
       }, 1800);
     } catch {
       // silent fail
@@ -33,7 +33,7 @@ function makeIconCopyButton(getText: () => string): HTMLButtonElement {
 
 function makeCodeBlock(snippet: string, filename?: string): HTMLElement {
   const wrapper = document.createElement('div');
-  wrapper.className = 'rounded-lg overflow-hidden border border-slate-800 mt-4';
+  wrapper.className = 'impl-code-block rounded-lg overflow-hidden border border-slate-800 mt-4';
 
   const topBar = document.createElement('div');
   topBar.className = 'flex items-center justify-between bg-slate-900 px-3 py-2 border-b border-slate-800';
@@ -73,7 +73,7 @@ function makeInstallTabs(pkg: string): HTMLElement {
   };
 
   const wrapper = document.createElement('div');
-  wrapper.className = 'rounded-lg overflow-hidden border border-slate-800 mt-4';
+  wrapper.className = 'impl-code-block rounded-lg overflow-hidden border border-slate-800 mt-4';
 
   const tabBar = document.createElement('div');
   tabBar.className = 'flex items-center bg-slate-900 border-b border-slate-800 px-3 pt-2 gap-1';
@@ -126,7 +126,7 @@ interface Step {
 
 function renderStep(step: Step, isLast: boolean): HTMLElement {
   const row = document.createElement('div');
-  row.className = 'flex gap-6';
+  row.className = 'impl-step flex gap-6';
 
   const left = document.createElement('div');
   left.className = 'flex flex-col items-center';
@@ -173,7 +173,7 @@ export function buildImplementationModal(): {
   let isOpen = false;
 
   const backdrop = document.createElement('div');
-  backdrop.className = 'fixed inset-0 z-50 flex flex-col bg-slate-950 overflow-hidden';
+  backdrop.className = 'impl-modal-backdrop fixed inset-0 z-50 flex flex-col overflow-hidden';
   backdrop.style.display = 'none';
 
   const modalHeader = document.createElement('div');
@@ -216,7 +216,7 @@ export function buildImplementationModal(): {
   modalHeader.appendChild(headerRight);
 
   const body = document.createElement('div');
-  body.className = 'flex-1 overflow-y-auto';
+  body.className = 'impl-modal-panel flex-1 overflow-y-auto bg-slate-950';
 
   const inner = document.createElement('div');
   inner.className = 'max-w-3xl mx-auto px-8 py-10';
@@ -289,6 +289,7 @@ export function buildImplementationModal(): {
     currentState = state;
     isOpen = true;
     rebuildSteps(state);
+    backdrop.classList.remove('closing');
     backdrop.style.display = 'flex';
     document.body.style.overflow = 'hidden';
   }
@@ -300,8 +301,14 @@ export function buildImplementationModal(): {
 
   function close(): void {
     isOpen = false;
-    backdrop.style.display = 'none';
-    document.body.style.overflow = '';
+    backdrop.classList.add('closing');
+    backdrop.addEventListener('animationend', () => {
+      if (!isOpen) {
+        backdrop.style.display = 'none';
+        backdrop.classList.remove('closing');
+        document.body.style.overflow = '';
+      }
+    }, { once: true });
   }
 
   return { open, update, close };
