@@ -124,10 +124,53 @@ function defaultState(): BuilderState {
   };
 }
 
+const STORAGE_KEY = 'cocart-checkout-builder-state';
+const TTL_MS = 24 * 60 * 60 * 1000;
+
+type PersistedState = Omit<BuilderState, 'theme'>;
+
+function saveState(state: BuilderState): void {
+  try {
+    const { theme: _theme, ...rest } = state;
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ ts: Date.now(), state: rest }));
+  } catch { /* quota exceeded or SSR */ }
+}
+
+function loadPersistedState(): Partial<PersistedState> | null {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as { ts: number; state: Partial<PersistedState> };
+    if (Date.now() - parsed.ts > TTL_MS) {
+      localStorage.removeItem(STORAGE_KEY);
+      return null;
+    }
+    return parsed.state;
+  } catch { return null; }
+}
+
+function buildThemeFromState(state: BuilderState): BuilderState {
+  if (state.themePreset === 'tailwind') {
+    return { ...state, theme: createTailwindCheckoutTheme({ variables: { ...TAILWIND_VARIABLES } }) };
+  }
+  if (state.themePreset === 'modern') {
+    return { ...state, theme: createModernCheckoutTheme({ variables: { ...MODERN_VARIABLES } }) };
+  }
+  return state;
+}
+
+function initialState(): BuilderState {
+  const base = defaultState();
+  const saved = loadPersistedState();
+  if (!saved) return base;
+  const merged: BuilderState = { ...base, ...saved, theme: base.theme };
+  return buildThemeFromState(merged);
+}
+
 type Listener = (state: BuilderState) => void;
 
 class StateStore {
-  private state: BuilderState = defaultState();
+  private state: BuilderState = initialState();
   private listeners: Set<Listener> = new Set();
 
   get(): BuilderState {
@@ -136,6 +179,13 @@ class StateStore {
 
   update(patch: Partial<BuilderState>): void {
     this.state = { ...this.state, ...patch };
+    saveState(this.state);
+    this.notify();
+  }
+
+  reset(): void {
+    try { localStorage.removeItem(STORAGE_KEY); } catch { /* ignore */ }
+    this.state = defaultState();
     this.notify();
   }
 

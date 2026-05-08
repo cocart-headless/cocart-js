@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import type { CheckoutTheme } from '../index.js';
 import { Sk } from './skeleton.js';
 
@@ -26,8 +26,8 @@ export function DiscountCode({ theme, applied, onApply, onRemove }: DiscountCode
   const [error, setError] = useState('');
   const inputClass = theme.inputClassName
     ? `${theme.inputClassName} flex-1 min-w-0`
-    : 'h-(--cocart-input-height) flex-1 min-w-0 rounded-(--cocart-border-radius) border border-(--cocart-color-border) bg-(--cocart-color-surface) px-3.5 text-sm text-(--cocart-color-text) placeholder:text-(--cocart-color-text-muted) outline-none transition focus:border-(--cocart-color-primary)';
-  const btnClass = 'h-(--cocart-input-height) shrink-0 rounded-(--cocart-border-radius) border border-(--cocart-color-border) bg-(--cocart-color-background) px-4 text-sm font-medium text-(--cocart-color-text) transition hover:bg-(--cocart-color-background-hover) disabled:opacity-40';
+    : 'h-(--cocart-input-height) flex-1 min-w-0 rounded-(--cocart-border-radius) border border-(--cocart-color-border) bg-(--cocart-color-surface) px-3.5 text-sm text-(--cocart-color-text) placeholder:text-(--cocart-color-text-muted) outline-none transition focus:border-(--cocart-color-primary) focus-visible:ring-2 focus-visible:ring-(--cocart-color-primary) focus-visible:ring-offset-1';
+  const btnClass = 'h-(--cocart-input-height) shrink-0 rounded-(--cocart-border-radius) border border-(--cocart-color-border) bg-(--cocart-color-background) px-4 text-sm font-medium text-(--cocart-color-text) transition hover:bg-(--cocart-color-background-hover) disabled:opacity-40 focus-visible:ring-2 focus-visible:ring-(--cocart-color-primary) focus-visible:ring-offset-1';
 
   async function handleApply() {
     const trimmed = code.trim().toUpperCase();
@@ -55,7 +55,9 @@ export function DiscountCode({ theme, applied, onApply, onRemove }: DiscountCode
   return (
     <div className="grid gap-2 mb-4">
       <div className="flex gap-2">
+        <label htmlFor="discount-code" className="sr-only">Discount code or gift card</label>
         <input
+          id="discount-code"
           type="text"
           value={code}
           onChange={e => { setCode(e.target.value); setError(''); }}
@@ -63,25 +65,33 @@ export function DiscountCode({ theme, applied, onApply, onRemove }: DiscountCode
           placeholder="Discount code or gift card"
           className={`${inputClass}${error ? ' border-(--cocart-color-error)' : ''}`}
           disabled={loading}
+          aria-describedby={error ? 'discount-error' : undefined}
         />
         <button
           type="button"
           disabled={!code.trim() || loading}
+          aria-busy={loading}
+          aria-label={loading ? 'Applying discount code' : 'Apply discount code'}
           className={btnClass}
           onClick={() => void handleApply()}
         >
           {loading ? '…' : 'Apply'}
         </button>
       </div>
-      {error && <p className="text-xs" style={{ color: 'var(--cocart-color-error)' }}>{error}</p>}
+      {error && (
+        <p id="discount-error" role="alert" className="text-xs" style={{ color: 'var(--cocart-color-error)' }}>
+          {error}
+        </p>
+      )}
       {applied.map(coupon => (
         <div key={coupon.code} className="flex items-center justify-between gap-2 text-sm">
           <span className="inline-flex items-center rounded-full bg-green-50 border border-green-200 px-2.5 py-0.5 font-mono text-xs font-medium text-green-700 uppercase">
-            {coupon.code}
+            <span className="sr-only">Discount code: </span>{coupon.code}
           </span>
           <button
             type="button"
-            className="text-xs text-(--cocart-color-text-muted) underline shrink-0 ml-auto"
+            aria-label={`Remove discount code ${coupon.code}`}
+            className="text-xs text-(--cocart-color-text-muted) underline shrink-0 ml-auto focus-visible:ring-2 focus-visible:ring-(--cocart-color-primary) rounded"
             onClick={() => onRemove(coupon.code)}
           >
             Remove
@@ -92,18 +102,6 @@ export function DiscountCode({ theme, applied, onApply, onRemove }: DiscountCode
   );
 }
 
-// Mock data — real integrations replace these with API responses
-const MOCK_ITEMS = [
-  { name: 'Product One', variant: 'Default', qty: 1, price: '$49.00' },
-  { name: 'Product Two', variant: 'Size M / Black', qty: 2, price: '$38.00' },
-];
-
-const MOCK_COUPONS: Record<string, { discount: string; discountCents: number; freeShipping?: boolean }> = {
-  'SAVE10':   { discount: '-$10.00',       discountCents: 1000 },
-  'SUMMER15': { discount: '-$13.05 (15%)', discountCents: 1305 },
-  'FREESHIP': { discount: 'Free shipping', discountCents: 0, freeShipping: true },
-};
-
 export interface OrderLineItem {
   name: string;
   variant: string;
@@ -113,15 +111,18 @@ export interface OrderLineItem {
 
 export interface OrderLineItemsProps {
   theme: CheckoutTheme;
-  items?: OrderLineItem[];
+  items: OrderLineItem[];
 }
 
-export function OrderLineItems({ theme: _theme, items = MOCK_ITEMS }: OrderLineItemsProps) {
+export function OrderLineItems({ theme: _theme, items }: OrderLineItemsProps) {
   return (
-    <div className="grid gap-4">
+    <ul className="grid gap-4 list-none m-0 p-0">
       {items.map(item => (
-        <div key={item.name} className="flex items-center gap-3">
-          <div className="relative h-14 w-14 shrink-0 rounded-(--cocart-border-radius) border border-(--cocart-color-border) bg-(--cocart-color-surface) flex items-center justify-center">
+        <li key={item.name} className="flex items-center gap-3">
+          <div
+            className="relative h-14 w-14 shrink-0 rounded-(--cocart-border-radius) border border-(--cocart-color-border) bg-(--cocart-color-surface) flex items-center justify-center"
+            aria-hidden="true"
+          >
             <span className="text-xs text-(--cocart-color-text-muted)">img</span>
             <span className="absolute -top-1.5 -right-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-(--cocart-color-text-muted) text-[10px] font-medium text-(--cocart-color-surface)">
               {item.qty}
@@ -131,77 +132,103 @@ export function OrderLineItems({ theme: _theme, items = MOCK_ITEMS }: OrderLineI
             <p className="text-sm font-medium text-(--cocart-color-text) truncate">{item.name}</p>
             <p className="text-xs text-(--cocart-color-text-muted)">{item.variant}</p>
           </div>
-          <span className="text-sm font-medium text-(--cocart-color-text) shrink-0">{item.price}</span>
-        </div>
+          <span className="text-sm font-medium text-(--cocart-color-text) shrink-0" aria-label={`Price: ${item.price}`}>
+            {item.price}
+          </span>
+        </li>
       ))}
-    </div>
+    </ul>
   );
 }
 
 export interface OrderTotalsProps {
   theme: CheckoutTheme;
-  subtotalCents?: number;
-  taxCents?: number;
+  subtotalCents: number;
+  taxCents: number;
   coupons?: AppliedCoupon[];
   showShipping?: boolean;
+  shippingCostCents?: number;
 }
 
-export function OrderTotals({ theme: _theme, subtotalCents = 8700, taxCents = 870, coupons = [], showShipping = true }: OrderTotalsProps) {
+export function OrderTotals({ theme: _theme, subtotalCents, taxCents, coupons = [], showShipping = true, shippingCostCents }: OrderTotalsProps) {
   const hasFreeShipping = coupons.some(c => c.freeShipping);
   const totalDiscountCents = coupons.reduce((sum, c) => sum + (Number(c.discountCents) || 0), 0);
-  const totalCents = subtotalCents - totalDiscountCents + taxCents;
+  const effectiveShippingCents = hasFreeShipping ? 0 : (shippingCostCents ?? 0);
+  const totalCents = subtotalCents - totalDiscountCents + taxCents + (shippingCostCents !== undefined ? effectiveShippingCents : 0);
   const fmt = (cents: number) => `$${(cents / 100).toFixed(2)}`;
   const itemCount = 2;
 
   return (
-    <div className="grid gap-2.5">
+    <dl className="grid gap-2.5 m-0">
       <div className="flex justify-between text-sm text-(--cocart-color-text)">
-        <span>Subtotal · {itemCount} items</span>
-        <span>{fmt(subtotalCents)}</span>
+        <dt>Subtotal · {itemCount} items</dt>
+        <dd className="m-0">{fmt(subtotalCents)}</dd>
       </div>
       {coupons.filter(c => !c.freeShipping).map(coupon => (
         <div key={coupon.code} className="flex justify-between text-sm">
-          <span className="text-green-600">Discount ({coupon.code})</span>
-          <span className="text-green-600 font-medium">-{fmt(coupon.discountCents)}</span>
+          <dt className="text-green-600">Discount ({coupon.code})</dt>
+          <dd className="m-0 text-green-600 font-medium">-{fmt(coupon.discountCents)}</dd>
         </div>
       ))}
       {hasFreeShipping && (
         <div className="flex justify-between text-sm">
-          <span className="text-green-600">Discount ({coupons.find(c => c.freeShipping)?.code})</span>
-          <span className="text-green-600 font-medium">Free</span>
+          <dt className="text-green-600">Discount ({coupons.find(c => c.freeShipping)?.code})</dt>
+          <dd className="m-0 text-green-600 font-medium">Free shipping</dd>
         </div>
       )}
       {showShipping && (
         <div className="flex justify-between text-sm">
-          <span className="text-(--cocart-color-text)">Shipping</span>
-          <span className={hasFreeShipping ? 'line-through text-(--cocart-color-text-muted)' : 'text-(--cocart-color-text-muted)'}>
-            {hasFreeShipping ? 'Free' : 'Enter shipping address'}
-          </span>
+          <dt className="text-(--cocart-color-text)">Shipping</dt>
+          <dd className="m-0">
+            {shippingCostCents === undefined ? (
+              <span className="text-(--cocart-color-text-muted)">Enter shipping address</span>
+            ) : hasFreeShipping || shippingCostCents === 0 ? (
+              <span className="text-green-600 font-medium">Free</span>
+            ) : (
+              <span className="text-(--cocart-color-text)">{fmt(shippingCostCents)}</span>
+            )}
+          </dd>
         </div>
       )}
       <div className="flex justify-between text-sm text-(--cocart-color-text)">
-        <span>Taxes</span>
-        <span>{fmt(taxCents)}</span>
+        <dt>Taxes</dt>
+        <dd className="m-0">{fmt(taxCents)}</dd>
       </div>
       <div className="flex justify-between text-base font-semibold text-(--cocart-color-text) border-t border-(--cocart-color-border) pt-3 mt-1">
-        <span>Total</span>
-        <span>USD {fmt(totalCents)}</span>
+        <dt>Total</dt>
+        <dd className="m-0">USD {fmt(totalCents)}</dd>
       </div>
-    </div>
+    </dl>
   );
 }
 
-interface OrderSummaryProps {
+export interface OrderSummaryProps {
   theme: CheckoutTheme;
   mobileDrawer?: boolean;
   loading?: boolean;
   total?: string;
   currency?: string;
   showShipping?: boolean;
+  shippingCostCents?: number;
+  items: OrderLineItem[];
+  subtotalCents: number;
+  taxCents: number;
+  onApply: (code: string) => Promise<AppliedCoupon | null>;
   onCouponsChange?: (coupons: AppliedCoupon[]) => void;
 }
 
-function SummaryContent({ theme, showShipping = true, onCouponsChange }: { theme: CheckoutTheme; showShipping?: boolean; onCouponsChange?: (coupons: AppliedCoupon[]) => void }) {
+interface SummaryContentProps {
+  theme: CheckoutTheme;
+  showShipping?: boolean;
+  shippingCostCents?: number;
+  items: OrderLineItem[];
+  subtotalCents: number;
+  taxCents: number;
+  onApply: (code: string) => Promise<AppliedCoupon | null>;
+  onCouponsChange?: (coupons: AppliedCoupon[]) => void;
+}
+
+function SummaryContent({ theme, showShipping = true, shippingCostCents, items, subtotalCents, taxCents, onApply, onCouponsChange }: SummaryContentProps) {
   const [coupons, setCoupons] = useState<AppliedCoupon[]>([]);
 
   function updateCoupons(next: AppliedCoupon[]) {
@@ -210,17 +237,14 @@ function SummaryContent({ theme, showShipping = true, onCouponsChange }: { theme
   }
 
   async function handleApply(code: string): Promise<AppliedCoupon | null> {
-    await new Promise(r => setTimeout(r, 600));
-    const mock = MOCK_COUPONS[code];
-    if (!mock) return null;
-    const coupon: AppliedCoupon = { code, discount: mock.discount, discountCents: mock.discountCents, freeShipping: mock.freeShipping };
-    updateCoupons([...coupons, coupon]);
-    return coupon;
+    const result = await onApply(code);
+    if (result) updateCoupons([...coupons, result]);
+    return result;
   }
 
   return (
     <div className={theme.orderSummaryClassName ?? ''}>
-      <OrderLineItems theme={theme} />
+      <OrderLineItems theme={theme} items={items} />
       <div className="border-t border-(--cocart-color-border) mt-4 pt-4">
         <DiscountCode
           theme={theme}
@@ -230,14 +254,33 @@ function SummaryContent({ theme, showShipping = true, onCouponsChange }: { theme
         />
       </div>
       <div className="border-t border-(--cocart-color-border) mt-4 pt-4">
-        <OrderTotals theme={theme} coupons={coupons} showShipping={showShipping} />
+        <OrderTotals theme={theme} subtotalCents={subtotalCents} taxCents={taxCents} coupons={coupons} showShipping={showShipping} shippingCostCents={shippingCostCents} />
       </div>
     </div>
   );
 }
 
-export function OrderSummary({ theme, mobileDrawer = false, loading = false, total = 'USD $95.70', currency: _currency, showShipping = true, onCouponsChange }: OrderSummaryProps) {
+export function OrderSummary({ theme, mobileDrawer = false, loading = false, total, currency: _currency, showShipping = true, shippingCostCents, items, subtotalCents, taxCents, onApply, onCouponsChange }: OrderSummaryProps) {
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const toggleBtnRef = useRef<HTMLButtonElement>(null);
+  const closeBtnRef = useRef<HTMLButtonElement>(null);
+  const drawerId = 'order-summary-drawer';
+  const drawerTitleId = 'order-summary-drawer-title';
+
+  useEffect(() => {
+    if (drawerOpen) {
+      closeBtnRef.current?.focus();
+    }
+  }, [drawerOpen]);
+
+  function closeDrawer() {
+    setDrawerOpen(false);
+    toggleBtnRef.current?.focus();
+  }
+
+  function handleDrawerKeyDown(e: React.KeyboardEvent) {
+    if (e.key === 'Escape') closeDrawer();
+  }
 
   if (loading) {
     if (mobileDrawer) {
@@ -251,7 +294,7 @@ export function OrderSummary({ theme, mobileDrawer = false, loading = false, tot
       );
     }
     return (
-      <div className={theme.orderSummaryClassName ?? ''}>
+      <div className={theme.orderSummaryClassName ?? ''} aria-busy="true" aria-label="Loading order summary">
         <div className="grid gap-4 mb-6">
           {[0, 1].map(i => (
             <div key={i} className="flex items-center gap-3">
@@ -281,7 +324,7 @@ export function OrderSummary({ theme, mobileDrawer = false, loading = false, tot
   }
 
   if (!mobileDrawer) {
-    return <SummaryContent theme={theme} showShipping={showShipping} onCouponsChange={onCouponsChange} />;
+    return <SummaryContent theme={theme} showShipping={showShipping} shippingCostCents={shippingCostCents} items={items} subtotalCents={subtotalCents} taxCents={taxCents} onApply={onApply} onCouponsChange={onCouponsChange} />;
   }
 
   return (
@@ -289,50 +332,61 @@ export function OrderSummary({ theme, mobileDrawer = false, loading = false, tot
       {/* Sticky bottom bar */}
       <div className="border-t border-(--cocart-color-border) bg-(--cocart-color-background-alt)">
         <button
+          ref={toggleBtnRef}
           type="button"
+          aria-expanded={drawerOpen}
+          aria-controls={drawerId}
           onClick={() => setDrawerOpen(o => !o)}
-          className="w-full flex items-center justify-between px-4 py-3.5 text-sm font-medium text-(--cocart-color-text)"
+          className="w-full flex items-center justify-between px-4 py-3.5 text-sm font-medium text-(--cocart-color-text) focus-visible:ring-2 focus-visible:ring-(--cocart-color-primary) focus-visible:ring-inset"
         >
           <span className="flex items-center gap-2">
             <svg
               className={`h-4 w-4 transition-transform duration-200 ${drawerOpen ? 'rotate-180' : ''}`}
               viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2"
               strokeLinecap="round" strokeLinejoin="round"
+              aria-hidden="true"
             >
               <path d="M3 6l5 5 5-5" />
             </svg>
             Order summary
           </span>
-          <span className="font-semibold">{total}</span>
+          <span className="font-semibold" aria-live="polite">{total}</span>
         </button>
       </div>
 
-      {/* Bottom sheet drawer — rendered as a sibling, positioned absolutely by the parent container */}
+      {/* Bottom sheet drawer */}
       {drawerOpen && (
         <div
+          id={drawerId}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby={drawerTitleId}
           className="absolute inset-0 z-30 flex flex-col justify-end bg-black/20"
-          onClick={() => setDrawerOpen(false)}
+          onClick={closeDrawer}
+          onKeyDown={handleDrawerKeyDown}
         >
           <div
             className="rounded-t-2xl bg-(--cocart-color-background-alt) overflow-y-auto max-h-4/5 shadow-2xl"
             onClick={e => e.stopPropagation()}
           >
-            <div className="flex justify-center pt-3 pb-1">
+            <div className="flex justify-center pt-3 pb-1" aria-hidden="true">
               <div className="h-1 w-10 rounded-full bg-(--cocart-color-border)" />
             </div>
             <div className="flex items-center justify-between px-4 py-3 border-b border-(--cocart-color-border)">
-              <span className="text-sm font-semibold text-(--cocart-color-text)">Order summary</span>
+              <span id={drawerTitleId} className="text-sm font-semibold text-(--cocart-color-text)">Order summary</span>
               <button
+                ref={closeBtnRef}
                 type="button"
-                onClick={() => setDrawerOpen(false)}
-                className="text-(--cocart-color-text-muted)"
+                aria-label="Close order summary"
+                onClick={closeDrawer}
+                className="p-1 text-(--cocart-color-text-muted) rounded focus-visible:ring-2 focus-visible:ring-(--cocart-color-primary)"
               >
-                <svg className="h-4 w-4" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                <svg className="h-4 w-4" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
                   <path d="M3 3l10 10M13 3L3 13" />
                 </svg>
               </button>
             </div>
-            <SummaryContent theme={theme} onCouponsChange={onCouponsChange} />
+            <SummaryContent theme={theme} shippingCostCents={shippingCostCents} items={items} subtotalCents={subtotalCents} taxCents={taxCents} onApply={onApply} onCouponsChange={onCouponsChange} />
           </div>
         </div>
       )}

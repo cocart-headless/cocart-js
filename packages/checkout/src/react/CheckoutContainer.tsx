@@ -12,8 +12,9 @@ export function CheckoutContainer({ form, layout = 'two-column', children }: Che
     : 'grid gap-6';
 
   return (
-    <div className={className}>
+    <form className={className} noValidate>
+      <h1 className="sr-only">Checkout</h1>
       {children}
-    </div>
+    </form>
   );
 }

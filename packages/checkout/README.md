@@ -28,14 +28,14 @@ This package is separate from `@cocartheadless/sdk` and installs as an extension
 
 - `<CheckoutContainer>`, `<Address>`, `<ExpressBar>`, `<ShippingMethods>`
 - `<PaymentMethods>`, `<OrderSummary>`, `<PayButton>`
-- Stripe-inspired Appearance API — variables, rules, and three presets
+- Ready to use out of the box — import and render with no additional configuration
+- Fully customizable with Tailwind classes and CSS variables to match your brand; adjust component props for full control over style, colors, and layout
+- WCAG 2.1 AA accessible — ARIA labels, keyboard navigation, and focus management built-in
 
 **Extras**
 - Headless UI Rendering
 - Tailwind CSS 4
-- shadcn-style component systems
-- Coupon apply/remove
-- Typed order summary
+- shadcn and daisyUI theme presets
 
 > [!IMPORTANT]
 > This SDK is still an MVP and is looking for feedback, if you experience a bug or feel something can be better, please report it.

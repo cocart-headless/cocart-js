@@ -23,7 +23,7 @@ function isFullWidth(field: CheckoutFormField): boolean {
   );
 }
 
-const DEFAULT_INPUT = 'h-(--cocart-input-height) w-full rounded-(--cocart-border-radius) border border-(--cocart-color-border) bg-(--cocart-color-surface) px-3.5 text-[length:var(--cocart-font-size-base)] text-(--cocart-color-text) placeholder:text-(--cocart-color-text-muted) outline-none transition focus:border-(--cocart-color-primary)';
+const DEFAULT_INPUT = 'h-(--cocart-input-height) w-full rounded-(--cocart-border-radius) border border-(--cocart-color-border) bg-(--cocart-color-surface) px-3.5 text-[length:var(--cocart-font-size-base)] text-(--cocart-color-text) placeholder:text-(--cocart-color-text-muted) outline-none transition focus:border-(--cocart-color-primary) focus-visible:ring-2 focus-visible:ring-(--cocart-color-primary) focus-visible:ring-offset-1';
 const DEFAULT_HELPER = 'text-xs text-(--cocart-color-text-muted)';
 
 interface SelectOption { value: string; label: string; }
@@ -35,30 +35,93 @@ function CountrySelect({ field, inputClass }: { field: CheckoutFormField; inputC
   const defaultOption = options.find(o => o.value === defaultCode)
     ?? { value: defaultCode, label: `${countryFlag(defaultCode)}  ${defaultCode}` };
   const [selected, setSelected] = useState<SelectOption>(defaultOption);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
+  const listboxId = `listbox-${field.name}`;
+  const labelId = `label-${field.name}`;
+
+  useEffect(() => {
+    if (open) {
+      // Focus the selected option or the first option
+      const activeBtn = listRef.current?.querySelector<HTMLButtonElement>('[aria-selected="true"]')
+        ?? listRef.current?.querySelector<HTMLButtonElement>('button');
+      activeBtn?.focus();
+    }
+  }, [open]);
+
+  function handleTriggerKeyDown(e: React.KeyboardEvent) {
+    if (e.key === 'Enter' || e.key === ' ' || e.key === 'ArrowDown') {
+      e.preventDefault();
+      setOpen(true);
+    }
+  }
+
+  function handleOptionKeyDown(e: React.KeyboardEvent<HTMLButtonElement>, opt: SelectOption) {
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      setOpen(false);
+      triggerRef.current?.focus();
+    } else if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      const next = e.currentTarget.parentElement?.nextElementSibling?.querySelector('button') as HTMLButtonElement | null;
+      next?.focus();
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      const prev = e.currentTarget.parentElement?.previousElementSibling?.querySelector('button') as HTMLButtonElement | null;
+      if (prev) {
+        prev.focus();
+      } else {
+        setOpen(false);
+        triggerRef.current?.focus();
+      }
+    } else if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      setSelected(opt);
+      setOpen(false);
+      triggerRef.current?.focus();
+    }
+  }
 
   return (
     <div className="relative">
       <button
+        ref={triggerRef}
         type="button"
+        id={`trigger-${field.name}`}
+        role="combobox"
+        aria-expanded={open}
+        aria-haspopup="listbox"
+        aria-controls={listboxId}
+        aria-labelledby={`${labelId} trigger-${field.name}`}
         onClick={() => setOpen(o => !o)}
+        onKeyDown={handleTriggerKeyDown}
         className={`${inputClass} text-left flex items-center justify-between pr-9`}
       >
         <span>{selected.label}</span>
       </button>
-      <span className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 opacity-40">
+      <span className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 opacity-40" aria-hidden="true">
         <svg width="12" height="8" viewBox="0 0 12 8" fill="none"><path d="M1 1l5 5 5-5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
       </span>
       {open && (
-        <div className="absolute z-50 mt-1 w-full max-h-60 overflow-y-auto rounded-(--cocart-border-radius) border border-(--cocart-color-border) bg-(--cocart-color-surface) shadow-lg">
+        <div
+          ref={listRef}
+          id={listboxId}
+          role="listbox"
+          aria-labelledby={labelId}
+          className="absolute z-50 mt-1 w-full max-h-60 overflow-y-auto rounded-(--cocart-border-radius) border border-(--cocart-color-border) bg-(--cocart-color-surface) shadow-lg"
+        >
           {options.map(opt => (
-            <button
-              key={opt.value}
-              type="button"
-              className={`w-full px-3.5 py-2.5 text-left text-sm text-(--cocart-color-text) transition hover:bg-(--cocart-color-background-hover) ${selected.value === opt.value ? 'bg-(--cocart-color-background-hover) font-medium' : ''}`}
-              onClick={() => { setSelected(opt); setOpen(false); }}
-            >
-              {opt.label}
-            </button>
+            <div key={opt.value} role="option" aria-selected={selected.value === opt.value}>
+              <button
+                type="button"
+                tabIndex={0}
+                className={`w-full px-3.5 py-2.5 text-left text-sm text-(--cocart-color-text) transition hover:bg-(--cocart-color-background-hover) focus:outline-none focus:bg-(--cocart-color-background-hover) ${selected.value === opt.value ? 'bg-(--cocart-color-background-hover) font-medium' : ''}`}
+                onClick={() => { setSelected(opt); setOpen(false); triggerRef.current?.focus(); }}
+                onKeyDown={e => handleOptionKeyDown(e, opt)}
+              >
+                {opt.label}
+              </button>
+            </div>
           ))}
         </div>
       )}
@@ -70,6 +133,7 @@ function CountrySelect({ field, inputClass }: { field: CheckoutFormField; inputC
 function PhoneInput({ field, inputClass }: { field: CheckoutFormField; inputClass: string }) {
   const [value, setValue] = useState('');
   const [countryCode, setCountryCode] = useState<string | null>(null);
+  const inputId = `field-${field.name}`;
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
     const val = e.target.value;
@@ -84,15 +148,21 @@ function PhoneInput({ field, inputClass }: { field: CheckoutFormField; inputClas
   return (
     <div className="relative">
       {countryCode && (
-        <span className="pointer-events-none absolute top-1/2 -translate-y-1/2 text-lg leading-none select-none" style={{ left: '14px' }}>
+        <span
+          className="pointer-events-none absolute top-1/2 -translate-y-1/2 text-lg leading-none select-none"
+          style={{ left: '14px' }}
+          aria-label={`Country code: ${countryCode}`}
+        >
           {countryFlag(countryCode)}
         </span>
       )}
       <input
+        id={inputId}
         type="tel"
         name={field.name}
         autoComplete={field.autoComplete}
         required={field.required}
+        aria-required={field.required}
         placeholder={field.placeholder ?? field.label}
         value={value}
         onChange={handleChange}
@@ -108,6 +178,9 @@ function EmailInput({ field, inputClass, helperClass }: { field: CheckoutFormFie
   const [showError, setShowError] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+  const inputId = `field-${field.name}`;
+  const errorId = `error-${field.name}`;
+  const helperId = `helper-${field.name}`;
 
   useEffect(() => {
     if (timerRef.current) clearTimeout(timerRef.current);
@@ -119,17 +192,25 @@ function EmailInput({ field, inputClass, helperClass }: { field: CheckoutFormFie
   return (
     <>
       <input
+        id={inputId}
         type="email"
         name={field.name}
         autoComplete={field.autoComplete}
         required={field.required}
+        aria-required={field.required}
+        aria-invalid={showError || undefined}
+        aria-describedby={showError ? errorId : field.description ? helperId : undefined}
         placeholder={field.placeholder ?? field.label}
         value={value}
         onChange={e => { setValue(e.target.value); if (showError && isValid) setShowError(false); }}
         className={`${inputClass}${showError ? ' border-(--cocart-color-error) focus:border-(--cocart-color-error)' : ''}`}
       />
-      {showError && <p className="text-xs mt-1" style={{ color: 'var(--cocart-color-error)' }}>Please enter a valid email address.</p>}
-      {!showError && field.description && <p className={helperClass}>{field.description}</p>}
+      {showError && (
+        <p id={errorId} role="alert" className="text-xs mt-1" style={{ color: 'var(--cocart-color-error)' }}>
+          Please enter a valid email address.
+        </p>
+      )}
+      {!showError && field.description && <p id={helperId} className={helperClass}>{field.description}</p>}
     </>
   );
 }
@@ -139,35 +220,67 @@ function Field({ field, theme }: { field: CheckoutFormField; theme: CheckoutThem
 
   const inputClass = theme.inputClassName ?? DEFAULT_INPUT;
   const helperClass = theme.helperTextClassName ?? DEFAULT_HELPER;
+  const inputId = `field-${field.name}`;
+  const helperId = `helper-${field.name}`;
+  const labelId = `label-${field.name}`;
 
   if (field.type === 'textarea') {
     return (
-      <textarea
-        name={field.name}
-        autoComplete={field.autoComplete}
-        required={field.required}
-        placeholder={field.placeholder ?? field.label}
-        className={`${inputClass} resize-none min-h-20 py-3 h-auto`}
-      />
+      <div className="grid gap-1">
+        <label id={labelId} htmlFor={inputId} className="text-sm font-medium text-(--cocart-color-text)">
+          {field.label}{field.required && <span aria-hidden="true" className="ml-0.5 text-(--cocart-color-error)">*</span>}
+        </label>
+        <textarea
+          id={inputId}
+          name={field.name}
+          autoComplete={field.autoComplete}
+          required={field.required}
+          aria-required={field.required}
+          placeholder={field.placeholder}
+          className={`${inputClass} resize-none min-h-20 py-3 h-auto`}
+        />
+      </div>
     );
   }
 
   if (field.type === 'select') {
     const isCountry = field.autoComplete?.includes('country') || field.name.includes('country');
-    if (isCountry) return <CountrySelect field={field} inputClass={inputClass} />;
+    if (isCountry) {
+      return (
+        <div className="grid gap-1">
+          <span id={labelId} className="text-sm font-medium text-(--cocart-color-text)">
+            {field.label}{field.required && <span aria-hidden="true" className="ml-0.5 text-(--cocart-color-error)">*</span>}
+          </span>
+          <CountrySelect field={field} inputClass={inputClass} />
+        </div>
+      );
+    }
     return (
-      <select name={field.name} className={inputClass}>
-        {(field.options ?? []).map(o => (
-          <option key={o.value} value={o.value}>{o.label}</option>
-        ))}
-      </select>
+      <div className="grid gap-1">
+        <label htmlFor={inputId} className="text-sm font-medium text-(--cocart-color-text)">
+          {field.label}{field.required && <span aria-hidden="true" className="ml-0.5 text-(--cocart-color-error)">*</span>}
+        </label>
+        <select id={inputId} name={field.name} required={field.required} aria-required={field.required} className={inputClass}>
+          {(field.options ?? []).map(o => (
+            <option key={o.value} value={o.value}>{o.label}</option>
+          ))}
+        </select>
+      </div>
     );
   }
 
   if (field.type === 'checkbox') {
     return (
       <label className="flex items-center gap-2.5 text-sm cursor-pointer py-1">
-        <input type="checkbox" name={field.name} required={field.required} defaultChecked={field.defaultValue === true} className="h-4 w-4 rounded accent-(--cocart-color-primary)" />
+        <input
+          id={inputId}
+          type="checkbox"
+          name={field.name}
+          required={field.required}
+          aria-required={field.required}
+          defaultChecked={field.defaultValue === true}
+          className="h-4 w-4 rounded accent-(--cocart-color-primary) focus-visible:ring-2 focus-visible:ring-(--cocart-color-primary)"
+        />
         <span className="text-(--cocart-color-text)">{field.label}</span>
       </label>
     );
@@ -175,15 +288,23 @@ function Field({ field, theme }: { field: CheckoutFormField; theme: CheckoutThem
 
   if (field.type === 'radio') {
     return (
-      <div className="grid gap-1.5">
+      <fieldset className="grid gap-1.5 border-0 p-0 m-0">
+        <legend className="text-sm font-medium text-(--cocart-color-text) mb-1">
+          {field.label}{field.required && <span aria-hidden="true" className="ml-0.5 text-(--cocart-color-error)">*</span>}
+        </legend>
         {field.options?.map(opt => (
           <label key={opt.value} className="flex items-center gap-2.5 text-sm cursor-pointer">
-            <input type="radio" name={field.name} value={opt.value} className="h-4 w-4 accent-(--cocart-color-primary)" />
+            <input
+              type="radio"
+              name={field.name}
+              value={opt.value}
+              className="h-4 w-4 accent-(--cocart-color-primary) focus-visible:ring-2 focus-visible:ring-(--cocart-color-primary)"
+            />
             <span className="text-(--cocart-color-text)">{opt.label}</span>
             {opt.description && <span className={helperClass}>{opt.description}</span>}
           </label>
         ))}
-      </div>
+      </fieldset>
     );
   }
 
@@ -196,25 +317,45 @@ function Field({ field, theme }: { field: CheckoutFormField; theme: CheckoutThem
   }
 
   if (field.type === 'tel') {
-    return <PhoneInput field={field} inputClass={inputClass} />;
+    return (
+      <div className="grid gap-1">
+        <label htmlFor={inputId} className="text-sm font-medium text-(--cocart-color-text)">
+          {field.label}{field.required && <span aria-hidden="true" className="ml-0.5 text-(--cocart-color-error)">*</span>}
+        </label>
+        <PhoneInput field={field} inputClass={inputClass} />
+      </div>
+    );
   }
 
   if (field.type === 'email') {
-    return <EmailInput field={field} inputClass={inputClass} helperClass={helperClass} />;
+    return (
+      <div className="grid gap-1">
+        <label htmlFor={inputId} className="text-sm font-medium text-(--cocart-color-text)">
+          {field.label}{field.required && <span aria-hidden="true" className="ml-0.5 text-(--cocart-color-error)">*</span>}
+        </label>
+        <EmailInput field={field} inputClass={inputClass} helperClass={helperClass} />
+      </div>
+    );
   }
 
   return (
-    <>
+    <div className="grid gap-1">
+      <label htmlFor={inputId} className="text-sm font-medium text-(--cocart-color-text)">
+        {field.label}{field.required && <span aria-hidden="true" className="ml-0.5 text-(--cocart-color-error)">*</span>}
+      </label>
       <input
+        id={inputId}
         type="text"
         name={field.name}
         autoComplete={field.autoComplete}
         required={field.required}
-        placeholder={field.placeholder ?? field.label}
+        aria-required={field.required}
+        aria-describedby={field.description ? helperId : undefined}
+        placeholder={field.placeholder}
         className={inputClass}
       />
-      {field.description && <p className={helperClass}>{field.description}</p>}
-    </>
+      {field.description && <p id={helperId} className={helperClass}>{field.description}</p>}
+    </div>
   );
 }
 
@@ -222,6 +363,14 @@ export function Address({ type, section, theme, loading = false, isAuthorized = 
   const [signInOpen, setSignInOpen] = useState(false);
   const [loggedIn, setLoggedIn] = useState(false);
   const sectionClass = theme.sectionClassName ?? '';
+  const signInEmailRef = useRef<HTMLInputElement>(null);
+  const signInBtnRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    if (signInOpen && !loggedIn) {
+      signInEmailRef.current?.focus();
+    }
+  }, [signInOpen, loggedIn]);
 
   if (loading || !section) {
     const isAddress = type === 'billing' || type === 'shipping';
@@ -253,9 +402,8 @@ export function Address({ type, section, theme, loading = false, isAuthorized = 
   const visibleFields = section.fields.filter(f => !f.hidden);
   const showSignIn = isContact && !isAuthorized;
   const inputClass = theme.inputClassName ?? DEFAULT_INPUT;
-  const btnClass = 'h-(--cocart-input-height) w-full rounded-(--cocart-border-radius-full) bg-(--cocart-color-button) px-4 text-[length:var(--cocart-font-size-base)] font-medium text-(--cocart-color-button-text) transition hover:opacity-90';
+  const btnClass = 'h-(--cocart-input-height) w-full rounded-(--cocart-border-radius-full) bg-(--cocart-color-button) px-4 text-[length:var(--cocart-font-size-base)] font-medium text-(--cocart-color-button-text) transition hover:opacity-90 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-(--cocart-color-primary)';
 
-  // Sign-in form: replaces contact fields entirely while open
   if (showSignIn && signInOpen && !loggedIn) {
     const emailField = visibleFields.find(f => f.type === 'email');
     return (
@@ -263,21 +411,41 @@ export function Address({ type, section, theme, loading = false, isAuthorized = 
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-base font-bold text-(--cocart-color-text)">Login</h2>
           <button
+            ref={signInBtnRef}
             type="button"
-            className="text-xs text-(--cocart-color-text) underline"
+            className="text-xs text-(--cocart-color-text) underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--cocart-color-primary) rounded"
             onClick={() => setSignInOpen(false)}
           >
             Cancel
           </button>
         </div>
         <div className="grid gap-(--cocart-field-gap)">
-          {emailField && <Field field={emailField} theme={theme} />}
-          <input
-            type="password"
-            autoComplete="current-password"
-            placeholder="Password"
-            className={inputClass}
-          />
+          {emailField && (
+            <div className="grid gap-1">
+              <label htmlFor={`field-${emailField.name}`} className="text-sm font-medium text-(--cocart-color-text)">
+                {emailField.label}
+              </label>
+              <input
+                ref={signInEmailRef}
+                id={`field-${emailField.name}`}
+                type="email"
+                name={emailField.name}
+                autoComplete="email"
+                placeholder={emailField.placeholder ?? emailField.label}
+                className={inputClass}
+              />
+            </div>
+          )}
+          <div className="grid gap-1">
+            <label htmlFor="signin-password" className="text-sm font-medium text-(--cocart-color-text)">Password</label>
+            <input
+              id="signin-password"
+              type="password"
+              autoComplete="current-password"
+              placeholder="Password"
+              className={inputClass}
+            />
+          </div>
           <button type="button" className={btnClass} onClick={() => { setLoggedIn(true); setSignInOpen(false); }}>
             Sign in
           </button>
@@ -294,7 +462,7 @@ export function Address({ type, section, theme, loading = false, isAuthorized = 
           {showSignIn && !loggedIn && (
             <button
               type="button"
-              className="text-xs text-(--cocart-color-text) underline"
+              className="text-xs text-(--cocart-color-text) underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--cocart-color-primary) rounded"
               onClick={() => setSignInOpen(true)}
             >
               Sign in
@@ -303,7 +471,7 @@ export function Address({ type, section, theme, loading = false, isAuthorized = 
           {showSignIn && loggedIn && (
             <button
               type="button"
-              className="text-xs text-(--cocart-color-text-muted) underline"
+              className="text-xs text-(--cocart-color-text-muted) underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--cocart-color-primary) rounded"
               onClick={() => setLoggedIn(false)}
             >
               Sign out

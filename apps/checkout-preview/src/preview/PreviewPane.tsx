@@ -8,6 +8,15 @@ import type { AppliedCoupon } from '@cocartheadless/checkout/react';
 import { CheckoutContainer, ExpressBar, Address, ShippingMethods, PaymentMethods, OrderSummary, OrderLineItems, DiscountCode, OrderTotals, PayButton, TermsAndConditions } from '@cocartheadless/checkout/react';
 import { mockCoCartClient } from '../mock-client.js';
 import type { BuilderState, GatewayConfig } from '../state.js';
+import { MOCK_ITEMS, MOCK_COUPONS, MOCK_RATES, MOCK_SUBTOTAL_CENTS, MOCK_TAX_CENTS, MOCK_TOTAL } from '../mock-data.js';
+import type { MockShippingRate } from '../mock-data.js';
+
+async function mockOnApply(code: string): Promise<AppliedCoupon | null> {
+  await new Promise(r => setTimeout(r, 600));
+  const entry = MOCK_COUPONS[code];
+  if (!entry) return null;
+  return { code, ...entry };
+}
 
 const SCOPE = '#checkout-preview-root';
 let themeStyleEl: HTMLStyleElement | null = null;
@@ -64,11 +73,13 @@ interface PreviewProps {
   activeGatewayId: string | undefined;
   sections: CheckoutFormSection[];
   freeShipping?: boolean;
+  shippingCostCents?: number;
   onFreeShippingChange?: (free: boolean) => void;
+  onShippingCostChange?: (cents: number) => void;
   suppressOrderSummary?: boolean;
 }
 
-function OrderSummarySection({ state, onCouponsChange }: { state: BuilderState; onCouponsChange?: (free: boolean) => void }) {
+function OrderSummarySection({ state, shippingCostCents, onCouponsChange }: { state: BuilderState; shippingCostCents?: number; onCouponsChange?: (free: boolean) => void }) {
   const { theme, showOrderLineItems, showDiscountCode, showOrderTotals } = state;
   const showShipping = state.collectShippingAddress && !state.shippingSameAsBilling;
   const [coupons, setCoupons] = useState<AppliedCoupon[]>([]);
@@ -83,20 +94,24 @@ function OrderSummarySection({ state, onCouponsChange }: { state: BuilderState; 
 
   return (
     <div className={theme.orderSummaryClassName ?? ''}>
-      {showOrderLineItems && <OrderLineItems theme={theme} />}
+      {showOrderLineItems && <OrderLineItems theme={theme} items={MOCK_ITEMS} />}
       {showDiscountCode && (
         <div className={showOrderLineItems ? 'border-t border-(--cocart-color-border) mt-4 pt-4' : ''}>
           <DiscountCode
             theme={theme}
             applied={coupons}
-            onApply={async () => null}
+            onApply={async (code) => {
+              const result = await mockOnApply(code);
+              if (result) handleCoupons([...coupons, result]);
+              return result;
+            }}
             onRemove={code => handleCoupons(coupons.filter(c => c.code !== code))}
           />
         </div>
       )}
       {showOrderTotals && (
         <div className={(showOrderLineItems || showDiscountCode) ? 'border-t border-(--cocart-color-border) mt-4 pt-4' : ''}>
-          <OrderTotals theme={theme} coupons={coupons} showShipping={showShipping} />
+          <OrderTotals theme={theme} subtotalCents={MOCK_SUBTOTAL_CENTS} taxCents={MOCK_TAX_CENTS} coupons={coupons} showShipping={showShipping} shippingCostCents={shippingCostCents} />
         </div>
       )}
     </div>
@@ -107,6 +122,7 @@ function MobileScreen({ state, expressGateways, regularGateways, expressOnly, ac
   const { theme, includeOrderSummary, mobileOrderSummaryDrawer } = state;
   const showShipping = state.collectShippingAddress && !state.shippingSameAsBilling;
   const [freeShipping, setFreeShipping] = useState(false);
+  const [shippingCostCents, setShippingCostCents] = useState<number | undefined>(undefined);
 
   return (
     <div className="relative overflow-hidden rounded-[38px] bg-(--cocart-color-background) min-h-160 flex flex-col">
@@ -123,20 +139,22 @@ function MobileScreen({ state, expressGateways, regularGateways, expressOnly, ac
           activeGatewayId={activeGatewayId}
           sections={sections}
           freeShipping={freeShipping}
+          shippingCostCents={shippingCostCents}
           onFreeShippingChange={setFreeShipping}
+          onShippingCostChange={setShippingCostCents}
           suppressOrderSummary
         />
         {includeOrderSummary && !mobileOrderSummaryDrawer && (
-          <OrderSummary theme={theme} showShipping={showShipping} onCouponsChange={c => setFreeShipping(c.some(x => x.freeShipping))} />
+          <OrderSummary theme={theme} items={MOCK_ITEMS} subtotalCents={MOCK_SUBTOTAL_CENTS} taxCents={MOCK_TAX_CENTS} total={MOCK_TOTAL} showShipping={showShipping} shippingCostCents={shippingCostCents} onApply={mockOnApply} onCouponsChange={c => setFreeShipping(c.some(x => x.freeShipping))} />
         )}
         {!includeOrderSummary && (
-          <OrderSummarySection state={state} onCouponsChange={setFreeShipping} />
+          <OrderSummarySection state={state} shippingCostCents={shippingCostCents} onCouponsChange={setFreeShipping} />
         )}
       </div>
 
       {/* Bottom bar + drawer — rendered outside scroll so bar never scrolls away */}
       {includeOrderSummary && mobileOrderSummaryDrawer && (
-        <OrderSummary theme={theme} mobileDrawer showShipping={showShipping} onCouponsChange={c => setFreeShipping(c.some(x => x.freeShipping))} />
+        <OrderSummary theme={theme} mobileDrawer items={MOCK_ITEMS} subtotalCents={MOCK_SUBTOTAL_CENTS} taxCents={MOCK_TAX_CENTS} total={MOCK_TOTAL} showShipping={showShipping} shippingCostCents={shippingCostCents} onApply={mockOnApply} onCouponsChange={c => setFreeShipping(c.some(x => x.freeShipping))} />
       )}
 
       {/* Home indicator */}
@@ -147,9 +165,13 @@ function MobileScreen({ state, expressGateways, regularGateways, expressOnly, ac
   );
 }
 
-function CheckoutPreview({ state, expressGateways, regularGateways, expressOnly, activeGatewayId, sections, freeShipping: freeShippingProp, onFreeShippingChange, suppressOrderSummary }: PreviewProps) {
+function CheckoutPreview({ state, expressGateways, regularGateways, expressOnly, activeGatewayId, sections, freeShipping: freeShippingProp, shippingCostCents: shippingCostCentsProp, onFreeShippingChange, onShippingCostChange, suppressOrderSummary }: PreviewProps) {
   const [freeShippingLocal, setFreeShippingLocal] = useState(false);
+  const [addressEntered, setAddressEntered] = useState(false);
+  const [shippingCostCentsLocal, setShippingCostCentsLocal] = useState<number | undefined>(undefined);
   const freeShipping = freeShippingProp ?? freeShippingLocal;
+  const shippingCostCents = shippingCostCentsProp ?? shippingCostCentsLocal;
+
   function handleCouponsChange(coupons: AppliedCoupon[]) {
     const free = coupons.some(c => c.freeShipping);
     setFreeShippingLocal(free);
@@ -158,6 +180,21 @@ function CheckoutPreview({ state, expressGateways, regularGateways, expressOnly,
   function handleFreeShippingChange(free: boolean) {
     setFreeShippingLocal(free);
     onFreeShippingChange?.(free);
+  }
+  function handleAddressToggle(entered: boolean) {
+    setAddressEntered(entered);
+    if (entered) {
+      const defaultCost = MOCK_RATES[0]?.costCents ?? 0;
+      setShippingCostCentsLocal(defaultCost);
+      onShippingCostChange?.(defaultCost);
+    } else {
+      setShippingCostCentsLocal(undefined);
+      onShippingCostChange?.(0);
+    }
+  }
+  function handleRateChange(rate: MockShippingRate) {
+    setShippingCostCentsLocal(rate.costCents);
+    onShippingCostChange?.(rate.costCents);
   }
   const { theme, includeOrderSummary } = state;
   const layout = state.previewViewport === 'mobile' ? 'stacked' : state.containerLayout;
@@ -189,7 +226,13 @@ function CheckoutPreview({ state, expressGateways, regularGateways, expressOnly,
         <Address type="shipping" section={shippingSection} theme={theme} />
       )}
       {showShipping && (
-        <ShippingMethods theme={theme} freeShipping={freeShipping} />
+        <>
+          <ShippingMethods theme={theme} rates={MOCK_RATES} freeShipping={freeShipping} placeholder={!addressEntered} onRateChange={r => handleRateChange(r as MockShippingRate)} />
+          <label className="flex items-center gap-2 px-4 pb-2 text-xs text-slate-400 cursor-pointer select-none">
+            <input type="checkbox" checked={addressEntered} onChange={e => handleAddressToggle(e.target.checked)} className="accent-violet-500" />
+            Simulate address entered
+          </label>
+        </>
       )}
       {!showShipping && billingSection && (
         <Address type="billing" section={billingSection} theme={theme} />
@@ -230,8 +273,8 @@ function CheckoutPreview({ state, expressGateways, regularGateways, expressOnly,
         {!suppressOrderSummary && (
           <div className="bg-(--cocart-color-background-alt)">
             {includeOrderSummary
-              ? <OrderSummary theme={theme} showShipping={showShipping} onCouponsChange={handleCouponsChange} />
-              : <OrderSummarySection state={state} onCouponsChange={handleFreeShippingChange} />
+              ? <OrderSummary theme={theme} items={MOCK_ITEMS} subtotalCents={MOCK_SUBTOTAL_CENTS} taxCents={MOCK_TAX_CENTS} total={MOCK_TOTAL} showShipping={showShipping} shippingCostCents={shippingCostCents} onApply={mockOnApply} onCouponsChange={handleCouponsChange} />
+              : <OrderSummarySection state={state} shippingCostCents={shippingCostCents} onCouponsChange={handleFreeShippingChange} />
             }
           </div>
         )}
@@ -245,8 +288,8 @@ function CheckoutPreview({ state, expressGateways, regularGateways, expressOnly,
       {leftCol}
       <div className="self-stretch bg-(--cocart-color-background-alt)">
         {includeOrderSummary
-          ? <OrderSummary theme={theme} showShipping={showShipping} onCouponsChange={handleCouponsChange} />
-          : <OrderSummarySection state={state} onCouponsChange={handleFreeShippingChange} />
+          ? <OrderSummary theme={theme} items={MOCK_ITEMS} subtotalCents={MOCK_SUBTOTAL_CENTS} taxCents={MOCK_TAX_CENTS} total={MOCK_TOTAL} showShipping={showShipping} shippingCostCents={shippingCostCents} onApply={mockOnApply} onCouponsChange={handleCouponsChange} />
+          : <OrderSummarySection state={state} shippingCostCents={shippingCostCents} onCouponsChange={handleFreeShippingChange} />
         }
       </div>
     </CheckoutContainer>
@@ -255,10 +298,15 @@ function CheckoutPreview({ state, expressGateways, regularGateways, expressOnly,
 
 export class PreviewPane {
   private root: Root;
+  private simulationKey = 0;
 
   constructor(container: HTMLElement) {
     container.id = 'checkout-preview-root';
     this.root = createRoot(container);
+  }
+
+  resetSimulation(): void {
+    this.simulationKey += 1;
   }
 
   render(state: BuilderState): void {
@@ -319,6 +367,7 @@ export class PreviewPane {
               <div className="absolute top-3 left-1/2 -translate-x-1/2 h-7 w-28 rounded-b-2xl bg-slate-900 z-10" />
               {/* Screen */}
               <MobileScreen
+                key={this.simulationKey}
                 state={state}
                 expressGateways={expressGateways}
                 regularGateways={regularGateways}
@@ -330,6 +379,7 @@ export class PreviewPane {
           </div>
         ) : (
           <CheckoutPreview
+            key={this.simulationKey}
             state={state}
             expressGateways={expressGateways}
             regularGateways={regularGateways}

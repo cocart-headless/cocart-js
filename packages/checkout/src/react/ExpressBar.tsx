@@ -137,6 +137,8 @@ export function ExpressBar({ gateways, theme, expressOnly = false, loading = fal
         </p>
       )}
 
+      <fieldset className="border-0 p-0 m-0">
+        <legend className="sr-only">Express checkout</legend>
       <div className={`${theme.expressCheckoutBarClassName ?? 'flex gap-2.5 flex-wrap'}${expressOnly ? ' justify-center' : ''}`}>
         {gateways.map(gw => {
           const gwFields = fieldsByGateway.get(gw.id) ?? [];
@@ -169,6 +171,7 @@ export function ExpressBar({ gateways, theme, expressOnly = false, loading = fal
           return (
             <div
               key={gw.id}
+              aria-label={`Pay with ${gw.label}`}
               className={`flex items-center justify-center gap-2 rounded-(--cocart-border-radius) border-2 border-dashed border-(--cocart-color-border) bg-(--cocart-color-surface) px-4 py-2.5 text-xs font-medium text-(--cocart-color-text-muted)${expressOnly ? ' min-w-40' : ' min-w-30'}`}
             >
               [ {gw.label} ]
@@ -176,6 +179,7 @@ export function ExpressBar({ gateways, theme, expressOnly = false, loading = fal
           );
         })}
       </div>
+      </fieldset>
 
       {!expressOnly && (
         <div className="mt-2 flex items-center gap-3 text-xs text-(--cocart-color-text-muted)">

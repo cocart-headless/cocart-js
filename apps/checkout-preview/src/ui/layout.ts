@@ -8,6 +8,7 @@ export interface LayoutParts {
   previewOuter: HTMLElement;
   previewLabel: HTMLElement;
   codeContainer: HTMLElement;
+  setOnReset: (fn: () => void) => void;
 }
 
 export function buildLayout(root: HTMLElement, store: StateStore): LayoutParts {
@@ -129,6 +130,59 @@ export function buildLayout(root: HTMLElement, store: StateStore): LayoutParts {
   docsLink.className = 'inline-flex items-center gap-1 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 transition';
   docsLink.textContent = 'Docs ↗';
 
+  // ── Reset confirmation modal ────────────────────────────────────────────
+  let onResetFn: (() => void) | null = null;
+
+  const modalBackdrop = document.createElement('div');
+  modalBackdrop.className = 'fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm';
+  modalBackdrop.style.display = 'none';
+
+  const modalBox = document.createElement('div');
+  modalBox.className = 'bg-white rounded-xl border border-slate-200 shadow-2xl w-80 p-6 flex flex-col gap-4';
+
+  const modalTitle = document.createElement('p');
+  modalTitle.className = 'text-sm font-semibold text-slate-900';
+  modalTitle.textContent = 'Reset builder?';
+
+  const modalBody = document.createElement('p');
+  modalBody.className = 'text-xs text-slate-500 leading-relaxed';
+  modalBody.textContent = 'This will restore all settings to their defaults. Your changes cannot be undone.';
+
+  const modalActions = document.createElement('div');
+  modalActions.className = 'flex justify-end gap-2';
+
+  const modalCancel = document.createElement('button');
+  modalCancel.type = 'button';
+  modalCancel.textContent = 'Cancel';
+  modalCancel.className = 'rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 transition';
+
+  const modalConfirm = document.createElement('button');
+  modalConfirm.type = 'button';
+  modalConfirm.textContent = 'Reset';
+  modalConfirm.className = 'rounded-lg bg-red-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-red-700 transition';
+
+  modalActions.appendChild(modalCancel);
+  modalActions.appendChild(modalConfirm);
+  modalBox.appendChild(modalTitle);
+  modalBox.appendChild(modalBody);
+  modalBox.appendChild(modalActions);
+  modalBackdrop.appendChild(modalBox);
+  document.body.appendChild(modalBackdrop);
+
+  function openModal() { modalBackdrop.style.display = 'flex'; }
+  function closeModal() { modalBackdrop.style.display = 'none'; }
+
+  modalBackdrop.addEventListener('click', e => { if (e.target === modalBackdrop) closeModal(); });
+  modalCancel.addEventListener('click', closeModal);
+  modalConfirm.addEventListener('click', () => { closeModal(); onResetFn?.(); });
+
+  const resetBtn = document.createElement('button');
+  resetBtn.type = 'button';
+  resetBtn.textContent = 'Reset';
+  resetBtn.className = 'inline-flex items-center rounded-lg border border-red-200 px-3 py-1.5 text-xs font-medium text-red-500 hover:bg-red-50 hover:text-red-700 transition';
+  resetBtn.addEventListener('click', openModal);
+
+  headerRight.appendChild(resetBtn);
   headerRight.appendChild(schemeToggle);
   headerRight.appendChild(viewportToggle);
   headerRight.appendChild(docsLink);
@@ -188,7 +242,7 @@ export function buildLayout(root: HTMLElement, store: StateStore): LayoutParts {
   root.appendChild(main);
   root.appendChild(codePanel);
 
-  return { builderPanel, tabBar, tabContent, previewContainer, previewOuter, previewLabel, codeContainer };
+  return { builderPanel, tabBar, tabContent, previewContainer, previewOuter, previewLabel, codeContainer, setOnReset: (fn: () => void) => { onResetFn = fn; } };
 }
 
 function makeIcon(pathD: string, size: number): SVGSVGElement {

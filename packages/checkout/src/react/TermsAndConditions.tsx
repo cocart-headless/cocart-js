@@ -22,7 +22,7 @@ export function TermsAndConditions({ theme, termsUrl, privacyUrl, label, childre
     <span className={helperClass}>
       I agree to the{' '}
       {termsUrl ? (
-        <a href={termsUrl} target="_blank" rel="noopener noreferrer" className="underline text-(--cocart-color-text)">
+        <a href={termsUrl} target="_blank" rel="noopener noreferrer" aria-label="Terms &amp; Conditions (opens in new tab)" className="underline text-(--cocart-color-text)">
           Terms &amp; Conditions
         </a>
       ) : (
@@ -31,7 +31,7 @@ export function TermsAndConditions({ theme, termsUrl, privacyUrl, label, childre
       {privacyUrl && (
         <>
           {' '}and{' '}
-          <a href={privacyUrl} target="_blank" rel="noopener noreferrer" className="underline text-(--cocart-color-text)">
+          <a href={privacyUrl} target="_blank" rel="noopener noreferrer" aria-label="Privacy Policy (opens in new tab)" className="underline text-(--cocart-color-text)">
             Privacy Policy
           </a>
         </>
@@ -43,15 +43,19 @@ export function TermsAndConditions({ theme, termsUrl, privacyUrl, label, childre
     <div className={`${theme.sectionClassName ?? ''} grid gap-3`}>
       <label className="flex items-start gap-2.5 cursor-pointer select-none">
         <input
+          id="terms-and-conditions"
           type="checkbox"
           checked={accepted}
           onChange={e => setAccepted(e.target.checked)}
-          className="mt-0.5 h-4 w-4 shrink-0 rounded accent-(--cocart-color-primary)"
+          className="mt-0.5 h-4 w-4 shrink-0 rounded accent-(--cocart-color-primary) focus-visible:ring-2 focus-visible:ring-(--cocart-color-primary)"
         />
         {label ?? defaultLabel}
       </label>
       {children && (
-        <div className={`transition-opacity ${accepted ? 'opacity-100' : 'opacity-40 pointer-events-none'}`}>
+        <div
+          className={`transition-opacity ${accepted ? 'opacity-100' : 'opacity-40 pointer-events-none'}`}
+          aria-disabled={!accepted}
+        >
           {children}
         </div>
       )}

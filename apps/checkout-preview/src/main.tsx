@@ -19,7 +19,7 @@ function main(): void {
   const appEl = document.getElementById('app');
   if (!appEl) throw new Error('Missing #app element');
 
-  const { tabBar, tabContent, previewContainer, previewOuter, previewLabel, codeContainer } = buildLayout(appEl, store);
+  const { tabBar, tabContent, previewContainer, previewOuter, previewLabel, codeContainer, setOnReset } = buildLayout(appEl, store);
 
   // ── Tab bar ────────────────────────────────────────────────────────────
   const tabButtons = new Map<string, HTMLButtonElement>();
@@ -50,6 +50,7 @@ function main(): void {
 
   // ── Preview pane ───────────────────────────────────────────────────────
   const preview = new PreviewPane(previewContainer);
+  setOnReset(() => { store.reset(); preview.resetSimulation(); });
 
   // ── Code panel ─────────────────────────────────────────────────────────
   let codeVisible = false;

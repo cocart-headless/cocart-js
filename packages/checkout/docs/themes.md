@@ -1,6 +1,6 @@
 # Themes & Appearance API
 
-The checkout package uses a Stripe-inspired Appearance API. You control brand colours, typography, shape, and spacing through **variables**, and use **rules** for per-element CSS overrides. CSS class name overrides are still supported for Tailwind / shadcn power users.
+The checkout package uses a Stripe-inspired Appearance API. You control brand colours, typography, shape, and spacing through **variables**, and use **rules** for per-element CSS overrides. CSS class name overrides are still supported for Tailwind / daisyUI / shadcn power users.
 
 Zero config gives you the **modern** preset — a clean, Shopify-style layout.
 

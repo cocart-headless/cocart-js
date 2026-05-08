@@ -136,40 +136,52 @@ function PaymentFields({ fields, helperClass, paymentContainerClass }: { fields:
 
 function RadioLayout({ gateways, activeId, onSelect, paymentSection, helperClass, paymentContainerClass }: LayoutProps) {
   return (
-    <div className="mb-4 rounded-(--cocart-border-radius) border border-(--cocart-color-border) overflow-hidden">
-      {gateways.map((gw, i) => {
-        const icons = gatewayIcons(gw);
-        const selected = gw.id === activeId;
-        return (
-          <div key={gw.id} className={i > 0 ? 'border-t border-(--cocart-color-border)' : ''}>
-            <label className={`flex items-start gap-3 px-4 py-3.5 text-sm cursor-pointer transition ${selected ? 'bg-(--cocart-color-background-hover)' : 'bg-(--cocart-color-surface) hover:bg-(--cocart-color-background-hover)'}`}>
-              <input type="radio" name="payment_method" value={gw.id} checked={selected} onChange={() => onSelect(gw.id)} className="h-4 w-4 mt-0.5 shrink-0 accent-(--cocart-color-primary)" />
-              <div className="flex flex-col flex-1 min-w-0">
-                <span className="font-medium text-(--cocart-color-text)">{gw.label}</span>
-                {selected && gw.description && <span className={helperClass}>{gw.description}</span>}
-              </div>
-              {icons.length > 0 && (
-                <span className="flex items-center gap-1 shrink-0">
-                  {icons.map(key => <span key={key}>{Icons[key]}</span>)}
-                </span>
+    <fieldset className="border-0 p-0 m-0 mb-4">
+      <legend className="sr-only">Payment method</legend>
+      <div className="rounded-(--cocart-border-radius) border border-(--cocart-color-border) overflow-hidden">
+        {gateways.map((gw, i) => {
+          const icons = gatewayIcons(gw);
+          const selected = gw.id === activeId;
+          const descId = `pm-radio-desc-${gw.id}`;
+          return (
+            <div key={gw.id} className={i > 0 ? 'border-t border-(--cocart-color-border)' : ''}>
+              <label className={`flex items-start gap-3 px-4 py-3.5 text-sm cursor-pointer transition ${selected ? 'bg-(--cocart-color-background-hover)' : 'bg-(--cocart-color-surface) hover:bg-(--cocart-color-background-hover)'}`}>
+                <input
+                  type="radio"
+                  name="payment_method"
+                  value={gw.id}
+                  checked={selected}
+                  onChange={() => onSelect(gw.id)}
+                  aria-describedby={gw.description ? descId : undefined}
+                  className="h-4 w-4 mt-0.5 shrink-0 accent-(--cocart-color-primary) focus-visible:ring-2 focus-visible:ring-(--cocart-color-primary) focus-visible:ring-offset-1"
+                />
+                <div className="flex flex-col flex-1 min-w-0">
+                  <span className="font-medium text-(--cocart-color-text)">{gw.label}</span>
+                  {gw.description && <span id={descId} className={helperClass}>{gw.description}</span>}
+                </div>
+                {icons.length > 0 && (
+                  <span className="flex items-center gap-1 shrink-0" aria-hidden="true">
+                    {icons.map(key => <span key={key}>{Icons[key]}</span>)}
+                  </span>
+                )}
+              </label>
+              {selected && !gw.supports.includes('offline') && paymentSection && (
+                <div className="border-t border-(--cocart-color-border) px-4 py-4">
+                  <PaymentFields fields={paymentSection.fields} helperClass={helperClass} paymentContainerClass={paymentContainerClass} />
+                </div>
               )}
-            </label>
-            {selected && !gw.supports.includes('offline') && paymentSection && (
-              <div className="border-t border-(--cocart-color-border) px-4 py-4">
-                <PaymentFields fields={paymentSection.fields} helperClass={helperClass} paymentContainerClass={paymentContainerClass} />
-              </div>
-            )}
-          </div>
-        );
-      })}
-    </div>
+            </div>
+          );
+        })}
+      </div>
+    </fieldset>
   );
 }
 
 function TabsLayout({ gateways, activeId, onSelect, paymentSection, helperClass, paymentContainerClass }: LayoutProps) {
-  const activeGw = gateways.find(g => g.id === activeId);
   const scrollRef = useRef<HTMLDivElement>(null);
   const dragRef = useRef({ dragging: false, startX: 0, scrollLeft: 0, moved: false });
+  const tabRefs = useRef<Map<string, HTMLButtonElement>>(new Map());
 
   useEffect(() => {
     const el = scrollRef.current;
@@ -204,13 +216,31 @@ function TabsLayout({ gateways, activeId, onSelect, paymentSection, helperClass,
     el.style.cursor = 'grabbing';
   }
 
+  function onKeyDown(e: React.KeyboardEvent) {
+    const ids = gateways.map(g => g.id);
+    const idx = ids.indexOf(activeId);
+    let next = -1;
+    if (e.key === 'ArrowRight') next = (idx + 1) % ids.length;
+    else if (e.key === 'ArrowLeft') next = (idx - 1 + ids.length) % ids.length;
+    else if (e.key === 'Home') next = 0;
+    else if (e.key === 'End') next = ids.length - 1;
+    if (next !== -1) {
+      e.preventDefault();
+      onSelect(ids[next]);
+      tabRefs.current.get(ids[next])?.focus();
+    }
+  }
+
   return (
     <div className="mb-4">
       <div
         ref={scrollRef}
+        role="tablist"
+        aria-label="Payment method"
         className="flex gap-2 pb-3 select-none"
         style={{ cursor: 'grab', WebkitOverflowScrolling: 'touch', overflowX: 'auto', width: '100%', msOverflowStyle: 'none', scrollbarWidth: 'none' } as React.CSSProperties}
         onMouseDown={onMouseDown}
+        onKeyDown={onKeyDown}
       >
         {gateways.map(gw => {
           const icons = gatewayIcons(gw);
@@ -219,25 +249,42 @@ function TabsLayout({ gateways, activeId, onSelect, paymentSection, helperClass,
           return (
             <button
               key={gw.id}
+              ref={el => { if (el) tabRefs.current.set(gw.id, el); else tabRefs.current.delete(gw.id); }}
               type="button"
+              role="tab"
+              aria-selected={selected}
+              aria-controls={`tabpanel-${gw.id}`}
+              id={`tab-${gw.id}`}
+              tabIndex={selected ? 0 : -1}
               onClick={() => { if (!dragRef.current.moved) onSelect(gw.id); }}
-              className={`flex flex-col items-center justify-center gap-1.5 rounded-(--cocart-border-radius) border-2 px-4 py-3 text-xs font-medium whitespace-nowrap shrink-0 min-w-24 transition ${selected ? 'border-(--cocart-color-primary) text-(--cocart-color-text)' : 'border-(--cocart-color-border) text-(--cocart-color-text-muted) hover:border-(--cocart-color-text-muted)'}`}
+              className={`flex flex-col items-center justify-center gap-1.5 rounded-(--cocart-border-radius) border-2 px-4 py-3 text-xs font-medium whitespace-nowrap shrink-0 min-w-24 transition focus-visible:ring-2 focus-visible:ring-(--cocart-color-primary) focus-visible:ring-offset-1 ${selected ? 'border-(--cocart-color-primary) text-(--cocart-color-text)' : 'border-(--cocart-color-border) text-(--cocart-color-text-muted) hover:border-(--cocart-color-text-muted)'}`}
             >
-              {icon ? <span className="block">{Icons[icon]}</span> : <span className="h-6" />}
+              {icon ? <span className="block" aria-hidden="true">{Icons[icon]}</span> : <span className="h-6" />}
               <span>{gw.label}</span>
             </button>
           );
         })}
       </div>
-      {(activeGw?.supports.includes('offline') || paymentSection) && (
-        <div className="mt-2">
-          {activeGw?.supports.includes('offline') ? (
-            <p className={helperClass}>{activeGw.description ?? 'No additional details required.'}</p>
-          ) : paymentSection ? (
-            <PaymentFields fields={paymentSection.fields} helperClass={helperClass} paymentContainerClass={paymentContainerClass} />
-          ) : null}
-        </div>
-      )}
+      {gateways.map(gw => {
+        const selected = gw.id === activeId;
+        if (!selected) return null;
+        return (
+          <div
+            key={gw.id}
+            id={`tabpanel-${gw.id}`}
+            role="tabpanel"
+            aria-labelledby={`tab-${gw.id}`}
+            tabIndex={0}
+            className="mt-2 focus-visible:outline-none"
+          >
+            {gw.supports.includes('offline') ? (
+              <p className={helperClass}>{gw.description ?? 'No additional details required.'}</p>
+            ) : paymentSection ? (
+              <PaymentFields fields={paymentSection.fields} helperClass={helperClass} paymentContainerClass={paymentContainerClass} />
+            ) : null}
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -249,28 +296,33 @@ function AccordionLayout({ gateways, activeId, onSelect, paymentSection, helperC
         const icons = gatewayIcons(gw);
         const selected = gw.id === activeId;
         const hasFields = !gw.supports.includes('offline') && paymentSection && paymentSection.fields.some(f => !f.hidden);
+        const btnId = `accordion-btn-${gw.id}`;
+        const panelId = `accordion-${gw.id}`;
         return (
           <div key={gw.id} className={`${i > 0 ? 'border-t border-(--cocart-color-border)' : ''} ${selected ? 'bg-(--cocart-color-background-hover)' : 'bg-(--cocart-color-surface)'}`}>
             <button
               type="button"
+              id={btnId}
+              aria-expanded={selected}
+              aria-controls={hasFields ? panelId : undefined}
               onClick={() => onSelect(gw.id)}
-              className="w-full flex items-start gap-3 px-4 py-3.5 text-sm text-left transition hover:bg-(--cocart-color-background-hover)"
+              className="w-full flex items-start gap-3 px-4 py-3.5 text-sm text-left transition hover:bg-(--cocart-color-background-hover) focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-(--cocart-color-primary)"
             >
               <div className="flex flex-col flex-1 min-w-0">
                 <span className="font-medium text-(--cocart-color-text)">{gw.label}</span>
                 {selected && gw.description && <span className={helperClass}>{gw.description}</span>}
               </div>
               {icons.length > 0 && (
-                <span className="flex items-center gap-1 shrink-0">
+                <span className="flex items-center gap-1 shrink-0" aria-hidden="true">
                   {icons.map(key => <span key={key}>{Icons[key]}</span>)}
                 </span>
               )}
               {hasFields && (
-                <svg className={`h-4 w-4 shrink-0 text-(--cocart-color-text-muted) transition-transform ${selected ? 'rotate-180' : ''}`} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M4 6l4 4 4-4"/></svg>
+                <svg aria-hidden="true" className={`h-4 w-4 shrink-0 text-(--cocart-color-text-muted) transition-transform ${selected ? 'rotate-180' : ''}`} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M4 6l4 4 4-4"/></svg>
               )}
             </button>
             {selected && hasFields && (
-              <div className="px-4 pb-4">
+              <div id={panelId} role="region" aria-labelledby={btnId} className="px-4 pb-4">
                 <PaymentFields fields={paymentSection!.fields} helperClass={helperClass} paymentContainerClass={paymentContainerClass} />
               </div>
             )}

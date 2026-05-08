@@ -2,6 +2,10 @@
 
 Headless, themeable React components for building a CoCart checkout UI.
 
+- Ready to use out of the box — import and render with no additional configuration
+- Fully customizable with Tailwind classes and CSS variables to match your brand; adjust component props for full control over style, colors, and layout
+- WCAG 2.1 AA accessible — ARIA labels, keyboard navigation, and focus management built-in
+
 ---
 
 ## Installation
