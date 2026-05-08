@@ -165,41 +165,75 @@ export class CheckoutClient implements CheckoutSDK {
   }
 
   async getCheckout(params?: Record<string, string>): Promise<Response<CheckoutState>> {
-    return this.client.requestRaw('GET', this.routeBase, this.withPreviewAuth(params)) as Promise<Response<CheckoutState>>;
+    try {
+      return this.client.requestRaw('GET', this.routeBase, this.withPreviewAuth(params)) as Promise<Response<CheckoutState>>;
+    } catch (err) {
+      throw wrapError(err, 'Failed to retrieve checkout state.', 'checkout_fetch_failed');
+    }
   }
 
   async updateCheckout(data: CheckoutUpdateInput): Promise<Response<CheckoutState>> {
-    return this.client.requestRaw('POST', this.routeBase, this.withPreviewAuth(), data as Record<string, unknown>) as Promise<Response<CheckoutState>>;
+    try {
+      return this.client.requestRaw('POST', this.routeBase, this.withPreviewAuth(), data as Record<string, unknown>) as Promise<Response<CheckoutState>>;
+    } catch (err) {
+      throw wrapError(err, 'Failed to update checkout.', 'checkout_update_failed');
+    }
   }
 
   async processCheckout(data: CheckoutProcessInput): Promise<Response<CheckoutState>> {
-    return this.client.requestRaw('PUT', this.routeBase, this.withPreviewAuth(), data as Record<string, unknown>) as Promise<Response<CheckoutState>>;
+    try {
+      return this.client.requestRaw('PUT', this.routeBase, this.withPreviewAuth(), data as Record<string, unknown>) as Promise<Response<CheckoutState>>;
+    } catch (err) {
+      throw wrapError(err, 'Failed to process checkout.', 'checkout_process_failed');
+    }
   }
 
   async getPaymentMethods(): Promise<Response<CheckoutPaymentMethodsResponse>> {
-    return this.client.requestRaw('GET', `${this.routeBase}/payment-methods`, this.withPreviewAuth()) as Promise<Response<CheckoutPaymentMethodsResponse>>;
+    try {
+      return this.client.requestRaw('GET', `${this.routeBase}/payment-methods`, this.withPreviewAuth()) as Promise<Response<CheckoutPaymentMethodsResponse>>;
+    } catch (err) {
+      throw wrapError(err, 'Failed to retrieve payment methods.', 'checkout_payment_methods_failed');
+    }
   }
 
   async createPaymentContext(request: CheckoutPaymentContextRequest): Promise<Response<Record<string, unknown>>> {
-    return this.client.requestRaw('POST', `${this.routeBase}/payment-context`, this.withPreviewAuth(), request as Record<string, unknown>) as Promise<Response<Record<string, unknown>>>;
+    try {
+      return this.client.requestRaw('POST', `${this.routeBase}/payment-context`, this.withPreviewAuth(), request as Record<string, unknown>) as Promise<Response<Record<string, unknown>>>;
+    } catch (err) {
+      throw wrapError(err, 'Failed to create payment context.', 'checkout_payment_context_failed');
+    }
   }
 
   async applyCoupon(code: string): Promise<Response> {
     if (typeof this.client.cart !== 'function') {
       throw new CoCartError('Cart endpoint is not available on the CoCart client.', 0, 'checkout_cart_unavailable');
     }
-    return this.client.cart().applyCoupon(code);
+    try {
+      return await this.client.cart().applyCoupon(code);
+    } catch (err) {
+      throw wrapError(err, `Failed to apply coupon "${code}".`, 'checkout_coupon_apply_failed');
+    }
   }
 
   async removeCoupon(code: string): Promise<Response> {
     if (typeof this.client.cart !== 'function') {
       throw new CoCartError('Cart endpoint is not available on the CoCart client.', 0, 'checkout_cart_unavailable');
     }
-    return this.client.cart().removeCoupon(code);
+    try {
+      return await this.client.cart().removeCoupon(code);
+    } catch (err) {
+      throw wrapError(err, `Failed to remove coupon "${code}".`, 'checkout_coupon_remove_failed');
+    }
   }
 
   async getOrderSummary(): Promise<CheckoutOrderSummary> {
-    const state = (await this.getCheckout()).toObject();
+    let state: CheckoutState;
+    try {
+      state = (await this.getCheckout()).toObject();
+    } catch (err) {
+      throw wrapError(err, 'Failed to retrieve order summary.', 'checkout_summary_failed');
+    }
+
     const cartData = (state.cart ?? {}) as Record<string, unknown>;
     const totalsData = (state.totals ?? {}) as Record<string, unknown>;
 
@@ -248,9 +282,13 @@ export class CheckoutClient implements CheckoutSDK {
     if (typeof this.client.cart !== 'function') {
       throw new CoCartError('Cart endpoint is not available on the CoCart client.', 0, 'checkout_cart_unavailable');
     }
-    const response = (await this.client.cart().getShippingMethods()).toObject() as Record<string, unknown>;
-    const shipping = response['shipping'] ?? response;
-    return Array.isArray(shipping) ? (shipping as CheckoutShippingPackage[]) : [];
+    try {
+      const response = (await this.client.cart().getShippingMethods()).toObject() as Record<string, unknown>;
+      const shipping = response['shipping'] ?? response;
+      return Array.isArray(shipping) ? (shipping as CheckoutShippingPackage[]) : [];
+    } catch (err) {
+      throw wrapError(err, 'Failed to retrieve shipping methods.', 'checkout_shipping_methods_failed');
+    }
   }
 
   createForm(options: { gatewayId?: string; theme?: CheckoutTheme; needsPayment?: boolean; includeSummary?: boolean; shippingMethods?: CheckoutShippingRate[] } = {}): CheckoutFormDefinition {
@@ -365,13 +403,30 @@ export class CheckoutClient implements CheckoutSDK {
   async submit(input: CheckoutSubmitInput): Promise<CheckoutSubmitResult> {
     const gateway = this.getGateway(input.gatewayId);
     const skipPayment = input.zeroTotal === true;
-    const checkoutState = input.hydratePaymentContext === false ? undefined : (await this.getCheckout()).toObject();
-    const paymentContextResponse = (!skipPayment && gateway.tokenize) ? await this.createPaymentContext({ payment_method: input.gatewayId }) : undefined;
-    const paymentContext = paymentContextResponse?.toObject() as Record<string, unknown> | undefined;
+
+    let checkoutState: CheckoutState | undefined;
+    try {
+      checkoutState = input.hydratePaymentContext === false ? undefined : (await this.getCheckout()).toObject();
+    } catch (err) {
+      throw wrapError(err, 'Failed to load checkout state before submission.', 'checkout_submit_hydrate_failed');
+    }
+
+    let paymentContext: Record<string, unknown> | undefined;
+    if (!skipPayment && gateway.tokenize) {
+      try {
+        paymentContext = (await this.createPaymentContext({ payment_method: input.gatewayId }))?.toObject() as Record<string, unknown> | undefined;
+      } catch (err) {
+        throw wrapError(err, 'Failed to create payment context.', 'checkout_payment_context_failed');
+      }
+    }
+
     const checkoutId = String(checkoutState?.id ?? checkoutState?.cart_key ?? '');
     const successUrl = this.successUrl?.replace('{CHECKOUT_ID}', checkoutId);
-    const paymentData = (!skipPayment && gateway.tokenize)
-      ? await gateway.tokenize({
+
+    let paymentData: Record<string, unknown> | undefined;
+    if (!skipPayment && gateway.tokenize) {
+      try {
+        paymentData = await gateway.tokenize({
           client: this.client,
           checkout: this,
           gatewayId: input.gatewayId,
@@ -380,8 +435,11 @@ export class CheckoutClient implements CheckoutSDK {
           input: input.process ?? { payment_method: input.gatewayId },
           successUrl,
           returnUrl: this.returnUrl,
-        })
-      : undefined;
+        });
+      } catch (err) {
+        throw wrapError(err, 'Payment tokenization failed.', 'checkout_tokenize_failed');
+      }
+    }
 
     const updatePayload = {
       ...(input.update ?? {}),
@@ -396,8 +454,21 @@ export class CheckoutClient implements CheckoutSDK {
     };
 
     const hasExtraUpdateFields = Object.keys(input.update ?? {}).length > 0;
-    const updateResponse = hasExtraUpdateFields ? await this.updateCheckout(updatePayload) : undefined;
-    const processResponse = await this.processCheckout(processPayload);
+    let updateResponse: Response<CheckoutState> | undefined;
+    if (hasExtraUpdateFields) {
+      try {
+        updateResponse = await this.updateCheckout(updatePayload);
+      } catch (err) {
+        throw wrapError(err, 'Failed to update checkout before processing.', 'checkout_update_failed');
+      }
+    }
+
+    let processResponse: Response<CheckoutState>;
+    try {
+      processResponse = await this.processCheckout(processPayload);
+    } catch (err) {
+      throw wrapError(err, 'Failed to process payment.', 'checkout_process_failed');
+    }
 
     return {
       updateResponse,
@@ -422,6 +493,12 @@ export class CheckoutClient implements CheckoutSDK {
       consumer_secret: consumerSecret,
     };
   }
+}
+
+function wrapError(err: unknown, fallbackMessage: string, code: string): CoCartError {
+  if (err instanceof CoCartError) return err;
+  const message = err instanceof Error ? err.message : fallbackMessage;
+  return new CoCartError(message, 0, code);
 }
 
 function applyTheme(fields: CheckoutFormField[], theme: CheckoutTheme): CheckoutFormField[] {

@@ -261,6 +261,327 @@ function buildJsxCode(state: BuilderState): string {
   return lines.join('\n');
 }
 
+export function generateFullCode(state: BuilderState): {
+  clientTs: string;
+  mappersTs: string;
+  pageTsx: string;
+} {
+  const enabledGateways = state.gateways.filter(g => g.enabled);
+  const regularGateways = enabledGateways.filter(g => !g.isExpress);
+  const expressGateways = enabledGateways.filter(g => g.isExpress);
+  const showShipping = state.collectShippingAddress && !state.shippingSameAsBilling;
+  const preset = state.themePreset as string;
+  const themeExpr = themeExpression(state);
+  const isDefaultTheme = themeExpr === 'createModernCheckoutTheme()';
+
+  const themeImport = preset === 'modern' ? 'createModernCheckoutTheme'
+    : preset === 'tailwind' ? 'createTailwindCheckoutTheme'
+    : preset === 'shadcn' ? 'createShadcnCheckoutTheme'
+    : 'createCheckoutTheme';
+
+  const gatewayFns = enabledGateways.map(g => GATEWAY_IMPORT_MAP[g.id]).filter(Boolean);
+  const checkoutImports = [...new Set([
+    'createCheckout',
+    ...(!isDefaultTheme ? [themeImport] : []),
+    ...gatewayFns,
+  ])];
+
+  const defaultGatewayId = state.defaultGateway || regularGateways[0]?.id || 'stripe';
+
+  // ── lib/checkout-client.ts ────────────────────────────────────────────────
+  const gatewayAdapterLines: string[] = [];
+  enabledGateways.forEach(gw => {
+    const snippet = GATEWAY_SNIPPET[gw.id] ?? `/* ${gw.id} */`;
+    const isStripe = gw.id === 'stripe' || gw.id === 'stripe-express';
+    if (isStripe) {
+      const adjusted = snippet.replace('{ stripe, elements }', '{ stripe, elements: null }');
+      gatewayAdapterLines.push(`    ${adjusted}, // elements attached at render time`);
+    } else {
+      gatewayAdapterLines.push(`    ${snippet},`);
+    }
+  });
+
+  const hasStripe = enabledGateways.some(g => g.id === 'stripe' || g.id === 'stripe-express');
+  const stripeLines = hasStripe ? [
+    `import { loadStripe } from '@stripe/stripe-js';`,
+    ``,
+    `const stripe = await loadStripe(process.env.NEXT_PUBLIC_STRIPE_KEY!);`,
+    ``,
+  ] : [];
+
+  // Indent multi-line theme expression so continuation lines align under the opening paren
+  const indentedThemeExpr = themeExpr.replace(/\n/g, '\n    ');
+
+  const checkoutOptionsLines: string[] = [];
+  if (!isDefaultTheme) checkoutOptionsLines.push(`    defaultTheme: ${indentedThemeExpr},`);
+  if (state.successUrl) checkoutOptionsLines.push(`    successUrl: \`\${process.env.NEXT_PUBLIC_SITE_URL}${state.successUrl}\`,`);
+  else checkoutOptionsLines.push(`    successUrl: \`\${process.env.NEXT_PUBLIC_SITE_URL}/order/{CHECKOUT_ID}\`,`);
+  if (state.returnUrl) checkoutOptionsLines.push(`    returnUrl: \`\${process.env.NEXT_PUBLIC_SITE_URL}${state.returnUrl}\`,`);
+  else checkoutOptionsLines.push(`    returnUrl: \`\${process.env.NEXT_PUBLIC_SITE_URL}/checkout\`,`);
+  if (gatewayAdapterLines.length > 0) {
+    checkoutOptionsLines.push(`    gatewayAdapters: [`);
+    gatewayAdapterLines.forEach(l => checkoutOptionsLines.push(l));
+    checkoutOptionsLines.push(`    ],`);
+  }
+
+  const clientTs = [
+    `import { CoCart } from '@cocartheadless/sdk';`,
+    `import {`,
+    `  ${checkoutImports.join(',\n  ')},`,
+    `} from '@cocartheadless/checkout';`,
+    ...stripeLines,
+    `export const client = new CoCart(process.env.NEXT_PUBLIC_COCART_URL!).use(`,
+    `  createCheckout({`,
+    ...checkoutOptionsLines,
+    `  })`,
+    `);`,
+  ].join('\n');
+
+  // ── lib/checkout-mappers.ts ───────────────────────────────────────────────
+  const mappersTs = [
+    `import { CurrencyFormatter } from '@cocartheadless/sdk';`,
+    `import type { CurrencyInfo } from '@cocartheadless/sdk';`,
+    `import type { CheckoutSummaryItem, CheckoutShippingRate } from '@cocartheadless/checkout';`,
+    `import type { OrderLineItem, ShippingRate } from '@cocartheadless/checkout/react';`,
+    ``,
+    `const fmt = new CurrencyFormatter();`,
+    ``,
+    `export function toLineItem(item: CheckoutSummaryItem): OrderLineItem {`,
+    `  return {`,
+    `    name: item.name,`,
+    `    variant: '',`,
+    `    qty: item.quantity,`,
+    `    price: item.price,`,
+    `  };`,
+    `}`,
+    ``,
+    `export function toShippingRate(rate: CheckoutShippingRate, currency: CurrencyInfo): ShippingRate {`,
+    `  const cost = parseInt(rate.cost, 10);`,
+    `  return {`,
+    `    id: rate.key,`,
+    `    label: rate.label,`,
+    `    meta: '',`,
+    `    price: cost === 0 ? 'Free' : fmt.format(cost, currency),`,
+    `  };`,
+    `}`,
+  ].join('\n');
+
+  // ── app/checkout/page.tsx ─────────────────────────────────────────────────
+  const componentImports = [
+    'CheckoutContainer',
+    expressGateways.length > 0 ? 'ExpressBar' : null,
+    'Address',
+    showShipping ? 'ShippingMethods' : null,
+    regularGateways.length > 0 ? 'PaymentMethods' : null,
+    state.includeOrderSummary ? 'OrderSummary' : null,
+    state.includeTerms ? 'TermsAndConditions' : null,
+    'PayButton',
+  ].filter(Boolean) as string[];
+
+  const layoutProp = state.containerLayout === 'stacked' ? ' layout="stacked"' : ' layout="two-column"';
+  const paymentLayoutProp = state.paymentLayout !== 'radio' ? ` layout="${state.paymentLayout}"` : '';
+
+  const pageTsx = [
+    `'use client';`,
+    ``,
+    `import { useState, useEffect } from 'react';`,
+    `import { client } from '@/lib/checkout-client';`,
+    `import { toLineItem, toShippingRate } from '@/lib/checkout-mappers';`,
+    `import type { CurrencyInfo } from '@cocartheadless/sdk';`,
+    `import type { CheckoutOrderSummary, CheckoutShippingPackage } from '@cocartheadless/checkout';`,
+    `import type { OrderLineItem, ShippingRate, AppliedCoupon } from '@cocartheadless/checkout/react';`,
+    `import {`,
+    `  ${componentImports.join(',\n  ')},`,
+    `} from '@cocartheadless/checkout/react';`,
+    ``,
+    `export default function CheckoutPage() {`,
+    `  const [summary, setSummary] = useState<CheckoutOrderSummary | null>(null);`,
+    `  const [currency, setCurrency] = useState<CurrencyInfo | null>(null);`,
+    showShipping ? `  const [packages, setPackages] = useState<CheckoutShippingPackage[]>([]);` : null,
+    showShipping ? `  const [rates, setRates] = useState<ShippingRate[]>([]);` : null,
+    showShipping ? `  const [shippingCostCents, setShippingCostCents] = useState<number | undefined>();` : null,
+    `  const [loading, setLoading] = useState(true);`,
+    `  const [error, setError] = useState('');`,
+    ``,
+    `  const form = client.checkout.createForm({ gatewayId: '${defaultGatewayId}' });`,
+    `  const regularGateways = client.checkout.listGateways();`,
+    expressGateways.length > 0 ? `  const expressGateways = client.checkout.listExpressGateways();` : null,
+    ``,
+    `  const contactSection  = form.sections.find(s => s.id === 'contact');`,
+    showShipping ? `  const shippingSection = form.sections.find(s => s.id === 'shipping');` : null,
+    `  const billingSection  = form.sections.find(s => s.id === 'billing');`,
+    `  const paymentSection  = form.sections.find(s => s.id === 'payment');`,
+    ``,
+    `  useEffect(() => {`,
+    `    async function load() {`,
+    `      try {`,
+    `        const cartResponse = await client.cart().get();`,
+    `        const curr = cartResponse.getCurrency();`,
+    `        setCurrency(curr);`,
+    ``,
+    `        const sum = await client.checkout.getOrderSummary();`,
+    `        setSummary(sum);`,
+    showShipping ? `` : null,
+    showShipping ? `        const pkgs = await client.checkout.getShippingMethods();` : null,
+    showShipping ? `        setPackages(pkgs);` : null,
+    showShipping ? `        const allRates = pkgs.flatMap(pkg =>` : null,
+    showShipping ? `          Object.values(pkg.rates).map(r => toShippingRate(r, curr))` : null,
+    showShipping ? `        );` : null,
+    showShipping ? `        setRates(allRates);` : null,
+    showShipping ? `        const chosenKey = pkgs[0]?.chosen_method;` : null,
+    showShipping ? `        if (chosenKey) {` : null,
+    showShipping ? `          const chosenRate = pkgs[0]?.rates[chosenKey];` : null,
+    showShipping ? `          if (chosenRate) setShippingCostCents(parseInt(chosenRate.cost, 10));` : null,
+    showShipping ? `        }` : null,
+    `      } catch (e) {`,
+    `        setError(e instanceof Error ? e.message : 'Failed to load checkout.');`,
+    `      } finally {`,
+    `        setLoading(false);`,
+    `      }`,
+    `    }`,
+    `    void load();`,
+    `  }, []);`,
+    ``,
+    `  async function handleApply(code: string): Promise<AppliedCoupon | null> {`,
+    `    try {`,
+    `      const before = await client.checkout.getOrderSummary();`,
+    `      const prevDiscount = parseInt(before.totals.discount_total, 10);`,
+    `      await client.checkout.applyCoupon(code);`,
+    `      const after = await client.checkout.getOrderSummary();`,
+    `      const coupon = after.coupons.find(c => c.code.toUpperCase() === code.toUpperCase());`,
+    `      if (!coupon) return null;`,
+    `      const newDiscount = parseInt(after.totals.discount_total, 10);`,
+    `      setSummary(after);`,
+    `      return {`,
+    `        code: coupon.code,`,
+    `        discount: coupon.saving,`,
+    `        discountCents: newDiscount - prevDiscount,`,
+    `        freeShipping: parseInt(after.totals.shipping_total, 10) === 0,`,
+    `      };`,
+    `    } catch {`,
+    `      return null;`,
+    `    }`,
+    `  }`,
+    ``,
+    `  async function handleSubmit(e: React.FormEvent) {`,
+    `    e.preventDefault();`,
+    `    setError('');`,
+    `    try {`,
+    `      const result = await client.checkout.submit({ gatewayId: '${defaultGatewayId}' });`,
+    `      if (result.processResponse) {`,
+    `        const state = result.processResponse.toObject() as { payment_result?: { redirect_url?: string } };`,
+    `        const redirect = state.payment_result?.redirect_url;`,
+    `        if (redirect) window.location.href = redirect;`,
+    `      }`,
+    `    } catch (e) {`,
+    `      setError(e instanceof Error ? e.message : 'Payment failed. Please try again.');`,
+    `    }`,
+    `  }`,
+    ``,
+    `  if (error) return <p role="alert">{error}</p>;`,
+    ``,
+    `  const items: OrderLineItem[] = summary?.items.map(toLineItem) ?? [];`,
+    `  const subtotalCents = summary ? parseInt(summary.totals.subtotal, 10) : 0;`,
+    `  const taxCents = summary ? parseInt(summary.totals.tax_total, 10) : 0;`,
+    `  const totalDisplay = summary && currency`,
+    `    ? new Intl.NumberFormat(undefined, {`,
+    `        style: 'currency',`,
+    `        currency: currency.currency_code,`,
+    `        minimumFractionDigits: currency.currency_minor_unit,`,
+    `      }).format(parseInt(summary.totals.total, 10) / Math.pow(10, currency.currency_minor_unit))`,
+    `    : '';`,
+    ``,
+    `  return (`,
+    `    <CheckoutContainer form={form}${layoutProp}>`,
+    `      <form onSubmit={handleSubmit}>`,
+    expressGateways.length > 0 ? `        {expressGateways.length > 0 && (` : null,
+    expressGateways.length > 0 ? `          <ExpressBar gateways={expressGateways} theme={form.theme} loading={loading} />` : null,
+    expressGateways.length > 0 ? `        )}` : null,
+    `        {contactSection && (`,
+    `          <Address type="contact" section={contactSection} theme={form.theme} loading={loading} />`,
+    `        )}`,
+    showShipping ? `        {shippingSection && (` : null,
+    showShipping ? `          <Address type="shipping" section={shippingSection} theme={form.theme} loading={loading} />` : null,
+    showShipping ? `        )}` : null,
+    showShipping ? `        <ShippingMethods` : null,
+    showShipping ? `          theme={form.theme}` : null,
+    showShipping ? `          rates={rates}` : null,
+    showShipping ? `          loading={loading}` : null,
+    showShipping ? `          placeholder={!loading && rates.length === 0}` : null,
+    showShipping ? `          onRateChange={rate => {` : null,
+    showShipping ? `            const raw = packages` : null,
+    showShipping ? `              .flatMap(pkg => Object.values(pkg.rates))` : null,
+    showShipping ? `              .find(r => r.key === rate.id);` : null,
+    showShipping ? `            if (raw) setShippingCostCents(parseInt(raw.cost, 10));` : null,
+    showShipping ? `          }}` : null,
+    showShipping ? `        />` : null,
+    regularGateways.length > 0 ? `        <PaymentMethods` : null,
+    regularGateways.length > 0 ? `          gateways={regularGateways}` : null,
+    regularGateways.length > 0 ? `          theme={form.theme}` : null,
+    regularGateways.length > 0 && paymentLayoutProp ? `          layout="${state.paymentLayout}"` : null,
+    regularGateways.length > 0 ? `          paymentSection={paymentSection}` : null,
+    regularGateways.length > 0 ? `          billingSection={billingSection}` : null,
+    regularGateways.length > 0 ? `          loading={loading}` : null,
+    regularGateways.length > 0 ? `        />` : null,
+    state.includeTerms ? `        <TermsAndConditions theme={form.theme} termsUrl="/terms" privacyUrl="/privacy">` : null,
+    state.includeTerms ? `          <PayButton theme={form.theme} label="Place order" />` : null,
+    state.includeTerms ? `        </TermsAndConditions>` : `        <PayButton theme={form.theme} label="Place order" />`,
+    `      </form>`,
+    state.includeOrderSummary ? `` : null,
+    state.includeOrderSummary ? `      <OrderSummary` : null,
+    state.includeOrderSummary ? `        theme={form.theme}` : null,
+    state.includeOrderSummary ? `        items={items}` : null,
+    state.includeOrderSummary ? `        subtotalCents={subtotalCents}` : null,
+    state.includeOrderSummary ? `        taxCents={taxCents}` : null,
+    state.includeOrderSummary && showShipping ? `        shippingCostCents={shippingCostCents}` : null,
+    state.includeOrderSummary ? `        total={totalDisplay}` : null,
+    state.includeOrderSummary ? `        loading={loading}` : null,
+    state.includeOrderSummary ? `        onApply={handleApply}` : null,
+    state.includeOrderSummary && showShipping ? `        onCouponsChange={coupons => {` : null,
+    state.includeOrderSummary && showShipping ? `          const hasFreeShipping = coupons.some(c => c.freeShipping);` : null,
+    state.includeOrderSummary && showShipping ? `          if (hasFreeShipping) setShippingCostCents(0);` : null,
+    state.includeOrderSummary && showShipping ? `        }}` : null,
+    state.includeOrderSummary ? `      />` : null,
+    state.includeOrderSummary ? `` : null,
+    `    </CheckoutContainer>`,
+    `  );`,
+    `}`,
+  ].filter((l): l is string => l !== null).join('\n');
+
+  return { clientTs, mappersTs, pageTsx };
+}
+
+export function generateMarkdownGuide(state: BuilderState): string {
+  const { clientTs, mappersTs, pageTsx } = generateFullCode(state);
+  return [
+    `# CoCart Checkout — Integration Guide`,
+    ``,
+    `## 1. Install the package`,
+    ``,
+    `\`\`\`bash`,
+    `npm install @cocartheadless/sdk @cocartheadless/checkout`,
+    `\`\`\``,
+    ``,
+    `## 2. Set up the client`,
+    ``,
+    `\`\`\`ts`,
+    clientTs,
+    `\`\`\``,
+    ``,
+    `## 3. Add data mappers`,
+    ``,
+    `\`\`\`ts`,
+    mappersTs,
+    `\`\`\``,
+    ``,
+    `## 4. Build the checkout page`,
+    ``,
+    `\`\`\`tsx`,
+    pageTsx,
+    `\`\`\``,
+  ].join('\n');
+}
+
 export function generateCode(state: BuilderState): string {
   return buildSetupCode(state) + '\n\n' + buildJsxCode(state);
 }
@@ -295,6 +616,25 @@ export function generateLLMPrompt(state: BuilderState): string {
   ].filter((l): l is string => l !== null);
 
   return descLines.join('\n') + '\n\n' + generateCode(state);
+}
+
+export function generateFullLLMPrompt(state: BuilderState): string {
+  const themeLabel = state.themePreset === 'tailwind' && state.daisyTheme
+    ? `tailwind (daisyUI: ${state.daisyTheme})`
+    : state.themePreset;
+
+  const header = [
+    '<!--',
+    '  CoCart Checkout SDK — Full Next.js Integration',
+    '  Generated from the Checkout Builder.',
+    `  Theme: ${themeLabel}`,
+    state.successUrl ? `  Success URL: ${state.successUrl}` : null,
+    state.returnUrl  ? `  Return URL:  ${state.returnUrl}` : null,
+    '  Paste this into your project as three files.',
+    '-->',
+  ].filter((l): l is string => l !== null).join('\n');
+
+  return header + '\n\n' + generateMarkdownGuide(state);
 }
 
 export function highlightCode(code: string): HTMLElement {

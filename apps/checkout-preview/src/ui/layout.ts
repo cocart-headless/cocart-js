@@ -8,6 +8,7 @@ export interface LayoutParts {
   previewOuter: HTMLElement;
   previewLabel: HTMLElement;
   codeContainer: HTMLElement;
+  implBtn: HTMLButtonElement;
   setOnReset: (fn: () => void) => void;
 }
 
@@ -176,12 +177,18 @@ export function buildLayout(root: HTMLElement, store: StateStore): LayoutParts {
   modalCancel.addEventListener('click', closeModal);
   modalConfirm.addEventListener('click', () => { closeModal(); onResetFn?.(); });
 
+  const implBtn = document.createElement('button');
+  implBtn.type = 'button';
+  implBtn.textContent = 'Implementation';
+  implBtn.className = 'inline-flex items-center rounded-lg bg-violet-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-violet-700 transition';
+
   const resetBtn = document.createElement('button');
   resetBtn.type = 'button';
   resetBtn.textContent = 'Reset';
   resetBtn.className = 'inline-flex items-center rounded-lg border border-red-200 px-3 py-1.5 text-xs font-medium text-red-500 hover:bg-red-50 hover:text-red-700 transition';
   resetBtn.addEventListener('click', openModal);
 
+  headerRight.appendChild(implBtn);
   headerRight.appendChild(resetBtn);
   headerRight.appendChild(schemeToggle);
   headerRight.appendChild(viewportToggle);
@@ -242,7 +249,7 @@ export function buildLayout(root: HTMLElement, store: StateStore): LayoutParts {
   root.appendChild(main);
   root.appendChild(codePanel);
 
-  return { builderPanel, tabBar, tabContent, previewContainer, previewOuter, previewLabel, codeContainer, setOnReset: (fn: () => void) => { onResetFn = fn; } };
+  return { builderPanel, tabBar, tabContent, previewContainer, previewOuter, previewLabel, codeContainer, implBtn, setOnReset: (fn: () => void) => { onResetFn = fn; } };
 }
 
 function makeIcon(pathD: string, size: number): SVGSVGElement {

@@ -3,6 +3,7 @@ import './styles/preview-utils.css';
 import { store } from './state.js';
 import { buildLayout } from './ui/layout.js';
 import { makeCopyButton } from './ui/copy-button.js';
+import { buildImplementationModal } from './ui/implementation-modal.js';
 import { renderDataTab } from './tabs/tab-data.js';
 import { renderAppearanceTab } from './tabs/tab-appearance.js';
 import { renderPaymentsTab } from './tabs/tab-payments.js';
@@ -19,7 +20,10 @@ function main(): void {
   const appEl = document.getElementById('app');
   if (!appEl) throw new Error('Missing #app element');
 
-  const { tabBar, tabContent, previewContainer, previewOuter, previewLabel, codeContainer, setOnReset } = buildLayout(appEl, store);
+  const { tabBar, tabContent, previewContainer, previewOuter, previewLabel, codeContainer, implBtn, setOnReset } = buildLayout(appEl, store);
+
+  const modal = buildImplementationModal();
+  implBtn.addEventListener('click', () => modal.open(store.get()));
 
   // ── Tab bar ────────────────────────────────────────────────────────────
   const tabButtons = new Map<string, HTMLButtonElement>();
@@ -64,7 +68,7 @@ function main(): void {
 
   const codePanelTitle = document.createElement('span');
   codePanelTitle.className = 'text-xs font-semibold text-slate-400 uppercase tracking-wider';
-  codePanelTitle.textContent = 'Implementation';
+  codePanelTitle.textContent = 'Basic Implementation';
 
   const toggleCodeBtn = document.createElement('button');
   toggleCodeBtn.type = 'button';
@@ -99,15 +103,17 @@ function main(): void {
   codeHighlightContainer.className = 'overflow-auto border-t border-slate-800';
   codeHighlightContainer.style.display = 'none';
 
+  guideEl.style.display = 'none';
   codeContainer.appendChild(guideEl);
   codeContainer.appendChild(codeHighlightContainer);
   codePanel.insertBefore(codePanelHeader, codeContainer);
 
   toggleCodeBtn.addEventListener('click', () => {
     codeVisible = !codeVisible;
+    guideEl.style.display = codeVisible ? 'block' : 'none';
     codeHighlightContainer.style.display = codeVisible ? 'block' : 'none';
     toggleCodeBtn.textContent = codeVisible ? 'Hide Code' : 'Show Code';
-    codePanel.style.maxHeight = codeVisible ? '340px' : '160px';
+    codePanel.style.maxHeight = codeVisible ? '540px' : '160px';
   });
 
   codePanel.style.maxHeight = '160px';
@@ -116,6 +122,7 @@ function main(): void {
   store.subscribe(state => {
     syncTabButtons(state.activeTab);
     preview.render(state);
+    modal.update(state);
     codeHighlightContainer.replaceChildren(highlightCode(generateCode(state)));
 
     // Apply dark mode and daisyUI theme to the whole preview area

@@ -138,6 +138,7 @@ export function CheckoutPage() {
 | [Coupons](docs/coupons.md) | Applying coupons, removing coupons, order summary, and re-checking `needs_payment` |
 | [Shipping Methods](docs/shipping.md) | Fetching rates, rendering a selector, multi-package support |
 | [Frameworks](docs/frameworks.md) | Next.js, Astro, and framework integration patterns |
+| [Next.js Integration](docs/integration-nextjs.md) | Complete App Router example with live API data, currency-aware mapping, and submit flow |
 | [Themes](docs/themes.md) | Appearance API — variables, rules, presets, and CSS custom properties |
 | [React Components](docs/components.md) | `<Address>`, `<PaymentMethods>`, `<PayButton>`, and the full component API |
 
