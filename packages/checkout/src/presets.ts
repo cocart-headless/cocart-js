@@ -8,7 +8,7 @@ export function createCheckoutTheme(options: CheckoutTheme = {}): CheckoutTheme 
 export function createModernCheckoutTheme(overrides: Partial<CheckoutTheme> = {}): CheckoutTheme {
   return {
     preset: 'modern',
-    containerClassName: 'mx-auto max-w-5xl grid lg:grid-cols-[1fr_380px]',
+    containerClassName: 'mx-auto max-w-5xl grid lg:grid-cols-[1fr_420px]',
     sectionClassName: 'px-4 lg:px-10',
     orderSummaryClassName: 'px-4 py-4 lg:px-10 lg:py-8',
     ...overrides,

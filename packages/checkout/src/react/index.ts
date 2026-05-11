@@ -6,6 +6,8 @@ export { ShippingMethods } from './ShippingMethods.js';
 export type { ShippingRate, ShippingMethodsProps } from './ShippingMethods.js';
 export { OrderSummary, OrderLineItems, OrderTotals, DiscountCode } from './OrderSummary.js';
 export type { AppliedCoupon, OrderLineItem, OrderLineItemsProps, OrderTotalsProps, OrderSummaryProps } from './OrderSummary.js';
+export { CrossSellProducts } from './CrossSellProducts.js';
+export type { CrossSellProduct, CrossSellProductsProps } from './CrossSellProducts.js';
 export { PayButton } from './PayButton.js';
 export { TermsAndConditions } from './TermsAndConditions.js';
 export { Sk as CheckoutSkeleton } from './skeleton.js';

@@ -10,6 +10,8 @@ interface AddressProps {
   loading?: boolean;
   /** Whether the customer is already authenticated. When false (default) the contact section shows a Sign in toggle. */
   isAuthorized?: boolean;
+  /** When isAuthorized is true, show this text as the compact one-line summary (e.g. email or formatted address). */
+  compactSummary?: string;
 }
 
 const FULL_WIDTH_FIELDS = new Set(['email', 'tel']);
@@ -359,12 +361,15 @@ function Field({ field, theme }: { field: CheckoutFormField; theme: CheckoutThem
   );
 }
 
-export function Address({ type, section, theme, loading = false, isAuthorized = false }: AddressProps) {
+export function Address({ type, section, theme, loading = false, isAuthorized = false, compactSummary }: AddressProps) {
   const [signInOpen, setSignInOpen] = useState(false);
   const [loggedIn, setLoggedIn] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [editing, setEditing] = useState(false);
   const sectionClass = theme.sectionClassName ?? '';
   const signInEmailRef = useRef<HTMLInputElement>(null);
   const signInBtnRef = useRef<HTMLButtonElement>(null);
+  const menuBtnRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     if (signInOpen && !loggedIn) {
@@ -454,11 +459,67 @@ export function Address({ type, section, theme, loading = false, isAuthorized = 
     );
   }
 
+  if (isAuthorized && compactSummary && !editing) {
+    return (
+      <div className={sectionClass}>
+        <div className="flex items-center justify-between">
+          {section.title && (
+            <h2 className="text-sm font-semibold text-(--cocart-color-text-muted) uppercase tracking-wide">{section.title}</h2>
+          )}
+          <div className="relative ml-auto">
+            <button
+              ref={menuBtnRef}
+              type="button"
+              aria-label="Edit section"
+              aria-expanded={menuOpen}
+              aria-haspopup="menu"
+              onClick={() => setMenuOpen(o => !o)}
+              onKeyDown={e => { if (e.key === 'Escape') setMenuOpen(false); }}
+              className="p-1.5 rounded text-(--cocart-color-text-muted) hover:text-(--cocart-color-text) focus-visible:ring-2 focus-visible:ring-(--cocart-color-primary) focus-visible:outline-none"
+            >
+              <svg viewBox="0 0 4 16" width="4" height="16" fill="currentColor" aria-hidden="true">
+                <circle cx="2" cy="2" r="1.5" />
+                <circle cx="2" cy="8" r="1.5" />
+                <circle cx="2" cy="14" r="1.5" />
+              </svg>
+            </button>
+            {menuOpen && (
+              <div
+                role="menu"
+                className="absolute right-0 top-full mt-1 z-50 min-w-24 rounded-(--cocart-border-radius) border border-(--cocart-color-border) bg-(--cocart-color-surface) shadow-lg py-1"
+                onKeyDown={e => { if (e.key === 'Escape') { setMenuOpen(false); menuBtnRef.current?.focus(); } }}
+              >
+                <button
+                  role="menuitem"
+                  type="button"
+                  className="w-full text-left px-3.5 py-2 text-sm text-(--cocart-color-text) hover:bg-(--cocart-color-background-hover) focus:bg-(--cocart-color-background-hover) focus-visible:outline-none"
+                  onClick={() => { setEditing(true); setMenuOpen(false); }}
+                >
+                  Edit
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+        <p className="text-sm text-(--cocart-color-text) mt-1">{compactSummary}</p>
+      </div>
+    );
+  }
+
   return (
     <div className={sectionClass}>
       {section.title && (
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-base font-bold text-(--cocart-color-text)">{section.title}</h2>
+          {isAuthorized && editing && (
+            <button
+              type="button"
+              className="text-xs text-(--cocart-color-text-muted) underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--cocart-color-primary) rounded"
+              onClick={() => setEditing(false)}
+            >
+              Done
+            </button>
+          )}
           {showSignIn && !loggedIn && (
             <button
               type="button"

@@ -35,7 +35,7 @@ const CLASS_NAME_KEYS: ClassNameKey[] = [
 
 const PRESET_CLASS_DEFAULTS: Record<string, Partial<Record<ClassNameKey, string>>> = {
   modern: {
-    containerClassName:  'mx-auto max-w-5xl grid lg:grid-cols-[1fr_380px]',
+    containerClassName:  'mx-auto max-w-5xl grid lg:grid-cols-[1fr_420px]',
     sectionClassName:    'px-4 lg:px-10',
     orderSummaryClassName: 'px-4 py-4 lg:px-10 lg:py-8',
   },

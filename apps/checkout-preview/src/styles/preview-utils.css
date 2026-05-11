@@ -24,6 +24,13 @@
   padding-bottom: 1rem;
   border-bottom: 1px solid var(--cocart-color-border);
 }
+.modern-sections > *:first-child {
+  padding-bottom: 0;
+}
 .modern-sections > *:last-child {
+  border-bottom: none;
+}
+/* Wrapper for ExpressBar — removes the bottom divider since the "or" separator is internal */
+.modern-sections > .express-bar-wrapper {
   border-bottom: none;
 }

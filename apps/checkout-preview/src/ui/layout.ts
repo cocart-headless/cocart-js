@@ -9,6 +9,7 @@ export interface LayoutParts {
   previewLabel: HTMLElement;
   codeContainer: HTMLElement;
   implBtn: HTMLButtonElement;
+  loggedInToggleBtn: HTMLButtonElement;
   setOnReset: (fn: () => void) => void;
 }
 
@@ -182,6 +183,22 @@ export function buildLayout(root: HTMLElement, store: StateStore): LayoutParts {
   implBtn.textContent = 'Implementation';
   implBtn.className = 'inline-flex items-center rounded-lg bg-violet-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-violet-700 transition';
 
+  const loggedInToggleBtn = document.createElement('button');
+  loggedInToggleBtn.type = 'button';
+  const initialLoggedIn = store.get().isLoggedIn;
+  loggedInToggleBtn.textContent = initialLoggedIn ? 'Logged In' : 'Guest';
+  loggedInToggleBtn.className = initialLoggedIn
+    ? 'inline-flex items-center rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-emerald-700 transition'
+    : 'inline-flex items-center rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-100 transition';
+  loggedInToggleBtn.addEventListener('click', () => {
+    const next = !store.get().isLoggedIn;
+    store.update({ isLoggedIn: next });
+    loggedInToggleBtn.textContent = next ? 'Logged In' : 'Guest';
+    loggedInToggleBtn.className = next
+      ? 'inline-flex items-center rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-emerald-700 transition'
+      : 'inline-flex items-center rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-100 transition';
+  });
+
   const resetBtn = document.createElement('button');
   resetBtn.type = 'button';
   resetBtn.textContent = 'Reset';
@@ -189,6 +206,7 @@ export function buildLayout(root: HTMLElement, store: StateStore): LayoutParts {
   resetBtn.addEventListener('click', openModal);
 
   headerRight.appendChild(implBtn);
+  headerRight.appendChild(loggedInToggleBtn);
   headerRight.appendChild(resetBtn);
   headerRight.appendChild(schemeToggle);
   headerRight.appendChild(viewportToggle);
@@ -249,7 +267,7 @@ export function buildLayout(root: HTMLElement, store: StateStore): LayoutParts {
   root.appendChild(main);
   root.appendChild(codePanel);
 
-  return { builderPanel, tabBar, tabContent, previewContainer, previewOuter, previewLabel, codeContainer, implBtn, setOnReset: (fn: () => void) => { onResetFn = fn; } };
+  return { builderPanel, tabBar, tabContent, previewContainer, previewOuter, previewLabel, codeContainer, implBtn, loggedInToggleBtn, setOnReset: (fn: () => void) => { onResetFn = fn; } };
 }
 
 function makeIcon(pathD: string, size: number): SVGSVGElement {

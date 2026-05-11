@@ -1,6 +1,8 @@
 import { useState, useRef, useEffect } from 'react';
 import type { CheckoutTheme } from '../index.js';
 import { Sk } from './skeleton.js';
+import { CrossSellProducts } from './CrossSellProducts.js';
+import type { CrossSellProduct } from './CrossSellProducts.js';
 
 export interface AppliedCoupon {
   code: string;
@@ -190,13 +192,13 @@ export function OrderTotals({ theme: _theme, subtotalCents, taxCents, coupons = 
           </dd>
         </div>
       )}
-      <div className="flex justify-between text-sm text-(--cocart-color-text)">
-        <dt>Taxes</dt>
-        <dd className="m-0">{fmt(taxCents)}</dd>
-      </div>
       <div className="flex justify-between text-base font-semibold text-(--cocart-color-text) border-t border-(--cocart-color-border) pt-3 mt-1">
         <dt>Total</dt>
         <dd className="m-0">USD {fmt(totalCents)}</dd>
+      </div>
+      <div className="flex justify-between text-xs text-(--cocart-color-text-muted) mt-1">
+        <dt>Including {fmt(taxCents)} in taxes</dt>
+        <dd className="m-0" />
       </div>
     </dl>
   );
@@ -213,6 +215,8 @@ export interface OrderSummaryProps {
   items: OrderLineItem[];
   subtotalCents: number;
   taxCents: number;
+  crossSellProducts?: CrossSellProduct[];
+  onCrossAdd?: (product: CrossSellProduct) => void;
   onApply: (code: string) => Promise<AppliedCoupon | null>;
   onCouponsChange?: (coupons: AppliedCoupon[]) => void;
 }
@@ -224,11 +228,13 @@ interface SummaryContentProps {
   items: OrderLineItem[];
   subtotalCents: number;
   taxCents: number;
+  crossSellProducts?: CrossSellProduct[];
+  onCrossAdd?: (product: CrossSellProduct) => void;
   onApply: (code: string) => Promise<AppliedCoupon | null>;
   onCouponsChange?: (coupons: AppliedCoupon[]) => void;
 }
 
-function SummaryContent({ theme, showShipping = true, shippingCostCents, items, subtotalCents, taxCents, onApply, onCouponsChange }: SummaryContentProps) {
+function SummaryContent({ theme, showShipping = true, shippingCostCents, items, subtotalCents, taxCents, crossSellProducts, onCrossAdd, onApply, onCouponsChange }: SummaryContentProps) {
   const [coupons, setCoupons] = useState<AppliedCoupon[]>([]);
 
   function updateCoupons(next: AppliedCoupon[]) {
@@ -245,6 +251,15 @@ function SummaryContent({ theme, showShipping = true, shippingCostCents, items, 
   return (
     <div className={theme.orderSummaryClassName ?? ''}>
       <OrderLineItems theme={theme} items={items} />
+      {crossSellProducts && crossSellProducts.length > 0 && (
+        <div className="border-t border-(--cocart-color-border) mt-4 pt-4">
+          <CrossSellProducts
+            theme={theme}
+            products={crossSellProducts}
+            onAdd={onCrossAdd ?? (() => {})}
+          />
+        </div>
+      )}
       <div className="border-t border-(--cocart-color-border) mt-4 pt-4">
         <DiscountCode
           theme={theme}
@@ -260,7 +275,7 @@ function SummaryContent({ theme, showShipping = true, shippingCostCents, items, 
   );
 }
 
-export function OrderSummary({ theme, mobileDrawer = false, loading = false, total, currency: _currency, showShipping = true, shippingCostCents, items, subtotalCents, taxCents, onApply, onCouponsChange }: OrderSummaryProps) {
+export function OrderSummary({ theme, mobileDrawer = false, loading = false, total, currency: _currency, showShipping = true, shippingCostCents, items, subtotalCents, taxCents, crossSellProducts, onCrossAdd, onApply, onCouponsChange }: OrderSummaryProps) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const toggleBtnRef = useRef<HTMLButtonElement>(null);
   const closeBtnRef = useRef<HTMLButtonElement>(null);
@@ -324,7 +339,7 @@ export function OrderSummary({ theme, mobileDrawer = false, loading = false, tot
   }
 
   if (!mobileDrawer) {
-    return <SummaryContent theme={theme} showShipping={showShipping} shippingCostCents={shippingCostCents} items={items} subtotalCents={subtotalCents} taxCents={taxCents} onApply={onApply} onCouponsChange={onCouponsChange} />;
+    return <SummaryContent theme={theme} showShipping={showShipping} shippingCostCents={shippingCostCents} items={items} subtotalCents={subtotalCents} taxCents={taxCents} crossSellProducts={crossSellProducts} onCrossAdd={onCrossAdd} onApply={onApply} onCouponsChange={onCouponsChange} />;
   }
 
   return (
@@ -386,7 +401,7 @@ export function OrderSummary({ theme, mobileDrawer = false, loading = false, tot
                 </svg>
               </button>
             </div>
-            <SummaryContent theme={theme} shippingCostCents={shippingCostCents} items={items} subtotalCents={subtotalCents} taxCents={taxCents} onApply={onApply} onCouponsChange={onCouponsChange} />
+            <SummaryContent theme={theme} shippingCostCents={shippingCostCents} items={items} subtotalCents={subtotalCents} taxCents={taxCents} crossSellProducts={crossSellProducts} onCrossAdd={onCrossAdd} onApply={onApply} onCouponsChange={onCouponsChange} />
           </div>
         </div>
       )}

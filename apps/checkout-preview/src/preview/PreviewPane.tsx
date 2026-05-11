@@ -8,8 +8,9 @@ import type { AppliedCoupon } from '@cocartheadless/checkout/react';
 import { CheckoutContainer, ExpressBar, Address, ShippingMethods, PaymentMethods, OrderSummary, OrderLineItems, DiscountCode, OrderTotals, PayButton, TermsAndConditions } from '@cocartheadless/checkout/react';
 import { mockCoCartClient } from '../mock-client.js';
 import type { BuilderState, GatewayConfig } from '../state.js';
-import { MOCK_ITEMS, MOCK_COUPONS, MOCK_RATES, MOCK_SUBTOTAL_CENTS, MOCK_TAX_CENTS, MOCK_TOTAL } from '../mock-data.js';
+import { MOCK_ITEMS, MOCK_COUPONS, MOCK_RATES, MOCK_SUBTOTAL_CENTS, MOCK_TAX_CENTS, MOCK_TOTAL, MOCK_CROSS_SELL_ITEMS } from '../mock-data.js';
 import type { MockShippingRate } from '../mock-data.js';
+import { TopBar } from './TopBar.js';
 
 async function mockOnApply(code: string): Promise<AppliedCoupon | null> {
   await new Promise(r => setTimeout(r, 600));
@@ -21,6 +22,9 @@ async function mockOnApply(code: string): Promise<AppliedCoupon | null> {
 const SCOPE = '#checkout-preview-root';
 let themeStyleEl: HTMLStyleElement | null = null;
 let customStyleEl: HTMLStyleElement | null = null;
+
+const MOCK_USER_EMAIL = 'customer@example.com';
+const MOCK_USER_ADDRESS = '136 Commerce Boulevard, Garland, NE 68360, US';
 
 function resolveEffectiveDark(colorScheme: BuilderState['colorScheme']): boolean {
   if (colorScheme === 'dark') return true;
@@ -126,8 +130,11 @@ function MobileScreen({ state, expressGateways, regularGateways, expressOnly, ac
 
   return (
     <div className="relative overflow-hidden rounded-[38px] bg-(--cocart-color-background) min-h-160 flex flex-col">
+      {/* Top bar */}
+      <TopBar storeName={state.topBarStoreName} logoUrl={state.topBarLogoUrl || undefined} bgColor={state.topBarBgColor} cartCount={MOCK_ITEMS.length} />
+
       {/* Status bar spacer */}
-      <div className="h-10 bg-(--cocart-color-background)" />
+      <div className="h-4 bg-(--cocart-color-background)" />
 
       {/* Scrollable form content */}
       <div className={`overflow-y-auto max-h-180${expressOnly ? ' px-4 pb-8' : ''}`}>
@@ -145,7 +152,7 @@ function MobileScreen({ state, expressGateways, regularGateways, expressOnly, ac
           suppressOrderSummary
         />
         {includeOrderSummary && !mobileOrderSummaryDrawer && (
-          <OrderSummary theme={theme} items={MOCK_ITEMS} subtotalCents={MOCK_SUBTOTAL_CENTS} taxCents={MOCK_TAX_CENTS} total={MOCK_TOTAL} showShipping={showShipping} shippingCostCents={shippingCostCents} onApply={mockOnApply} onCouponsChange={c => setFreeShipping(c.some(x => x.freeShipping))} />
+          <OrderSummary theme={theme} items={MOCK_ITEMS} subtotalCents={MOCK_SUBTOTAL_CENTS} taxCents={MOCK_TAX_CENTS} total={MOCK_TOTAL} showShipping={showShipping} shippingCostCents={shippingCostCents} crossSellProducts={MOCK_CROSS_SELL_ITEMS} onApply={mockOnApply} onCouponsChange={c => setFreeShipping(c.some(x => x.freeShipping))} />
         )}
         {!includeOrderSummary && (
           <OrderSummarySection state={state} shippingCostCents={shippingCostCents} onCouponsChange={setFreeShipping} />
@@ -154,7 +161,7 @@ function MobileScreen({ state, expressGateways, regularGateways, expressOnly, ac
 
       {/* Bottom bar + drawer — rendered outside scroll so bar never scrolls away */}
       {includeOrderSummary && mobileOrderSummaryDrawer && (
-        <OrderSummary theme={theme} mobileDrawer items={MOCK_ITEMS} subtotalCents={MOCK_SUBTOTAL_CENTS} taxCents={MOCK_TAX_CENTS} total={MOCK_TOTAL} showShipping={showShipping} shippingCostCents={shippingCostCents} onApply={mockOnApply} onCouponsChange={c => setFreeShipping(c.some(x => x.freeShipping))} />
+        <OrderSummary theme={theme} mobileDrawer items={MOCK_ITEMS} subtotalCents={MOCK_SUBTOTAL_CENTS} taxCents={MOCK_TAX_CENTS} total={MOCK_TOTAL} showShipping={showShipping} shippingCostCents={shippingCostCents} crossSellProducts={MOCK_CROSS_SELL_ITEMS} onApply={mockOnApply} onCouponsChange={c => setFreeShipping(c.some(x => x.freeShipping))} />
       )}
 
       {/* Home indicator */}
@@ -167,10 +174,12 @@ function MobileScreen({ state, expressGateways, regularGateways, expressOnly, ac
 
 function CheckoutPreview({ state, expressGateways, regularGateways, expressOnly, activeGatewayId, sections, freeShipping: freeShippingProp, shippingCostCents: shippingCostCentsProp, onFreeShippingChange, onShippingCostChange, suppressOrderSummary }: PreviewProps) {
   const [freeShippingLocal, setFreeShippingLocal] = useState(false);
-  const [addressEntered, setAddressEntered] = useState(false);
-  const [shippingCostCentsLocal, setShippingCostCentsLocal] = useState<number | undefined>(undefined);
+  const [shippingCostCentsLocal, setShippingCostCentsLocal] = useState<number | undefined>(
+    state.isLoggedIn ? (MOCK_RATES[0]?.costCents ?? 0) : undefined
+  );
   const freeShipping = freeShippingProp ?? freeShippingLocal;
   const shippingCostCents = shippingCostCentsProp ?? shippingCostCentsLocal;
+  const addressEntered = state.isLoggedIn;
 
   function handleCouponsChange(coupons: AppliedCoupon[]) {
     const free = coupons.some(c => c.freeShipping);
@@ -180,17 +189,6 @@ function CheckoutPreview({ state, expressGateways, regularGateways, expressOnly,
   function handleFreeShippingChange(free: boolean) {
     setFreeShippingLocal(free);
     onFreeShippingChange?.(free);
-  }
-  function handleAddressToggle(entered: boolean) {
-    setAddressEntered(entered);
-    if (entered) {
-      const defaultCost = MOCK_RATES[0]?.costCents ?? 0;
-      setShippingCostCentsLocal(defaultCost);
-      onShippingCostChange?.(defaultCost);
-    } else {
-      setShippingCostCentsLocal(undefined);
-      onShippingCostChange?.(0);
-    }
   }
   function handleRateChange(rate: MockShippingRate) {
     setShippingCostCentsLocal(rate.costCents);
@@ -207,7 +205,7 @@ function CheckoutPreview({ state, expressGateways, regularGateways, expressOnly,
 
   const showShipping = state.collectShippingAddress && !state.shippingSameAsBilling;
   const previewContainerClass = layout === 'two-column'
-    ? (theme.containerClassName ?? 'mx-auto max-w-5xl grid grid-cols-[1fr_380px]').replace(/\blg:grid-cols-/g, 'grid-cols-')
+    ? (theme.containerClassName ?? 'mx-auto max-w-5xl grid grid-cols-[1fr_420px]').replace(/\blg:grid-cols-/g, 'grid-cols-')
     : theme.containerClassName;
   const formDef = { theme: { ...theme, containerClassName: previewContainerClass }, sections, gatewayId: activeGatewayId };
 
@@ -217,25 +215,21 @@ function CheckoutPreview({ state, expressGateways, regularGateways, expressOnly,
   const leftContent = (
     <>
       {expressGateways.length > 0 && (
-        <ExpressBar gateways={expressGateways} theme={theme} expressOnly={expressOnly} />
+        <div className="express-bar-wrapper">
+          <ExpressBar gateways={expressGateways} theme={theme} expressOnly={expressOnly} />
+        </div>
       )}
       {contactSection && (
-        <Address type="contact" section={contactSection} theme={theme} />
+        <Address type="contact" section={contactSection} theme={theme} isAuthorized={state.isLoggedIn} compactSummary={MOCK_USER_EMAIL} />
       )}
       {showShipping && shippingSection && (
-        <Address type="shipping" section={shippingSection} theme={theme} />
+        <Address type="shipping" section={shippingSection} theme={theme} isAuthorized={state.isLoggedIn} compactSummary={MOCK_USER_ADDRESS} />
       )}
       {showShipping && (
-        <>
-          <ShippingMethods theme={theme} rates={MOCK_RATES} freeShipping={freeShipping} placeholder={!addressEntered} onRateChange={r => handleRateChange(r as MockShippingRate)} />
-          <label className="flex items-center gap-2 px-4 pb-2 text-xs text-slate-400 cursor-pointer select-none">
-            <input type="checkbox" checked={addressEntered} onChange={e => handleAddressToggle(e.target.checked)} className="accent-violet-500" />
-            Simulate address entered
-          </label>
-        </>
+        <ShippingMethods theme={theme} rates={MOCK_RATES} freeShipping={freeShipping} placeholder={!addressEntered} onRateChange={r => handleRateChange(r as MockShippingRate)} />
       )}
       {!showShipping && billingSection && (
-        <Address type="billing" section={billingSection} theme={theme} />
+        <Address type="billing" section={billingSection} theme={theme} isAuthorized={state.isLoggedIn} compactSummary={MOCK_USER_ADDRESS} />
       )}
       {notesSection && state.includeNotes && (
         <Address type="contact" section={notesSection} theme={theme} />
@@ -253,10 +247,10 @@ function CheckoutPreview({ state, expressGateways, regularGateways, expressOnly,
       )}
       {state.includeTerms ? (
         <TermsAndConditions theme={theme}>
-          <PayButton theme={theme} />
+          <PayButton theme={theme} onGuestCheckout={state.isLoggedIn ? () => {} : undefined} />
         </TermsAndConditions>
       ) : (
-        <PayButton theme={theme} />
+        <PayButton theme={theme} onGuestCheckout={state.isLoggedIn ? () => {} : undefined} />
       )}
     </>
   );
@@ -273,7 +267,7 @@ function CheckoutPreview({ state, expressGateways, regularGateways, expressOnly,
         {!suppressOrderSummary && (
           <div className="bg-(--cocart-color-background-alt)">
             {includeOrderSummary
-              ? <OrderSummary theme={theme} items={MOCK_ITEMS} subtotalCents={MOCK_SUBTOTAL_CENTS} taxCents={MOCK_TAX_CENTS} total={MOCK_TOTAL} showShipping={showShipping} shippingCostCents={shippingCostCents} onApply={mockOnApply} onCouponsChange={handleCouponsChange} />
+              ? <OrderSummary theme={theme} items={MOCK_ITEMS} subtotalCents={MOCK_SUBTOTAL_CENTS} taxCents={MOCK_TAX_CENTS} total={MOCK_TOTAL} showShipping={showShipping} shippingCostCents={shippingCostCents} crossSellProducts={MOCK_CROSS_SELL_ITEMS} onApply={mockOnApply} onCouponsChange={handleCouponsChange} />
               : <OrderSummarySection state={state} shippingCostCents={shippingCostCents} onCouponsChange={handleFreeShippingChange} />
             }
           </div>
@@ -288,7 +282,7 @@ function CheckoutPreview({ state, expressGateways, regularGateways, expressOnly,
       {leftCol}
       <div className="self-stretch bg-(--cocart-color-background-alt)">
         {includeOrderSummary
-          ? <OrderSummary theme={theme} items={MOCK_ITEMS} subtotalCents={MOCK_SUBTOTAL_CENTS} taxCents={MOCK_TAX_CENTS} total={MOCK_TOTAL} showShipping={showShipping} shippingCostCents={shippingCostCents} onApply={mockOnApply} onCouponsChange={handleCouponsChange} />
+          ? <OrderSummary theme={theme} items={MOCK_ITEMS} subtotalCents={MOCK_SUBTOTAL_CENTS} taxCents={MOCK_TAX_CENTS} total={MOCK_TOTAL} showShipping={showShipping} shippingCostCents={shippingCostCents} crossSellProducts={MOCK_CROSS_SELL_ITEMS} onApply={mockOnApply} onCouponsChange={handleCouponsChange} />
           : <OrderSummarySection state={state} shippingCostCents={shippingCostCents} onCouponsChange={handleFreeShippingChange} />
         }
       </div>
@@ -378,15 +372,18 @@ export class PreviewPane {
             </div>
           </div>
         ) : (
-          <CheckoutPreview
-            key={this.simulationKey}
-            state={state}
-            expressGateways={expressGateways}
-            regularGateways={regularGateways}
-            expressOnly={expressOnly}
-            activeGatewayId={activeGatewayId}
-            sections={formDef.sections}
-          />
+          <>
+            <TopBar storeName={state.topBarStoreName} logoUrl={state.topBarLogoUrl || undefined} bgColor={state.topBarBgColor} cartCount={MOCK_ITEMS.length} />
+            <CheckoutPreview
+              key={this.simulationKey}
+              state={state}
+              expressGateways={expressGateways}
+              regularGateways={regularGateways}
+              expressOnly={expressOnly}
+              activeGatewayId={activeGatewayId}
+              sections={formDef.sections}
+            />
+          </>
         )}
       </div>
     );

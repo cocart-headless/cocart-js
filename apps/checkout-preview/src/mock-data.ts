@@ -23,3 +23,9 @@ export const MOCK_RATES: MockShippingRate[] = [
 export const MOCK_SUBTOTAL_CENTS = 8700;
 export const MOCK_TAX_CENTS = 870;
 export const MOCK_TOTAL = 'USD $95.70';
+
+export const MOCK_CROSS_SELL_ITEMS = [
+  { name: 'Coffee 2.0', variant: 'Cacao & vanille', price: '€29.90' },
+  { name: 'Matcha 2.0 Matcha biologique', variant: '', price: '€29.90' },
+  { name: 'Refresh 2.0 Pamplemousse rouge', variant: '', price: '€29.90' },
+];

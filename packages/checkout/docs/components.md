@@ -23,6 +23,7 @@ import {
   OrderLineItems,
   OrderTotals,
   DiscountCode,
+  CrossSellProducts,
   PayButton,
   TermsAndConditions,
 } from '@cocartheadless/checkout/react';
@@ -55,12 +56,30 @@ The root wrapper. Applies the theme's `containerClassName` and switches between 
 
 Renders a form section (contact, billing, or shipping) as a responsive field grid. Country fields use a custom searchable dropdown with emoji flags. Two-column layout is applied automatically for billing/shipping sections; contact and notes sections render single-column.
 
+When `isAuthorized` is `true` and a `compactSummary` string is provided, the full form is replaced with a single-line summary and a three-dot (⋮) menu. The menu has one item — **Edit** — which expands the full form inline. This is the expected rendering for logged-in customers who have a saved address on file.
+
 ```tsx
 import { Address } from '@cocartheadless/checkout/react';
 
+{/* Guest — full form */}
 <Address type="contact" section={contactSection} theme={theme} />
 <Address type="shipping" section={shippingSection} theme={theme} />
-<Address type="billing" section={billingSection} theme={theme} />
+
+{/* Logged-in — compact summary with edit menu */}
+<Address
+  type="contact"
+  section={contactSection}
+  theme={theme}
+  isAuthorized
+  compactSummary="customer@example.com"
+/>
+<Address
+  type="shipping"
+  section={shippingSection}
+  theme={theme}
+  isAuthorized
+  compactSummary="Jane Smith, 1 Main St, New York, NY 10001, US"
+/>
 ```
 
 **Props**
@@ -71,7 +90,8 @@ import { Address } from '@cocartheadless/checkout/react';
 | `section` | `CheckoutFormSection` | required | Section definition from `form.sections` |
 | `theme` | `CheckoutTheme` | required | Controls `inputClassName`, `helperTextClassName`, `sectionClassName` |
 | `loading` | `boolean` | `false` | Shows skeleton placeholders |
-| `isAuthorized` | `boolean` | `false` | When `true` and `type="contact"`, hides the Sign in toggle and shows a Sign out link instead |
+| `isAuthorized` | `boolean` | `false` | When `true`, hides the Sign in toggle. Combine with `compactSummary` to show the compact logged-in view |
+| `compactSummary` | `string` | — | Text shown in compact mode when `isAuthorized` is `true` — typically the customer's email or formatted address. When omitted or empty (e.g. no saved address on file), the full form renders regardless of `isAuthorized` |
 
 `section` comes from the form definition returned by `client.checkout.createForm()`. Fields with `hidden: true` are automatically skipped.
 
@@ -223,7 +243,7 @@ Returns `null` when `gateways` is empty and no `paymentSection` is supplied.
 
 ## `<OrderSummary>`
 
-Composes `<OrderLineItems>`, `<DiscountCode>`, and `<OrderTotals>` into a single panel. Use this when you want the full summary in one component. Use the sub-components individually when you need to customise layout or data independently.
+Composes `<OrderLineItems>`, `<CrossSellProducts>` (optional), `<DiscountCode>`, and `<OrderTotals>` into a single panel. Use this when you want the full summary in one component. Use the sub-components individually when you need to customize layout or data independently.
 
 ```tsx
 <OrderSummary
@@ -233,6 +253,22 @@ Composes `<OrderLineItems>`, `<DiscountCode>`, and `<OrderTotals>` into a single
   taxCents={870}
   onApply={async (code) => validateCoupon(code)}
 />
+
+{/* With cross-sell products */}
+<OrderSummary
+  theme={theme}
+  items={lineItems}
+  subtotalCents={8700}
+  taxCents={870}
+  crossSellProducts={[
+    { name: 'Premium Bag', variant: 'Black', price: '$29.00' },
+    { name: 'Gift Wrap', price: '$5.00' },
+  ]}
+  onCrossAdd={(product) => addToCart(product)}
+  onApply={async (code) => validateCoupon(code)}
+/>
+
+{/* Mobile drawer */}
 <OrderSummary theme={theme} items={lineItems} subtotalCents={8700} taxCents={870} onApply={onApply} mobileDrawer total="USD $95.70" />
 ```
 
@@ -245,12 +281,51 @@ Composes `<OrderLineItems>`, `<DiscountCode>`, and `<OrderTotals>` into a single
 | `subtotalCents` | `number` | required | Subtotal in cents |
 | `taxCents` | `number` | required | Tax in cents |
 | `onApply` | `(code: string) => Promise<AppliedCoupon \| null>` | required | Coupon validation callback — return `AppliedCoupon` on success or `null` to show an error |
+| `crossSellProducts` | `CrossSellProduct[]` | — | Products to suggest above the discount field. Renders `<CrossSellProducts>` when provided |
+| `onCrossAdd` | `(product: CrossSellProduct) => void` | — | Called when the customer clicks Add on a cross-sell item |
 | `mobileDrawer` | `boolean` | `false` | Renders as a bottom-sheet drawer with a toggle bar — use when the order summary sits below the form on mobile |
 | `loading` | `boolean` | `false` | Shows skeleton placeholders instead of content |
 | `showShipping` | `boolean` | `true` | Show the shipping row in the totals |
 | `shippingCostCents` | `number` | — | Shipping cost in cents. Omit to show "Enter shipping address"; pass `0` for free |
 | `total` | `string` | — | Formatted total string shown in the mobile drawer toggle bar (e.g. `"USD $95.70"`) |
 | `onCouponsChange` | `(coupons: AppliedCoupon[]) => void` | — | Called when coupons are applied or removed — use to drive `freeShipping` state on `<ShippingMethods>` |
+
+---
+
+## `<CrossSellProducts>`
+
+Renders a list of suggested products above the discount code field in the order summary. Each item shows a product image placeholder, name, optional variant, price, and an **Add** button. The heading is intentionally omitted — store owners should add their own above this component if desired.
+
+```tsx
+import { CrossSellProducts } from '@cocartheadless/checkout/react';
+
+<CrossSellProducts
+  theme={theme}
+  products={[
+    { name: 'Premium Bag', variant: 'Black', price: '$29.00' },
+    { name: 'Gift Wrap', price: '$5.00' },
+  ]}
+  onAdd={(product) => addToCart(product)}
+/>
+```
+
+**Props**
+
+| Prop | Type | Default | Description |
+|---|---|---|---|
+| `theme` | `CheckoutTheme` | required | Controls button styling via `colorButton` / `colorButtonText` variables |
+| `products` | `CrossSellProduct[]` | required | Products to display |
+| `onAdd` | `(product: CrossSellProduct) => void` | required | Called when the customer clicks the Add button on a product |
+
+**`CrossSellProduct`**
+
+```ts
+interface CrossSellProduct {
+  name: string;
+  variant?: string;  // e.g. "Black / Large"
+  price: string;     // formatted string, e.g. "$29.00"
+}
+```
 
 ---
 
@@ -322,7 +397,7 @@ interface AppliedCoupon {
 
 ## `<OrderTotals>`
 
-Renders the subtotal, discount rows, shipping, taxes, and total. Discount rows are derived from the `coupons` prop — pass the same array you manage in state.
+Renders the subtotal, discount rows, shipping, and total. The tax amount is shown below the total as an "Including $X.xx in taxes" note rather than as a separate line item.
 
 ```tsx
 <OrderTotals theme={theme} subtotalCents={8700} taxCents={870} coupons={coupons} />
@@ -335,7 +410,7 @@ Renders the subtotal, discount rows, shipping, taxes, and total. Discount rows a
 |---|---|---|---|
 | `theme` | `CheckoutTheme` | required | Theme reference (reserved for future className support) |
 | `subtotalCents` | `number` | required | Subtotal in cents |
-| `taxCents` | `number` | required | Tax amount in cents |
+| `taxCents` | `number` | required | Tax amount in cents — included in the total and shown as a note below it |
 | `coupons` | `AppliedCoupon[]` | `[]` | Applied coupons — drives discount rows and free-shipping display |
 | `showShipping` | `boolean` | `true` | Show the shipping row |
 | `shippingCostCents` | `number` | — | Shipping cost in cents. Omit to show "Enter shipping address"; pass `0` for free |
@@ -344,11 +419,14 @@ Renders the subtotal, discount rows, shipping, taxes, and total. Discount rows a
 
 ## `<PayButton>`
 
-Renders a full-width `<button type="submit">` styled with the theme's button variables.
+Renders a full-width `<button type="submit">` styled with the theme's button variables. Optionally renders a "Check out as a guest" link below the button — intended for logged-in customers who want to place an order without their saved account.
 
 ```tsx
 <PayButton theme={theme} />
 <PayButton theme={theme} label="Complete order" />
+
+{/* Logged-in: show guest checkout escape hatch */}
+<PayButton theme={theme} onGuestCheckout={() => auth.signOut()} />
 ```
 
 **Props**
@@ -357,6 +435,7 @@ Renders a full-width `<button type="submit">` styled with the theme's button var
 |---|---|---|---|
 | `label` | `string` | `'Pay now'` | Button text |
 | `theme` | `CheckoutTheme` | required | Controls `submitButtonClassName` |
+| `onGuestCheckout` | `() => void` | — | When provided, renders a "Check out as a guest" link below the button. Omit when the customer is not logged in |
 
 ---
 
@@ -407,10 +486,24 @@ const paymentSection  = form.sections.find(s => s.id === 'payment');
 const expressGateways = client.checkout.listExpressGateways();
 const regularGateways = client.checkout.listGateways();
 
-export function CheckoutPage() {
+// Cross-sell products shown in the order summary above the discount field.
+// Populate from your product catalog or a recommendations API.
+const crossSellProducts = [
+  { name: 'Premium Bag', variant: 'Black', price: '$29.00' },
+  { name: 'Gift Wrap', price: '$5.00' },
+];
+
+export function CheckoutPage({ isLoggedIn }: { isLoggedIn: boolean }) {
   const [rates, setRates] = useState<ShippingRate[]>([]);
-  const [shippingCostCents, setShippingCostCents] = useState<number | undefined>();
-  const lineItems: OrderLineItem[] = checkout.items.map(i => ({ name: i.name, variant: i.variant, qty: i.quantity, price: i.price }));
+  const [shippingCostCents, setShippingCostCents] = useState<number | undefined>(
+    isLoggedIn ? 0 : undefined
+  );
+  const lineItems: OrderLineItem[] = checkout.items.map(i => ({
+    name: i.name,
+    variant: i.variant,
+    qty: i.quantity,
+    price: i.price,
+  }));
 
   return (
     <CheckoutContainer form={form} layout="two-column">
@@ -419,15 +512,27 @@ export function CheckoutPage() {
           <ExpressBar gateways={expressGateways} theme={theme} />
         )}
         {contactSection && (
-          <Address type="contact" section={contactSection} theme={theme} />
+          <Address
+            type="contact"
+            section={contactSection}
+            theme={theme}
+            isAuthorized={isLoggedIn}
+            compactSummary={isLoggedIn ? customer.email : undefined}
+          />
         )}
         {shippingSection && (
-          <Address type="shipping" section={shippingSection} theme={theme} />
+          <Address
+            type="shipping"
+            section={shippingSection}
+            theme={theme}
+            isAuthorized={isLoggedIn}
+            compactSummary={isLoggedIn ? customer.formattedAddress : undefined}
+          />
         )}
         <ShippingMethods
           theme={theme}
           rates={rates}
-          placeholder={rates.length === 0}
+          placeholder={!isLoggedIn && rates.length === 0}
           onRateChange={rate => setShippingCostCents(/* rate cost in cents */)}
         />
         <PaymentMethods
@@ -436,7 +541,10 @@ export function CheckoutPage() {
           paymentSection={paymentSection}
           billingSection={billingSection}
         />
-        <PayButton theme={theme} />
+        <PayButton
+          theme={theme}
+          onGuestCheckout={isLoggedIn ? () => auth.signOut() : undefined}
+        />
       </div>
       <div>
         <OrderSummary
@@ -445,6 +553,8 @@ export function CheckoutPage() {
           subtotalCents={checkout.subtotalCents}
           taxCents={checkout.taxCents}
           shippingCostCents={shippingCostCents}
+          crossSellProducts={crossSellProducts}
+          onCrossAdd={(product) => cart.add(product)}
           onApply={async (code) => client.checkout.applyCoupon(code)}
         />
       </div>

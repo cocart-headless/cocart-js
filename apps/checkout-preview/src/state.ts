@@ -52,6 +52,10 @@ export interface BuilderState {
   colorScheme: 'light' | 'dark' | 'system';
   daisyTheme: string;
   activeTab: 'data' | 'appearance' | 'payments';
+  isLoggedIn: boolean;
+  topBarStoreName: string;
+  topBarLogoUrl: string;
+  topBarBgColor: string;
 }
 
 export const GATEWAY_CATALOG: GatewayConfig[] = [
@@ -84,28 +88,28 @@ function defaultState(): BuilderState {
     returnUrl: '',
     fields: {
       contact: [
-        { name: 'billing_address.email', label: 'Email address', type: 'email',    required: true,  hidden: false, autoComplete: 'email' },
-        { name: 'billing_address.phone', label: 'Phone number',  type: 'tel',      required: false, hidden: false, autoComplete: 'tel' },
+        { name: 'billing_address.email', label: 'Email address', type: 'email', required: true,  hidden: false, autoComplete: 'email',  placeholder: 'customer@example.com' },
+        { name: 'billing_address.phone', label: 'Phone number',  type: 'tel',   required: false, hidden: false, autoComplete: 'tel',    placeholder: '402-588-1001' },
       ],
       billing: [
-        { name: 'billing_address.country',    label: 'Country/Region',          type: 'select', required: true,  hidden: false, autoComplete: 'country-name' },
-        { name: 'billing_address.first_name', label: 'First name',       type: 'text', required: true,  hidden: false, autoComplete: 'given-name' },
-        { name: 'billing_address.last_name',  label: 'Last name',        type: 'text', required: true,  hidden: false, autoComplete: 'family-name' },
-        { name: 'billing_address.address_1',  label: 'Address line 1',   type: 'text', required: true,  hidden: false, autoComplete: 'address-line1' },
-        { name: 'billing_address.address_2',  label: 'Address line 2',   type: 'text', required: false, hidden: false, autoComplete: 'address-line2' },
-        { name: 'billing_address.city',       label: 'City',             type: 'text', required: true,  hidden: false, autoComplete: 'address-level2' },
-        { name: 'billing_address.state',      label: 'State / Province', type: 'text', required: false, hidden: false, autoComplete: 'address-level1' },
-        { name: 'billing_address.postcode',   label: 'Postal code',      type: 'text', required: true,  hidden: false, autoComplete: 'postal-code' },
+        { name: 'billing_address.country',    label: 'Country/Region',  type: 'select', required: true,  hidden: false, autoComplete: 'country-name',    defaultValue: 'US' },
+        { name: 'billing_address.first_name', label: 'First name',      type: 'text',   required: true,  hidden: false, autoComplete: 'given-name' },
+        { name: 'billing_address.last_name',  label: 'Last name',       type: 'text',   required: true,  hidden: false, autoComplete: 'family-name' },
+        { name: 'billing_address.address_1',  label: 'Address line 1',  type: 'text',   required: true,  hidden: false, autoComplete: 'address-line1',   placeholder: '136 Commerce Boulevard' },
+        { name: 'billing_address.address_2',  label: 'Address line 2',  type: 'text',   required: false, hidden: false, autoComplete: 'address-line2' },
+        { name: 'billing_address.city',       label: 'City',            type: 'text',   required: true,  hidden: false, autoComplete: 'address-level2',  placeholder: 'Garland' },
+        { name: 'billing_address.state',      label: 'State / Province',type: 'text',   required: false, hidden: false, autoComplete: 'address-level1',  placeholder: 'NE' },
+        { name: 'billing_address.postcode',   label: 'Postal code',     type: 'text',   required: true,  hidden: false, autoComplete: 'postal-code',     placeholder: '68360' },
       ],
       shipping: [
-        { name: 'shipping_address.country',    label: 'Country/Region', type: 'select', required: true,  hidden: false, autoComplete: 'shipping country-name', defaultValue: 'US' },
-        { name: 'shipping_address.first_name', label: 'First name',       type: 'text', required: true,  hidden: false, autoComplete: 'shipping given-name' },
-        { name: 'shipping_address.last_name',  label: 'Last name',        type: 'text', required: true,  hidden: false, autoComplete: 'shipping family-name' },
-        { name: 'shipping_address.address_1',  label: 'Address line 1',   type: 'text', required: true,  hidden: false, autoComplete: 'shipping address-line1' },
-        { name: 'shipping_address.address_2',  label: 'Address line 2',   type: 'text', required: false, hidden: false, autoComplete: 'shipping address-line2' },
-        { name: 'shipping_address.city',       label: 'City',             type: 'text', required: true,  hidden: false, autoComplete: 'shipping address-level2' },
-        { name: 'shipping_address.state',      label: 'State / Province', type: 'text', required: false, hidden: false, autoComplete: 'shipping address-level1' },
-        { name: 'shipping_address.postcode',   label: 'Postal code',      type: 'text', required: true,  hidden: false, autoComplete: 'shipping postal-code' },
+        { name: 'shipping_address.country',    label: 'Country/Region',  type: 'select', required: true,  hidden: false, autoComplete: 'shipping country-name',    defaultValue: 'US' },
+        { name: 'shipping_address.first_name', label: 'First name',      type: 'text',   required: true,  hidden: false, autoComplete: 'shipping given-name' },
+        { name: 'shipping_address.last_name',  label: 'Last name',       type: 'text',   required: true,  hidden: false, autoComplete: 'shipping family-name' },
+        { name: 'shipping_address.address_1',  label: 'Address line 1',  type: 'text',   required: true,  hidden: false, autoComplete: 'shipping address-line1',   placeholder: '136 Commerce Boulevard' },
+        { name: 'shipping_address.address_2',  label: 'Address line 2',  type: 'text',   required: false, hidden: false, autoComplete: 'shipping address-line2' },
+        { name: 'shipping_address.city',       label: 'City',            type: 'text',   required: true,  hidden: false, autoComplete: 'shipping address-level2',  placeholder: 'Garland' },
+        { name: 'shipping_address.state',      label: 'State / Province',type: 'text',   required: false, hidden: false, autoComplete: 'shipping address-level1',  placeholder: 'NE' },
+        { name: 'shipping_address.postcode',   label: 'Postal code',     type: 'text',   required: true,  hidden: false, autoComplete: 'shipping postal-code',     placeholder: '68360' },
       ],
       notes: [
         { name: 'customer_note', label: 'Order notes', type: 'textarea', required: false, hidden: false, placeholder: 'Delivery instructions or special notes' },
@@ -121,6 +125,10 @@ function defaultState(): BuilderState {
     colorScheme: 'light',
     daisyTheme: 'light',
     activeTab: 'data',
+    isLoggedIn: true,
+    topBarStoreName: 'CoCart Checkout',
+    topBarLogoUrl: '',
+    topBarBgColor: '#000000',
   };
 }
 

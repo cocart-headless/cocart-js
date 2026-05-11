@@ -552,6 +552,60 @@ function buildColorRow({ label, varKey, value, onChange }: ColorRowOptions): HTM
   return row;
 }
 
+// ── Standalone color row (no theme variable binding) ─────────────────────────
+
+function buildStandaloneColorRow(label: string, initialValue: string, onChange: (hex: string) => void): HTMLElement {
+  const row = document.createElement('div');
+  row.className = 'flex items-center justify-between gap-3';
+
+  const labelEl = document.createElement('span');
+  labelEl.className = 'text-xs text-slate-600 min-w-0 flex-1';
+  labelEl.textContent = label;
+
+  const right = document.createElement('div');
+  right.className = 'flex items-center gap-2 shrink-0 relative';
+
+  const swatch = document.createElement('div');
+  swatch.className = 'h-6 w-6 rounded-md border border-slate-200 shrink-0 cursor-pointer';
+  swatch.style.backgroundColor = initialValue;
+
+  const hexDisplay = document.createElement('span');
+  hexDisplay.className = 'text-xs font-mono text-slate-500 w-16 truncate';
+  hexDisplay.textContent = initialValue;
+
+  let currentValue = initialValue;
+  let popoverEl: HTMLElement | null = null;
+
+  swatch.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (popoverEl) { popoverEl.remove(); popoverEl = null; activePopover = null; return; }
+    if (activePopover) { activePopover.remove(); activePopover = null; }
+    popoverEl = buildColorPopover(currentValue, label, (hex) => {
+      swatch.style.backgroundColor = hex;
+      hexDisplay.textContent = hex;
+      currentValue = hex;
+      onChange(hex);
+    }, swatch);
+    document.body.appendChild(popoverEl);
+    activePopover = popoverEl;
+  });
+
+  document.addEventListener('click', () => {
+    if (popoverEl) {
+      const el = popoverEl;
+      popoverEl = null;
+      el.remove();
+      if (activePopover === el) activePopover = null;
+    }
+  });
+
+  right.appendChild(swatch);
+  right.appendChild(hexDisplay);
+  row.appendChild(labelEl);
+  row.appendChild(right);
+  return row;
+}
+
 // ── Slider row ────────────────────────────────────────────────────────────────
 
 interface SliderRowOptions {
@@ -775,6 +829,41 @@ function buildAppearanceTab(store: StateStore): HTMLElement {
   const state = store.get();
   const panel = document.createElement('div');
   panel.className = 'tab-panel grid gap-4';
+
+  // ── Top Bar Branding ──────────────────────────────────────────────────────
+  panel.appendChild(buildSectionHeading('Top Bar'));
+
+  const storeNameRow = document.createElement('div');
+  storeNameRow.className = 'grid gap-1.5';
+  const storeNameLabel = document.createElement('label');
+  storeNameLabel.className = 'text-xs text-slate-600';
+  storeNameLabel.textContent = 'Store name';
+  const storeNameInput = document.createElement('input');
+  storeNameInput.type = 'text';
+  storeNameInput.value = state.topBarStoreName;
+  storeNameInput.placeholder = 'CoCart Checkout';
+  storeNameInput.className = 'h-8 rounded border border-slate-200 bg-slate-50 px-2.5 text-xs text-slate-800 outline-none focus:border-violet-500 w-full';
+  storeNameInput.addEventListener('input', () => store.update({ topBarStoreName: storeNameInput.value }));
+  storeNameRow.appendChild(storeNameLabel);
+  storeNameRow.appendChild(storeNameInput);
+  panel.appendChild(storeNameRow);
+
+  const logoUrlRow = document.createElement('div');
+  logoUrlRow.className = 'grid gap-1.5';
+  const logoUrlLabel = document.createElement('label');
+  logoUrlLabel.className = 'text-xs text-slate-600';
+  logoUrlLabel.textContent = 'Logo URL (optional)';
+  const logoUrlInput = document.createElement('input');
+  logoUrlInput.type = 'url';
+  logoUrlInput.value = state.topBarLogoUrl;
+  logoUrlInput.placeholder = 'https://example.com/logo.svg';
+  logoUrlInput.className = 'h-8 rounded border border-slate-200 bg-slate-50 px-2.5 text-xs text-slate-800 outline-none focus:border-violet-500 w-full';
+  logoUrlInput.addEventListener('input', () => store.update({ topBarLogoUrl: logoUrlInput.value }));
+  logoUrlRow.appendChild(logoUrlLabel);
+  logoUrlRow.appendChild(logoUrlInput);
+  panel.appendChild(logoUrlRow);
+
+  panel.appendChild(buildStandaloneColorRow('Background color', state.topBarBgColor, (val) => store.update({ topBarBgColor: val })));
 
   // ── Container layout ──────────────────────────────────────────────────────
   panel.appendChild(buildSectionHeading('Layout'));
