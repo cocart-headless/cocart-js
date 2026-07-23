@@ -1,7 +1,8 @@
 import { Endpoint } from './endpoint.js';
 import type { Response } from '../response.js';
-import type { CartGetParams, CartResponse } from '../cocart.types.js';
+import type { BatchRequestItem, CartGetParams, CartResponse } from '../cocart.types.js';
 import { validateProductId, validateQuantity } from '../validation.js';
+import { ValidationError } from '../exceptions/validation-error.js';
 
 /**
  * Cart Endpoint
@@ -65,53 +66,114 @@ export class Cart extends Endpoint {
   }
 
   /**
-   * Add multiple items to the cart in a single request.
+   * Add multiple children of a WooCommerce Grouped Product to the cart in a
+   * single request, via the dedicated `cart/add-items` endpoint.
+   *
+   * This is NOT a generic "add several unrelated products" call — the server
+   * requires a single grouped product ID plus a map of that group's child
+   * product IDs to quantities (confirmed against
+   * `class-cocart-add-items-controller.php`'s `add_to_cart_handler_grouped()`).
+   * For adding unrelated products in one request, use `client.batch()` instead.
+   *
+   * @param groupedProductId The parent grouped product's ID.
+   * @param items            Map of child product ID => quantity (shorthand), or an array of `{ id, quantity }` entries.
    */
-  async addItems(items: Array<{ id: string | number; quantity: string | number; [key: string]: unknown }>): Promise<Response> {
-    const formatted = items.map(item => ({
-      ...item,
-      id: String(item.id),
-      quantity: String(item.quantity),
-    }));
-    return this.post('add-items', { items: formatted });
+  async addItems(
+    groupedProductId: string | number,
+    items: Record<string, number> | Array<{ id: string | number; quantity: number }>,
+  ): Promise<Response> {
+    validateProductId(groupedProductId, this.client.getLocale());
+
+    const entries: Array<[string, number]> = Array.isArray(items)
+      ? items.map(item => [String(item.id), item.quantity])
+      : Object.entries(items);
+
+    if (entries.length === 0) {
+      throw new ValidationError('addItems() requires at least one item.');
+    }
+
+    const quantity: Record<string, string> = {};
+    for (const [childId, qty] of entries) {
+      quantity[childId] = String(qty);
+    }
+
+    return this.post('add-items', { id: String(groupedProductId), quantity });
   }
 
   /**
    * Update an item in the cart.
    *
    * @param itemKey  The cart item key
-   * @param quantity New quantity
+   * @param quantity New quantity - 0 removes the item (the API's own
+   *                 behavior on this endpoint), so it's exempt from the
+   *                 usual positive-quantity validation.
    * @param options  Additional options
    */
   async updateItem(itemKey: string, quantity: number, options: Record<string, unknown> = {}): Promise<Response> {
-    validateQuantity(quantity, this.client.getLocale());
+    if (quantity !== 0) {
+      validateQuantity(quantity, this.client.getLocale());
+    }
     const data = { quantity: String(quantity), ...options };
     return this.post(`item/${itemKey}`, data);
   }
 
   /**
-   * Update multiple items in a single request.
+   * Update multiple items' quantities, one request per item, sequentially.
    *
-   * Accepts either shorthand (item_key => quantity) or full format.
+   * Accepts either shorthand (item_key => quantity) or full format. Returns
+   * the response from the last update (reflects the fully-updated cart).
+   *
+   * @see CHANGELOG for why this isn't a single bulk request.
    */
   async updateItems(
     items: Record<string, number> | Array<{ item_key: string; quantity: number; [key: string]: unknown }>,
   ): Promise<Response> {
-    let formatted: Array<Record<string, unknown>>;
+    const entries = this.normalizeItemEntries(items);
 
-    if (Array.isArray(items)) {
-      formatted = items.map(item => ({
-        ...item,
-        quantity: String(item.quantity),
-      }));
-    } else {
-      formatted = Object.entries(items).map(([key, qty]) => ({
-        item_key: key,
-        quantity: String(qty),
-      }));
+    if (entries.length === 0) {
+      throw new ValidationError('updateItems() requires at least one item.');
     }
 
-    return this.post('update', { items: formatted });
+    let response: Response | undefined;
+    for (const [itemKey, quantity] of entries) {
+      response = await this.updateItem(itemKey, quantity);
+    }
+
+    return response as Response;
+  }
+
+  /**
+   * Update multiple items' quantities in a single request via the `cocart/batch`
+   * endpoint (requires CoCart Plus). Unlike `updateItems()`, this is a true
+   * single round trip instead of one sequential request per item.
+   *
+   * Accepts the same shorthand/full formats as `updateItems()`.
+   */
+  async batchUpdateItems(
+    items: Record<string, number> | Array<{ item_key: string; quantity: number; [key: string]: unknown }>,
+  ): Promise<Response> {
+    const entries = this.normalizeItemEntries(items);
+
+    if (entries.length === 0) {
+      throw new ValidationError('batchUpdateItems() requires at least one item.');
+    }
+
+    const requests: BatchRequestItem[] = entries.map(([itemKey, quantity]) => ({
+      method: 'POST',
+      path: `/${this.client.getNamespace()}/${this.client.getApiVersion()}/cart/item/${itemKey}`,
+      body: { quantity: String(quantity) },
+    }));
+
+    return this.client.batch(requests);
+  }
+
+  /** Convert the shorthand (item_key => quantity) or full array format into entry tuples. */
+  private normalizeItemEntries(
+    items: Record<string, number> | Array<{ item_key: string; quantity: number; [key: string]: unknown }>,
+  ): Array<[string, number]> {
+    return Array.isArray(items)
+      ? items.map(item => [item.item_key, item.quantity] as [string, number])
+      : Object.entries(items);
   }
 
   /** Remove an item from the cart. */
@@ -119,13 +181,41 @@ export class Cart extends Endpoint {
     return this.delete(`item/${itemKey}`);
   }
 
-  /** Remove multiple items from the cart. */
+  /**
+   * Remove multiple items from the cart, one request per item, sequentially.
+   * Returns the response from the last removal (reflects the fully-updated cart).
+   *
+   * @see CHANGELOG for why this isn't a single bulk request.
+   */
   async removeItems(itemKeys: string[]): Promise<Response> {
-    const items = itemKeys.map(key => ({
-      item_key: key,
-      quantity: '0',
+    if (itemKeys.length === 0) {
+      throw new ValidationError('removeItems() requires at least one item key.');
+    }
+
+    let response: Response | undefined;
+    for (const itemKey of itemKeys) {
+      response = await this.removeItem(itemKey);
+    }
+
+    return response as Response;
+  }
+
+  /**
+   * Remove multiple items in a single request via the `cocart/batch` endpoint
+   * (requires CoCart Plus). Unlike `removeItems()`, this is a true single
+   * round trip instead of one sequential request per item.
+   */
+  async batchRemoveItems(itemKeys: string[]): Promise<Response> {
+    if (itemKeys.length === 0) {
+      throw new ValidationError('batchRemoveItems() requires at least one item key.');
+    }
+
+    const requests: BatchRequestItem[] = itemKeys.map(itemKey => ({
+      method: 'DELETE',
+      path: `/${this.client.getNamespace()}/${this.client.getApiVersion()}/cart/item/${itemKey}`,
     }));
-    return this.post('update', { items });
+
+    return this.client.batch(requests);
   }
 
   /** Restore a removed item to the cart. */
@@ -210,22 +300,43 @@ export class Cart extends Endpoint {
   // --- Customer ---
 
   /**
-   * Update customer details.
+   * Update customer billing (and optionally shipping) address on the cart.
    *
-   * @param billing  Billing address fields
-   * @param shipping Shipping address fields
+   * Posts to the `update-customer` callback on `POST /cart/update`, verified
+   * against the CoCart plugin's actual `update-customer.php` callback -
+   * billing fields are sent unprefixed (`first_name`, `address_1`, ...) and
+   * shipping fields are sent `s_`-prefixed (`s_first_name`, `s_address_1`,
+   * ...), which the server always validates as required for any address
+   * field the destination country marks required, independent of whether
+   * `ship_to_different_address` is set. If `shipping` is omitted, billing is
+   * mirrored into the `s_` fields so that check passes and the shipping
+   * address matches billing, same as leaving "ship to a different address"
+   * unchecked at a normal WooCommerce checkout.
+   *
+   * Setting an address is available on CoCart Basic. If the destination
+   * country/state has shipping zones configured, the response's cart-level
+   * `shipping` field (see `getShippingMethods()`) is populated with
+   * calculated packages and rates - also Basic. Selecting a non-default rate
+   * (`setShippingMethod()`) requires CoCart Plus.
+   *
+   * @param billing  Billing address fields (unprefixed, e.g. `{ first_name, address_1, city, postcode, country, email, phone }`)
+   * @param shipping Shipping address fields, if different from billing. Omit to mirror billing.
    */
   async updateCustomer(
     billing: Record<string, string> = {},
-    shipping: Record<string, string> = {},
+    shipping?: Record<string, string>,
   ): Promise<Response> {
-    const data: Record<string, string> = {};
+    const shipTo = shipping && Object.keys(shipping).length > 0 ? shipping : billing;
+    const data: Record<string, unknown> = { namespace: 'update-customer' };
 
     for (const [key, value] of Object.entries(billing)) {
-      data[`billing_${key}`] = value;
+      data[key] = value;
     }
-    for (const [key, value] of Object.entries(shipping)) {
-      data[`shipping_${key}`] = value;
+    for (const [key, value] of Object.entries(shipTo)) {
+      data[`s_${key}`] = value;
+    }
+    if (shipping && Object.keys(shipping).length > 0) {
+      data.ship_to_different_address = true;
     }
 
     return this.post('update', data);
@@ -243,14 +354,34 @@ export class Cart extends Endpoint {
     return super.get('', { _fields: 'shipping' });
   }
 
-  /** Set shipping method for the cart (CoCart Plus). */
-  async setShippingMethod(methodKey: string): Promise<Response> {
-    return this.post('set-shipping-method', { method_key: methodKey });
+  /**
+   * Select a shipping rate for a package (CoCart Plus).
+   *
+   * Posts `rate_id` (and optional `package_id`) to `POST /cart/set-shipping-method`,
+   * verified against CoCart Plus's actual set-shipping-method controller.
+   * Omit `packageId` to apply the rate to every package.
+   *
+   * @param rateId     The chosen rate's key, e.g. `flat_rate:2` (see a shipping package's `rates` map).
+   * @param packageId  Restrict the selection to one package. Omit to apply to all packages.
+   */
+  async setShippingMethod(rateId: string, packageId?: string): Promise<Response> {
+    const data: Record<string, unknown> = { rate_id: rateId };
+    if (packageId) data.package_id = packageId;
+    return this.post('set-shipping-method', data);
   }
 
-  /** Calculate shipping for the cart. */
-  async calculateShipping(address: Record<string, string>): Promise<Response> {
-    return this.post('calculate/shipping', address);
+  /**
+   * @deprecated There is no address-taking shipping-calculation endpoint in
+   * the CoCart REST API - `POST /cart/calculate/shipping` (what this method
+   * used to call) does not exist. To calculate shipping, call
+   * `updateCustomer()` with the destination address first (the server
+   * recalculates totals as part of that request); this method now just
+   * delegates to `calculate()`, ignoring `address`. Prefer `calculate()`
+   * directly.
+   */
+  async calculateShipping(address?: Record<string, string>): Promise<Response> {
+    void address;
+    return this.calculate();
   }
 
   // --- Fees (CoCart Plus) ---
@@ -291,18 +422,5 @@ export class Cart extends Endpoint {
     attributes: Record<string, string> = {},
   ): Promise<Response> {
     return this.addItem(variationId, quantity, { variation: attributes });
-  }
-
-  // --- Internal ---
-
-  /** Convert typed params to Record<string, string> for the HTTP layer. */
-  private stringifyParams(params: Record<string, unknown>): Record<string, string> {
-    const result: Record<string, string> = {};
-    for (const [key, value] of Object.entries(params)) {
-      if (value !== undefined && value !== null) {
-        result[key] = String(value);
-      }
-    }
-    return result;
   }
 }

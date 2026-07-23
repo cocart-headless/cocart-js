@@ -151,7 +151,7 @@ export interface CartItem {
   name: string;
   title: string;
   price: string;
-  quantity: { value: number; min_purchase: number; max_purchase: number };
+  quantity: { value: number; minimum: number; maximum: number; multiple_of: number; editable: boolean };
   totals: { subtotal: string; subtotal_tax: string; total: string; tax: string };
   slug: string;
   meta: { product_type: string; sku: string; dimensions: Record<string, string>; weight: number };
@@ -215,6 +215,38 @@ export interface CartFee {
   [key: string]: unknown;
 }
 
+/**
+ * Cart tax line, normalized by `Response.getTaxes()`. One entry per tax
+ * rate when the store's tax display setting is itemized (`key` is WC's
+ * composite rate code, e.g. `US-US-1`), or a single synthetic entry keyed
+ * `"total"` when it isn't. Empty when tax is disabled or prices already
+ * include tax.
+ */
+export interface CartTax {
+  key: string;
+  name: string;
+  price: string;
+  [key: string]: unknown;
+}
+
+/** A tax line's value as it appears under the legacy object-keyed shape (no `key`, since the object's own key serves as it). */
+export interface CartTaxLegacyEntry {
+  name: string;
+  price: string;
+  [key: string]: unknown;
+}
+
+/**
+ * Raw `taxes` field as it appears on the wire. CoCart Starter (5.0+)
+ * returns a flat array (`CartTax[]`); the community CoCart plugin (and
+ * older Starter versions) still return an object keyed by the tax rate
+ * code, e.g. `{ "US-US-1": { name, price } }`, with no `key` in the
+ * value itself. `Response.getTaxes()` normalizes both into `CartTax[]`.
+ */
+export type CartTaxesResponse =
+  | CartTax[]
+  | Record<string, CartTaxLegacyEntry>;
+
 /** Shipping rate. */
 export interface ShippingRate {
   key: string;
@@ -261,7 +293,7 @@ export interface CartResponse {
   needs_shipping: boolean;
   shipping: ShippingPackage[];
   fees: CartFee[];
-  taxes: Record<string, unknown>;
+  taxes: CartTaxesResponse;
   totals: CartTotals;
   removed_items: CartItem[];
   cross_sells: CrossSellProduct[];
@@ -436,6 +468,17 @@ export interface CartGetParams {
   /** Specify a cart key (e.g., when transferring guest cart). */
   cart_key?: string;
   [key: string]: unknown;
+}
+
+/**
+ * A single sub-request within a batch call to `cocart/batch` (requires CoCart Plus).
+ *
+ * `path` must be a full REST route relative to the site root (e.g. `/cocart/v2/cart/item/{key}`).
+ */
+export interface BatchRequestItem {
+  method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
+  path: string;
+  body?: Record<string, unknown>;
 }
 
 // ---------------------------------------------------------------------------

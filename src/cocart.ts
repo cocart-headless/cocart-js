@@ -7,7 +7,7 @@ import { MemoryStorage } from './storage/memory-storage.js';
 import { LocalStorage } from './storage/local-storage.js';
 import { EncryptedStorage } from './storage/encrypted-storage.js';
 import type { StorageInterface } from './storage/storage.interface.js';
-import type { CoCartOptions, AuthCredentials, CoCartEventMap, CoCartEventListener, CoCartExtension, CoCartExtensionRegistry } from './cocart.types.js';
+import type { CoCartOptions, AuthCredentials, CoCartEventMap, CoCartEventListener, CoCartExtension, CoCartExtensionRegistry, BatchRequestItem } from './cocart.types.js';
 import { Account } from './endpoints/account.js';
 import { Cart } from './endpoints/cart.js';
 import { Products } from './endpoints/products.js';
@@ -32,7 +32,7 @@ function detectDefaultStorage(): StorageInterface {
 }
 
 export class CoCart {
-  static readonly VERSION = '1.0.0';
+  static readonly VERSION = '1.2.0';
   static readonly API_VERSION = 'v2';
 
   private storeUrl: string;
@@ -54,7 +54,8 @@ export class CoCart {
   private authHeaderName: string = 'Authorization';
   private responseTransformer: ((response: Response) => Response) | null = null;
   private etagEnabled: boolean = true;
-  private etagCache: Map<string, string> = new Map();
+  private etagCache: Map<string, { etag: string; body: string; headers: Headers }> = new Map();
+  private inFlightGetRequests: Map<string, Promise<Response>> = new Map();
   private mainPlugin: 'basic' | 'legacy' = 'basic';
   private extensions: Map<string, unknown> = new Map();
   private locale: string | undefined;
@@ -219,6 +220,10 @@ export class CoCart {
 
   getNamespace(): string {
     return this.namespace;
+  }
+
+  getApiVersion(): string {
+    return CoCart.API_VERSION;
   }
 
   addHeader(name: string, value: string): this {
@@ -479,6 +484,34 @@ export class CoCart {
     return this.cart().get();
   }
 
+  /**
+   * Dispatch multiple sub-requests in a single call via `cocart/batch` (requires CoCart Plus).
+   *
+   * Returns one merged, up-to-date cart response with per-operation notices,
+   * instead of one response per request. See `Cart.batchUpdateItems()` /
+   * `Cart.batchRemoveItems()` for typed convenience wrappers over this.
+   */
+  async batch(requests: BatchRequestItem[]): Promise<Response> {
+    if (requests.length === 0) {
+      throw new ValidationError('batch() requires at least one request.');
+    }
+
+    const params = this.cartKey && !this.isAuthenticated() ? { cart_key: this.cartKey } : undefined;
+
+    try {
+      return await this.requestRaw('POST', `${this.namespace}/batch`, params, { requests });
+    } catch (e) {
+      if (e instanceof CoCartError && e.errorCode === 'rest_no_route') {
+        throw new CoCartError(
+          t('endpoint.pluginRequired', undefined, this.locale),
+          404,
+          'cocart_plugin_required',
+        );
+      }
+      throw e;
+    }
+  }
+
   // --- Endpoints (lazy-loaded) ---
 
   account(): Account {
@@ -621,14 +654,42 @@ export class CoCart {
     data?: Record<string, unknown> | null,
   ): Promise<Response> {
     const url = this.buildUrl(endpoint, params);
+
+    // De-duplicate identical concurrent GETs (e.g. SSR + hydration, or
+    // multiple components requesting the same listing at once) so they
+    // share one network request instead of firing one each.
+    if (method === 'GET') {
+      const inFlight = this.inFlightGetRequests.get(url);
+      if (inFlight) {
+        return inFlight;
+      }
+
+      const promise = this.performRequest(method, url, params, data);
+      this.inFlightGetRequests.set(url, promise);
+      try {
+        return await promise;
+      } finally {
+        this.inFlightGetRequests.delete(url);
+      }
+    }
+
+    return this.performRequest(method, url, params, data);
+  }
+
+  private async performRequest(
+    method: string,
+    url: string,
+    params?: Record<string, string>,
+    data?: Record<string, unknown> | null,
+  ): Promise<Response> {
     const headers = this.buildHeaders();
     const body = data ? JSON.stringify(data) : undefined;
 
     // ETag: add If-None-Match for GET requests
     if (method === 'GET' && this.etagEnabled && !params?.['_skip_cache']) {
-      const cachedEtag = this.etagCache.get(url);
-      if (cachedEtag) {
-        headers['If-None-Match'] = cachedEtag;
+      const cached = this.etagCache.get(url);
+      if (cached) {
+        headers['If-None-Match'] = cached.etag;
       }
     }
 
@@ -647,7 +708,7 @@ export class CoCart {
           attempt++;
           const delay = this.getRetryDelay(attempt);
           this.emit('retry', { method, url, attempt, maxRetries: this.maxRetries, delay, reason: 'transient_error' });
-          await this.retrySleep(attempt);
+          await this.retrySleep(delay);
           continue;
         }
         const error = e instanceof CoCartError ? e : new CoCartError(
@@ -662,19 +723,26 @@ export class CoCart {
       const responseBody = await fetchResponse.text();
       const duration = Date.now() - startTime;
 
+      // A 304 has no body — reuse the body/headers cached alongside the ETag
+      // that produced the match, so callers still get the actual data instead
+      // of an empty object. Falls back to the live (empty) response if we
+      // somehow have no cache entry for this URL.
+      const isNotModified = method === 'GET' && this.etagEnabled && fetchResponse.status === 304;
+      const cachedEntry = isNotModified ? this.etagCache.get(url) : undefined;
+
       this.lastResponseValue = new Response(
         fetchResponse.status,
-        fetchResponse.headers,
-        responseBody,
+        cachedEntry ? cachedEntry.headers : fetchResponse.headers,
+        cachedEntry ? cachedEntry.body : responseBody,
       );
 
       await this.extractCartKeyFromHeaders(this.lastResponseValue);
 
-      // ETag: cache the ETag from the response
-      if (method === 'GET' && this.etagEnabled) {
+      // ETag: cache the ETag + body from a fresh (non-304) response
+      if (method === 'GET' && this.etagEnabled && !isNotModified) {
         const etag = this.lastResponseValue.getETag();
         if (etag) {
-          this.etagCache.set(url, etag);
+          this.etagCache.set(url, { etag, body: responseBody, headers: fetchResponse.headers });
         }
       }
 
@@ -683,7 +751,7 @@ export class CoCart {
         attempt++;
         const delay = this.getRetryDelay(attempt, this.lastResponseValue);
         this.emit('retry', { method, url, attempt, maxRetries: this.maxRetries, delay, reason: `http_${fetchResponse.status}` });
-        await this.retrySleep(attempt, this.lastResponseValue);
+        await this.retrySleep(delay);
         continue;
       }
 
@@ -775,10 +843,10 @@ export class CoCart {
       headers[this.authHeaderName] = `Basic ${btoa(`${this.consumerKey}:${this.consumerSecret}`)}`;
     }
 
-    // Cart key header
+    // Send only the cart-key header name the configured plugin actually allows.
     if (this.cartKey && !this.isAuthenticated()) {
-      headers['Cart-Key'] = this.cartKey;
-      headers['CoCart-API-Cart-Key'] = this.cartKey; // Fallback for older plugin versions
+      const cartKeyHeader = this.mainPlugin === 'legacy' ? 'CoCart-API-Cart-Key' : 'Cart-Key';
+      headers[cartKeyHeader] = this.cartKey;
     }
 
     return { ...headers, ...this.customHeaders };
@@ -835,21 +903,15 @@ export class CoCart {
         return Math.min(Number(retryAfter), 60) * 1000;
       }
     }
-    return Math.min(Math.pow(2, attempt - 1), 30) * 1000;
+    const base = Math.min(Math.pow(2, attempt - 1), 30) * 1000;
+    // ±20% jitter so many clients retrying at once don't re-collide on the
+    // same schedule (avoids synchronized retry storms against a rate limit).
+    const jitter = 0.8 + Math.random() * 0.4;
+    return Math.round(base * jitter);
   }
 
-  private async retrySleep(attempt: number, response?: Response): Promise<void> {
-    // Honor Retry-After header
-    if (response) {
-      const retryAfter = response.getHeader('Retry-After');
-      if (retryAfter !== null && !isNaN(Number(retryAfter))) {
-        await this.sleep(Math.min(Number(retryAfter), 60) * 1000);
-        return;
-      }
-    }
-
-    // Exponential backoff: 1s, 2s, 4s, ...
-    await this.sleep(Math.min(Math.pow(2, attempt - 1), 30) * 1000);
+  private async retrySleep(delay: number): Promise<void> {
+    await this.sleep(delay);
   }
 
   private applyTransformer(response: Response): Response {

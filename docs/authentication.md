@@ -98,6 +98,25 @@ console.log(response.get('user_id'));      // '123'
 const cart = await client.cart().get();
 ```
 
+### Disambiguating a Failed Login
+
+A failed `login()` throws `AuthenticationError` for two very different reasons that otherwise look identical: wrong credentials, or a correct login on a store that doesn't have the CoCart JWT Authentication plugin installed. The plugin-missing case has its own `errorCode` — check it to tell them apart:
+
+```ts
+import { AuthenticationError } from '@cocartheadless/sdk';
+
+try {
+  await client.login('customer@email.com', 'password');
+} catch (e) {
+  if (e instanceof AuthenticationError && e.errorCode === 'cocart_jwt_missing') {
+    // Credentials were valid — this store just doesn't have the CoCart JWT
+    // Authentication plugin installed. Fall back to Basic Auth via setAuth().
+  } else if (e instanceof AuthenticationError) {
+    // Wrong username/password
+  }
+}
+```
+
 ### Logout
 
 ```ts

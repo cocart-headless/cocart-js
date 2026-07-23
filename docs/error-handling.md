@@ -251,6 +251,22 @@ try {
 
 See [Two Factor Authentication](authentication.md#two-factor-authentication) for the full flow.
 
+### JWT Plugin Not Installed
+
+A correct login on a store without the CoCart JWT Authentication plugin still throws `AuthenticationError` — the same type as a wrong-password failure — but with a distinct `errorCode`:
+
+```ts
+try {
+  await client.login('customer@email.com', 'password');
+} catch (e) {
+  if (e instanceof AuthenticationError && e.errorCode === 'cocart_jwt_missing') {
+    // Credentials were valid; the store just doesn't have the plugin installed.
+  }
+}
+```
+
+See [Disambiguating a Failed Login](authentication.md#disambiguating-a-failed-login) for the full explanation.
+
 ### CoCart Plugin Required
 
 When calling methods that require a CoCart extension that isn't installed:

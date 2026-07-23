@@ -45,40 +45,4 @@ export function createServerClient(
   });
 }
 
-/**
- * Client-side helper: wraps the global fetch to attach the `X-Cart-Key`
- * header on same-origin requests.
- *
- * Call this once on the client:
- * ```ts
- * const client = createBrowserClient('https://store.example.com', { encryptionKey: '...' });
- * await client.restoreSession();
- * attachCartKeyHeader(client);
- * ```
- */
-export function attachCartKeyHeader(client: CoCart): void {
-  const originalFetch = globalThis.fetch;
-
-  globalThis.fetch = function (input: RequestInfo | URL, init?: RequestInit): Promise<globalThis.Response> {
-    const cartKey = client.getCartKey();
-
-    if (cartKey) {
-      const url = typeof input === 'string' ? input : input instanceof URL ? input.href : (input as Request).url;
-
-      try {
-        const requestUrl = new URL(url, globalThis.location?.origin);
-        if (requestUrl.origin === globalThis.location?.origin) {
-          const headers = new Headers(init?.headers);
-          if (!headers.has('X-Cart-Key')) {
-            headers.set('X-Cart-Key', cartKey);
-          }
-          init = { ...init, headers };
-        }
-      } catch {
-        // Invalid URL — skip header injection
-      }
-    }
-
-    return originalFetch.call(globalThis, input, init);
-  };
-}
+export { attachCartKeyHeader } from '../shared/attach-cart-key-header.js';

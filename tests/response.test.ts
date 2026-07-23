@@ -140,6 +140,7 @@ describe('Response', () => {
       currency: { currency_code: 'USD' },
       shipping: [{ package_name: 'Flat rate' }],
       fees: [{ name: 'Service fee' }],
+      taxes: [{ key: 'US-US-1', name: 'US', price: '120' }],
       cross_sells: [{ id: 5, name: 'Related' }],
       notices: ['Item added'],
     });
@@ -202,6 +203,27 @@ describe('Response', () => {
     it('getFees()', () => {
       const r = makeResponse(200, cartBody);
       expect(r.getFees()).toHaveLength(1);
+    });
+
+    it('getTaxes() / hasTaxes() — array shape (CoCart Starter 5.0+)', () => {
+      const r = makeResponse(200, cartBody);
+      expect(r.hasTaxes()).toBe(true);
+      expect(r.getTaxes()[0]).toEqual({ key: 'US-US-1', name: 'US', price: '120' });
+    });
+
+    it('getTaxes() normalizes the legacy object-keyed shape (community plugin / older Starter)', () => {
+      const r = makeResponse(200, JSON.stringify({
+        items: [],
+        taxes: { 'US-US-1': { name: 'US', price: '120' } },
+      }));
+      expect(r.hasTaxes()).toBe(true);
+      expect(r.getTaxes()).toEqual([{ key: 'US-US-1', name: 'US', price: '120' }]);
+    });
+
+    it('hasTaxes() is false when taxes is empty', () => {
+      const r = makeResponse(200, JSON.stringify({ items: [] }));
+      expect(r.hasTaxes()).toBe(false);
+      expect(r.getTaxes()).toEqual([]);
     });
 
     it('getCrossSells()', () => {
