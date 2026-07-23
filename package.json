@@ -1,6 +1,6 @@
 {
   "name": "@cocartheadless/sdk",
-  "version": "1.1.2",
+  "version": "1.2.0",
   "description": "Official TypeScript SDK for the CoCart REST API",
   "type": "module",
   "main": "./dist/index.cjs",
@@ -114,7 +114,8 @@
     "typecheck:gtm": "npm run typecheck --workspace @cocartheadless/analytics-gtm",
     "build:gtm": "npm run build --workspace @cocartheadless/analytics-gtm",
     "test:gtm": "npm run test --workspace @cocartheadless/analytics-gtm",
-    "lint": "tsc --noEmit"
+    "lint": "tsc --noEmit",
+    "release": "node scripts/release.mjs"
   },
   "keywords": [
     "cocart",

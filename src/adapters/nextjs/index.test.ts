@@ -77,5 +77,25 @@ describe('Next.js adapter', () => {
       const init = (mockFetch.mock.calls[0] as [string, RequestInit | undefined])[1];
       expect(init).toBeUndefined();
     });
+
+    it('does not stack wrappers when called more than once', async () => {
+      const mockFetch = vi.fn().mockResolvedValue(new Response());
+      globalThis.fetch = mockFetch;
+
+      const headers = new Headers({ 'X-Cart-Key': 'key-from-server' });
+      const client = createServerClient('https://store.example.com', headers);
+
+      attachCartKeyHeader(client);
+      const wrappedOnce = globalThis.fetch;
+      attachCartKeyHeader(client);
+      attachCartKeyHeader(client);
+
+      expect(globalThis.fetch).toBe(wrappedOnce);
+
+      await globalThis.fetch('https://app.example.com/api/cart');
+
+      const calledHeaders = new Headers((mockFetch.mock.calls[0] as [string, RequestInit])[1]?.headers);
+      expect(calledHeaders.get('X-Cart-Key')).toBe('key-from-server');
+    });
   });
 });

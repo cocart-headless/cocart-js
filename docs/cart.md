@@ -132,17 +132,25 @@ const response = await client.cart().addItem(456, 1, {
 });
 ```
 
-### Add Multiple Items at Once
+### Add Multiple Children of a Grouped Product
+
+`addItems()` is specifically for adding multiple children of a WooCommerce **Grouped Product** to the cart in one request — not a generic "add several unrelated products" call. Pass the grouped product's own ID, plus a map (or array) of its child product IDs to quantities:
 
 ```ts
-const response = await client.cart().addItems([
-  { id: '123', quantity: '2' },
-  { id: '456', quantity: '1', variation: {
-    attribute_pa_color: 'red',
-  }},
-  { id: '789', quantity: '3' },
+// Shorthand: child product id => quantity
+const response = await client.cart().addItems(100, {
+  '101': 2,
+  '102': 1,
+});
+
+// Full array form
+const response = await client.cart().addItems(100, [
+  { id: 101, quantity: 2 },
+  { id: 102, quantity: 1 },
 ]);
 ```
+
+For adding several _unrelated_ products in one request, use [`client.batch()`](#batch-requests) instead — one `add-item` sub-request per product.
 
 ## Updating Items
 
@@ -159,6 +167,8 @@ const response = await client.cart().updateItem('abc123def456...', 3, {
 ```
 
 ### Update Multiple Items at Once
+
+> This issues one `item/{key}` request per entry, sequentially — not a single bulk round trip — and resolves with the response from the last request only. For a true single-request bulk update, see [Batch Requests](#batch-requests).
 
 ```ts
 // Shorthand: item_key => quantity
@@ -183,6 +193,8 @@ const response = await client.cart().removeItem('abc123def456...');
 ```
 
 ### Remove Multiple Items at Once
+
+> Same as above — one sequential request per item key, not a single bulk round trip. See [Batch Requests](#batch-requests) for a single-request alternative.
 
 ```ts
 const response = await client.cart().removeItems([
@@ -353,13 +365,50 @@ const response = await client.cart().setShippingMethod('flat_rate:1');
 
 ### Calculate Shipping
 
+> `calculateShipping()` is deprecated — A mistake was made when reading the OpenAPI specs. Shipping is calculated as a side effect of `updateCustomer()` setting the destination address; use that, then `calculate()` (only if you need):
+
 ```ts
-const response = await client.cart().calculateShipping({
+await client.cart().updateCustomer({
   country: 'US',
   state: 'CA',
   postcode: '90001',
   city: 'Los Angeles',
 });
+const response = await client.cart().calculate();
+```
+
+## Batch Requests
+
+> Requires the CoCart Plus plugin.
+
+For a true single-request bulk operation — as opposed to `updateItems()`/`removeItems()`, which issue one sequential request per item (see above) — dispatch multiple sub-requests in one call via `client.batch()`. This can mix any operations, including adding items:
+
+```ts
+const response = await client.batch([
+  { method: 'POST', path: '/cocart/v2/cart/add-item', body: { id: '123', quantity: '2' } },
+  { method: 'POST', path: '/cocart/v2/cart/item/abc123def456...', body: { quantity: '3' } },
+  { method: 'DELETE', path: '/cocart/v2/cart/item/def789ghi012...' },
+]);
+```
+
+The server returns one merged, up-to-date cart response (if all sub-requests succeed) along with notices for each operation, instead of one response per request.
+
+> `addItems()` (see [Add Multiple Children of a Grouped Product](#add-multiple-children-of-a-grouped-product)) only handles adding children of one WooCommerce Grouped Product — it's not a general "add several unrelated products" call. For adding multiple unrelated products in a single request, use `client.batch()` with one `add-item` sub-request per product, as shown above.
+
+`Cart.batchUpdateItems()` and `Cart.batchRemoveItems()` are typed convenience wrappers over `client.batch()` for the common case of bulk item updates/removals, accepting the same shorthand/full formats as `updateItems()`/`removeItems()`:
+
+```ts
+// Update multiple items in one request
+const response = await client.cart().batchUpdateItems({
+  'abc123def456...': 3,
+  'def789ghi012...': 1,
+});
+
+// Remove multiple items in one request
+const response = await client.cart().batchRemoveItems([
+  'abc123def456...',
+  'def789ghi012...',
+]);
 ```
 
 ## Fees

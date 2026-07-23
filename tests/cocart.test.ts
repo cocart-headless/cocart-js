@@ -226,6 +226,41 @@ describe('CoCart', () => {
       expect(client.getCartKey()).toBe('ck_new');
     });
 
+    it('sends only the Cart-Key header for the default (basic/Starter) plugin, never CoCart-API-Cart-Key', async () => {
+      // Regression test: sending both header names at once used to break
+      // every browser request, since each plugin's CORS config only
+      // allowlists its own name in Access-Control-Allow-Headers.
+      const fetchMock = mockFetch(200, { ok: true }, { 'Cart-Key': 'ck_new' });
+      globalThis.fetch = fetchMock;
+
+      const client = new CoCart('https://store.com');
+      await client.get('cart');
+      expect(client.getCartKey()).toBe('ck_new');
+
+      await client.post('cart/add-item', { id: '1', quantity: '1' });
+
+      const [url, opts] = fetchMock.mock.calls[1] as [string, RequestInit];
+      expect(url).toContain('cart_key=ck_new');
+      expect((opts.headers as Record<string, string>)['Cart-Key']).toBe('ck_new');
+      expect(opts.headers).not.toHaveProperty('CoCart-API-Cart-Key');
+    });
+
+    it('sends only the CoCart-API-Cart-Key header when configured for the legacy (community) plugin', async () => {
+      const fetchMock = mockFetch(200, { ok: true }, { 'CoCart-API-Cart-Key': 'ck_new' });
+      globalThis.fetch = fetchMock;
+
+      const client = new CoCart('https://store.com', { mainPlugin: 'legacy' });
+      await client.get('cart');
+      expect(client.getCartKey()).toBe('ck_new');
+
+      await client.post('cart/add-item', { id: '1', quantity: '1' });
+
+      const [url, opts] = fetchMock.mock.calls[1] as [string, RequestInit];
+      expect(url).toContain('cart_key=ck_new');
+      expect((opts.headers as Record<string, string>)['CoCart-API-Cart-Key']).toBe('ck_new');
+      expect(opts.headers).not.toHaveProperty('Cart-Key');
+    });
+
     it('normalizes fields to _fields', async () => {
       const fetchMock = mockFetch(200, { ok: true });
       globalThis.fetch = fetchMock;
@@ -539,6 +574,45 @@ describe('CoCart', () => {
       expect(response.isNotModified()).toBe(true);
     });
 
+    it('304 response returns the previously cached body instead of an empty object', async () => {
+      const fetchMock = vi.fn()
+        .mockResolvedValueOnce({
+          status: 200,
+          headers: new Headers({ 'ETag': '"abc"' }),
+          text: () => Promise.resolve('{"items":[{"item_key":"a1"}],"item_count":1}'),
+        })
+        .mockResolvedValueOnce({
+          status: 304,
+          headers: new Headers({ 'ETag': '"abc"' }),
+          text: () => Promise.resolve(''),
+        });
+      globalThis.fetch = fetchMock;
+
+      const client = new CoCart('https://store.com');
+      const first = await client.get('cart');
+      const second = await client.get('cart');
+
+      expect(second.isNotModified()).toBe(true);
+      expect(second.toObject()).toEqual(first.toObject());
+      expect(second.getItemCount()).toBe(1);
+    });
+
+    it('304 with no cache entry falls back to the live (empty) response', async () => {
+      // Defensive case: a 304 should never arrive without a prior cached
+      // ETag for the same URL, but if it does, don't throw trying to read
+      // a cache entry that isn't there.
+      const fetchMock = vi.fn().mockResolvedValueOnce({
+        status: 304,
+        headers: new Headers({}),
+        text: () => Promise.resolve(''),
+      });
+      globalThis.fetch = fetchMock;
+
+      const client = new CoCart('https://store.com');
+      const response = await client.get('cart');
+      expect(response.toObject()).toEqual({});
+    });
+
     it('clearETagCache() removes cached ETags', async () => {
       const fetchMock = vi.fn()
         .mockResolvedValue({
@@ -619,6 +693,79 @@ describe('CoCart', () => {
       const [, optsProducts] = fetchMock.mock.calls[3];
       expect(optsCart.headers['If-None-Match']).toBe('"etag-cart"');
       expect(optsProducts.headers['If-None-Match']).toBe('"etag-products"');
+    });
+  });
+
+  describe('GET request de-duplication', () => {
+    it('shares one network call across concurrent identical GETs', async () => {
+      let resolveFetch: (value: unknown) => void;
+      const fetchMock = vi.fn().mockReturnValue(
+        new Promise((resolve) => {
+          resolveFetch = resolve;
+        }),
+      );
+      globalThis.fetch = fetchMock;
+
+      const client = new CoCart('https://store.com');
+      const first = client.get('products');
+      const second = client.get('products');
+
+      resolveFetch!({
+        status: 200,
+        headers: new Headers({}),
+        text: () => Promise.resolve('{"ok":true}'),
+      });
+
+      const [firstResponse, secondResponse] = await Promise.all([first, second]);
+
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+      expect(secondResponse.toObject()).toEqual(firstResponse.toObject());
+    });
+
+    it('fires separate requests for different URLs', async () => {
+      const fetchMock = vi.fn().mockResolvedValue({
+        status: 200,
+        headers: new Headers({}),
+        text: () => Promise.resolve('{"ok":true}'),
+      });
+      globalThis.fetch = fetchMock;
+
+      const client = new CoCart('https://store.com');
+      await Promise.all([client.get('cart'), client.get('products')]);
+
+      expect(fetchMock).toHaveBeenCalledTimes(2);
+    });
+
+    it('issues a fresh request once the in-flight one has settled', async () => {
+      const fetchMock = vi.fn().mockResolvedValue({
+        status: 200,
+        headers: new Headers({}),
+        text: () => Promise.resolve('{"ok":true}'),
+      });
+      globalThis.fetch = fetchMock;
+
+      const client = new CoCart('https://store.com');
+      await client.get('products');
+      await client.get('products');
+
+      expect(fetchMock).toHaveBeenCalledTimes(2);
+    });
+
+    it('never de-duplicates mutating requests', async () => {
+      const fetchMock = vi.fn().mockResolvedValue({
+        status: 200,
+        headers: new Headers({}),
+        text: () => Promise.resolve('{"ok":true}'),
+      });
+      globalThis.fetch = fetchMock;
+
+      const client = new CoCart('https://store.com');
+      await Promise.all([
+        client.post('cart/add-item', { id: '1', quantity: '1' }),
+        client.post('cart/add-item', { id: '1', quantity: '1' }),
+      ]);
+
+      expect(fetchMock).toHaveBeenCalledTimes(2);
     });
   });
 

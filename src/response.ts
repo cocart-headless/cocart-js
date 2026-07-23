@@ -1,5 +1,5 @@
 import type {
-  CartItem, CartTotals, CartCustomer, CartCoupon, CartFee,
+  CartItem, CartTotals, CartCustomer, CartCoupon, CartFee, CartTax, CartTaxesResponse,
   ShippingPackage, CrossSellProduct, CurrencyInfo,
 } from './cocart.types.js';
 
@@ -186,6 +186,32 @@ export class Response<T = unknown> {
   /** Get cart fees from response data. */
   getFees(): CartFee[] {
     return this.get<CartFee[]>('fees', []);
+  }
+
+  /**
+   * Get cart tax lines from response data, normalized to a flat array —
+   * one entry per tax rate when the store's tax display setting is
+   * itemized, or a single synthetic entry keyed `"total"` when it isn't.
+   *
+   * CoCart Starter 5.0+ already returns this shape as an array. The
+   * community CoCart plugin (and older Starter versions) instead return
+   * an object keyed by the tax rate code, e.g. `{ "US-US-1": { name,
+   * price } }` — that legacy shape is detected and converted here so
+   * callers never need to branch on which plugin/version they're talking to.
+   */
+  getTaxes(): CartTax[] {
+    const raw = this.get<CartTaxesResponse>('taxes', []);
+
+    if (Array.isArray(raw)) {
+      return raw;
+    }
+
+    return Object.entries(raw).map(([key, tax]) => ({ key, name: tax.name, price: tax.price }));
+  }
+
+  /** Check if the cart has any tax lines. */
+  hasTaxes(): boolean {
+    return this.getTaxes().length > 0;
   }
 
   /** Get cross-sell products from response data. */
