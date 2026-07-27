@@ -276,7 +276,7 @@ export class CoCart {
   }
 
   /**
-   * Guard that throws if a method requires CoCart Basic but the SDK
+   * Guard that throws if a method requires CoCart Starter but the SDK
    * is configured for the legacy plugin.
    */
   requiresBasic(method: string): void {
@@ -801,7 +801,7 @@ export class CoCart {
         delete resolvedParams['_fields'];
       }
     } else {
-      // CoCart Basic uses WordPress standard '_fields'
+      // CoCart Starter uses WordPress standard '_fields'
       if ('fields' in resolvedParams && !('_fields' in resolvedParams)) {
         resolvedParams['_fields'] = resolvedParams['fields'];
         delete resolvedParams['fields'];

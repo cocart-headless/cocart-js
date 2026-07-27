@@ -11,7 +11,7 @@ CoCartError (base)                    — any API error
 ├── AuthenticationError               — login/permission problems (401, 403)
 │   └── TwoFactorAuthRequiredError    — 2FA code required to complete login (401)
 ├── ValidationError                   — bad input (400)
-└── VersionError                      — method requires CoCart Basic (legacy mode)
+└── VersionError                      — method requires CoCart Starter (legacy mode)
 ```
 
 All errors extend `CoCartError`, which extends JavaScript's built-in `Error`. This means you can use `instanceof` to check what kind of error you caught.
@@ -27,7 +27,7 @@ try {
   const response = await client.cart().addItem(999, 1);
 } catch (e) {
   if (e instanceof VersionError) {
-    // Method requires CoCart Basic but SDK is configured for legacy plugin
+    // Method requires CoCart Starter but SDK is configured for legacy plugin
     console.log('Upgrade Required:', e.message);
     console.log('Error Code:', e.errorCode);    // 'cocart_version_required'
   } else if (e instanceof ValidationError) {
@@ -284,7 +284,7 @@ try {
 
 ### Legacy Plugin Version Guard
 
-When using the SDK with the legacy CoCart plugin (`mainPlugin: 'legacy'`), methods that require CoCart Basic throw immediately:
+When using the SDK with the CoCart Community plugin (`mainPlugin: 'legacy'`), methods that require CoCart Starter throw immediately:
 
 ```ts
 import { VersionError } from '@cocartheadless/sdk';
@@ -295,7 +295,7 @@ try {
   await client.products().findBySlug('blue-hoodie');
 } catch (e) {
   if (e instanceof VersionError) {
-    // e.message   => "products()->findBySlug() requires CoCart Basic. Please upgrade..."
+    // e.message   => "products()->findBySlug() requires CoCart Starter. Please upgrade..."
     // e.errorCode => 'cocart_version_required'
     // e.httpCode  => 0 (no HTTP request was made)
   }

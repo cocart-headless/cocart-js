@@ -64,7 +64,7 @@ export interface CoCartOptions {
   responseTransformer?: (response: import('./response.js').Response) => import('./response.js').Response;
   /** Enable ETag conditional requests for reduced bandwidth (default: true) */
   etag?: boolean;
-  /** CoCart main plugin: 'basic' (default) or 'legacy' for legacy CoCart plugin */
+  /** CoCart main plugin: 'basic' (default) or 'legacy' for CoCart Community plugin */
   mainPlugin?: 'basic' | 'legacy';
   /**
    * Locale for SDK-internal messages (validation errors, JWT errors, debug logs, etc.).

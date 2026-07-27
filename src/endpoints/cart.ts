@@ -313,7 +313,7 @@ export class Cart extends Endpoint {
    * address matches billing, same as leaving "ship to a different address"
    * unchecked at a normal WooCommerce checkout.
    *
-   * Setting an address is available on CoCart Basic. If the destination
+   * Setting an address is available on CoCart Starter. If the destination
    * country/state has shipping zones configured, the response's cart-level
    * `shipping` field (see `getShippingMethods()`) is populated with
    * calculated packages and rates - also Basic. Selecting a non-default rate

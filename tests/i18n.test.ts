@@ -15,7 +15,7 @@ const frCatalog = {
   'validation.invalidEmail':     'Une adresse e-mail valide est requise',
   'jwt.tokenMissing':            'Jeton JWT introuvable dans la réponse de connexion.',
   'jwt.noRefreshToken':          'Aucun jeton de rafraîchissement disponible.',
-  'version.requiresBasic':       '{method}() nécessite CoCart Basic.',
+  'version.requiresBasic':       '{method}() nécessite CoCart Starter.',
   'endpoint.pluginRequired':     'Cette méthode nécessite une extension CoCart supplémentaire.',
   'request.networkError':        'Erreur réseau',
   'request.timeout':             'Délai dépassé après {timeout}ms',
@@ -173,13 +173,13 @@ describe('VersionError with locale', () => {
 
   it('throws English message by default', () => {
     const error = new VersionError('products()->findBySlug');
-    expect(error.message).toContain('CoCart Basic');
+    expect(error.message).toContain('CoCart Starter');
     expect(error.message).toContain('products()->findBySlug');
   });
 
   it('throws translated message when locale passed', () => {
     const error = new VersionError('products()->findBySlug', 'fr');
-    expect(error.message).toContain('nécessite CoCart Basic');
+    expect(error.message).toContain('nécessite CoCart Starter');
     expect(error.message).toContain('products()->findBySlug');
   });
 
