@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.1] - 2026-07-29
+
 ### Fixed
 
 - **`Products.find()` couldn't look up a product by SKU, even though the store has always supported it.** You could already look up a product by its numeric ID or by its SKU, but the SDK's TypeScript types only allowed a number, so `find('PCT-2024')` wouldn't even compile. Fixed — `find()` now accepts a SKU as well as a numeric ID.
@@ -74,7 +76,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Initial public release of `@cocartheadless/sdk`
 
-[Unreleased]: https://github.com/cocart-headless/cocart-js/compare/v1.2.0...HEAD
+[Unreleased]: https://github.com/cocart-headless/cocart-js/compare/v1.2.1...HEAD
+[1.2.1]: https://github.com/cocart-headless/cocart-js/compare/v1.2.0...v1.2.1
 [1.2.0]: https://github.com/cocart-headless/cocart-js/compare/1.1.2...v1.2.0
 [1.1.2]: https://github.com/cocart-headless/cocart-js/compare/1.1.1...1.1.2
 [1.1.1]: https://github.com/cocart-headless/cocart-js/compare/1.1.0...1.1.1

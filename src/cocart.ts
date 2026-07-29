@@ -32,7 +32,7 @@ function detectDefaultStorage(): StorageInterface {
 }
 
 export class CoCart {
-  static readonly VERSION = '1.2.0';
+  static readonly VERSION = '1.2.1';
   static readonly API_VERSION = 'v2';
 
   private storeUrl: string;
