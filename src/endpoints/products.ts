@@ -19,8 +19,15 @@ export class Products extends Endpoint {
     return this.get('', params ? this.stringifyParams(params) : undefined);
   }
 
-  /** Get a single product by ID. */
-  async find(productId: number, params?: ProductParams): Promise<Response> {
+  /**
+   * Get a single product by ID or SKU.
+   *
+   * The `GET /products/{id}` route accepts either the numeric product/variation
+   * ID or the product's SKU in the same path segment (confirmed identical in
+   * both the CoCart Starter and CoCart Community v2 OpenAPI specs — `id` is
+   * documented as "Unique identifier for the product (ID or SKU)").
+   */
+  async find(productId: string | number, params?: ProductParams): Promise<Response> {
     return this.get(String(productId), params ? this.stringifyParams(params) : undefined);
   }
 

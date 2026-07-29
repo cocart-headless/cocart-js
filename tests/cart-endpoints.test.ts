@@ -58,6 +58,42 @@ describe('Cart endpoint methods', () => {
     expect(opts.method).toBe('GET');
   });
 
+  describe('addItem()', () => {
+    it('sends a numeric product ID as-is', async () => {
+      const fetchMock = mockFetch(200, { cart_key: 'ck_1' });
+      globalThis.fetch = fetchMock;
+
+      const client = new CoCart('https://store.com');
+      await client.cart().addItem(123, 2);
+
+      const [, opts] = fetchMock.mock.calls[0];
+      const body = JSON.parse(opts.body as string);
+      expect(body.id).toBe('123');
+      expect(body.quantity).toBe('2');
+    });
+
+    it('accepts a SKU without throwing and sends it untouched — the server resolves it', async () => {
+      const fetchMock = mockFetch(200, { cart_key: 'ck_1' });
+      globalThis.fetch = fetchMock;
+
+      const client = new CoCart('https://store.com');
+      await client.cart().addItem('BLUE-SHIRT-L', 1);
+
+      const [, opts] = fetchMock.mock.calls[0];
+      const body = JSON.parse(opts.body as string);
+      expect(body.id).toBe('BLUE-SHIRT-L');
+    });
+
+    it('rejects an invalid numeric product ID before sending a request', async () => {
+      const fetchMock = mockFetch(200, {});
+      globalThis.fetch = fetchMock;
+
+      const client = new CoCart('https://store.com');
+      await expect(client.cart().addItem(-1, 1)).rejects.toThrow();
+      expect(fetchMock).not.toHaveBeenCalled();
+    });
+  });
+
   describe('addItems()', () => {
     it('sends the grouped product id and a quantity map, in shorthand form', async () => {
       const fetchMock = mockFetch(200, { cart_key: 'ck_1' });

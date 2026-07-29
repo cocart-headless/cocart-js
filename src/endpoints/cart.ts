@@ -46,7 +46,17 @@ export class Cart extends Endpoint {
   /**
    * Add an item to the cart.
    *
-   * @param productId Product ID or variation ID
+   * `productId` accepts a numeric product/variation ID or a SKU. Verified
+   * against both `CoCart_Utilities_Cart_Helpers::validate_product_id()`
+   * (CoCart Starter) and the identical method on the CoCart Community
+   * plugin's cart controller — both resolve a non-numeric `id` via
+   * `wc_get_product_id_by_sku()` before falling back to a 404, so this is
+   * not Starter-only behavior. `validateProductId()` reflects this: it only
+   * rejects input that's certain to be invalid client-side (empty, or
+   * numeric but not a positive integer) and otherwise passes a non-numeric
+   * string through for the server to resolve.
+   *
+   * @param productId Product/variation ID (number or numeric string), or a SKU
    * @param quantity  Quantity to add (default: 1)
    * @param options   Additional options (variation, item_data, email, return_item, etc.)
    */
@@ -75,8 +85,14 @@ export class Cart extends Endpoint {
    * `class-cocart-add-items-controller.php`'s `add_to_cart_handler_grouped()`).
    * For adding unrelated products in one request, use `client.batch()` instead.
    *
-   * @param groupedProductId The parent grouped product's ID.
-   * @param items            Map of child product ID => quantity (shorthand), or an array of `{ id, quantity }` entries.
+   * `groupedProductId` supports a SKU, same as `addItem()` — it's resolved
+   * by the same server-side `validate_product_id()` helper. The child IDs in
+   * `items`, however, do **not**: `add_to_cart_handler_grouped()` resolves
+   * each one via `wc_get_product()` directly (`validate_product_for_cart()`),
+   * which has no SKU fallback, so those must be numeric product IDs.
+   *
+   * @param groupedProductId The parent grouped product's ID, or its SKU.
+   * @param items            Map of child product ID => quantity (shorthand), or an array of `{ id, quantity }` entries. Child IDs must be numeric — SKUs are not resolved here.
    */
   async addItems(
     groupedProductId: string | number,

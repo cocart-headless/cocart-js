@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **`Products.find()` couldn't look up a product by SKU, even though the store has always supported it.** You could already look up a product by its numeric ID or by its SKU, but the SDK's TypeScript types only allowed a number, so `find('PCT-2024')` wouldn't even compile. Fixed — `find()` now accepts a SKU as well as a numeric ID.
+- **Adding an item to the cart by SKU used to be rejected before the request was even sent.** The store has always accepted a SKU (like `'BLUE-SHIRT-L'`) as well as a numeric product ID when adding an item to the cart, but the SDK's own input checks were stricter than that and blocked anything that wasn't a plain number — so a valid SKU never got the chance to reach the server. This is now fixed for `addItem()`, `addVariation()`, and the main product in `addItems()`. Note: the individual products *inside* an `addItems()` group still need to be numeric IDs, not SKUs.
+
 ## [1.2.0] - 2026-07-23
 
 ### Added
@@ -70,7 +75,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Initial public release of `@cocartheadless/sdk`
 
 [Unreleased]: https://github.com/cocart-headless/cocart-js/compare/v1.2.0...HEAD
-[1.2.0]: https://github.com/cocart-headless/cocart-js/compare/v1.1.2...v1.2.0
-[1.1.2]: https://github.com/cocart-headless/cocart-js/compare/v1.1.1...v1.1.2
-[1.1.1]: https://github.com/cocart-headless/cocart-js/compare/v1.1.0...v1.1.1
-[1.1.0]: https://github.com/cocart-headless/cocart-js/releases/tag/v1.1.0
+[1.2.0]: https://github.com/cocart-headless/cocart-js/compare/1.1.2...v1.2.0
+[1.1.2]: https://github.com/cocart-headless/cocart-js/compare/1.1.1...1.1.2
+[1.1.1]: https://github.com/cocart-headless/cocart-js/compare/1.1.0...1.1.1
+[1.1.0]: https://github.com/cocart-headless/cocart-js/releases/tag/1.1.0
