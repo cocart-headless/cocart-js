@@ -114,10 +114,10 @@ You can also pin a specific version:
 
 ```html
 <!-- jsDelivr -->
-<script src="https://cdn.jsdelivr.net/npm/@cocartheadless/sdk@1.1.0/dist/index.global.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@cocartheadless/sdk@1.2.1/dist/index.global.js"></script>
 
 <!-- unpkg -->
-<script src="https://unpkg.com/@cocartheadless/sdk@1.1.0/dist/index.global.js"></script>
+<script src="https://unpkg.com/@cocartheadless/sdk@1.2.1/dist/index.global.js"></script>
 ```
 
 ## Quick Start

@@ -127,7 +127,7 @@ const client3 = new CoCart('https://your-store.com', {
 
 ## Legacy Plugin Support
 
-The SDK supports both **CoCart Basic** and the **legacy CoCart plugin** (`cart-rest-api-for-woocommerce` v4.x). By default, the SDK targets CoCart Basic.
+The SDK supports both **CoCart Starter** and the **CoCart Community plugin** (`cart-rest-api-for-woocommerce` v4.x). By default, the SDK targets CoCart Starter.
 
 To use the SDK with the legacy plugin, set `mainPlugin` to `'legacy'`:
 
@@ -142,7 +142,7 @@ client.setMainPlugin('legacy');
 
 ### What changes in legacy mode
 
-**Basic-only methods throw immediately.** Methods that require CoCart Basic will throw a `VersionError` before making any HTTP request, with a clear message indicating which method requires an upgrade:
+**Basic-only methods throw immediately.** Methods that require CoCart Starter will throw a `VersionError` before making any HTTP request, with a clear message indicating which method requires an upgrade:
 
 ```ts
 import { CoCart, VersionError } from '@cocartheadless/sdk';
@@ -153,7 +153,7 @@ try {
   await client.products().findBySlug('blue-hoodie');
 } catch (e) {
   if (e instanceof VersionError) {
-    // "products()->findBySlug() requires CoCart Basic. Please upgrade..."
+    // "products()->findBySlug() requires CoCart Starter. Please upgrade..."
   }
 }
 ```
@@ -166,4 +166,4 @@ Basic-only methods include:
 - `products().brands()`, `brand()`, `byBrand()`
 - `products().myReviews()`
 
-**Field filtering uses `fields` instead of `_fields`.** The legacy plugin uses CoCart's custom `fields` query parameter, while CoCart Basic uses the WordPress standard `_fields`. The SDK handles this automatically — methods like `getCoupons()`, `getCustomer()`, and `getShippingMethods()` will send the correct parameter based on the configured main plugin.
+**Field filtering uses `fields` instead of `_fields`.** The legacy plugin uses CoCart's custom `fields` query parameter, while CoCart Starter uses the WordPress standard `_fields`. The SDK handles this automatically — methods like `getCoupons()`, `getCustomer()`, and `getShippingMethods()` will send the correct parameter based on the configured main plugin.

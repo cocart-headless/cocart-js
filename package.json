@@ -1,6 +1,6 @@
 {
   "name": "@cocartheadless/sdk",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Official TypeScript SDK for the CoCart REST API",
   "type": "module",
   "main": "./dist/index.cjs",
@@ -144,7 +144,7 @@
     "vitest": "^3.0.0"
   },
   "engines": {
-    "node": ">=20.0.0"
+    "node": ">=22.0.0"
   },
   "overrides": {
     "picomatch": ">=4.0.4"

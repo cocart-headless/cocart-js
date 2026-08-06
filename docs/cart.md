@@ -72,7 +72,7 @@ try {
 
 Validation rules:
 
-- **Product ID** — Must be a positive integer (`addItem`, `addVariation`)
+- **Product ID** — Must be a positive whole number, or a SKU like `'BLUE-SHIRT-L'` (`addItem`, `addVariation`, and the main product in `addItems`). A SKU gets resolved by the store, not the SDK — the SDK can't tell if a SKU is real without asking the server, so it only blocks input it already knows is wrong (empty, negative, zero, or not a whole number). This doesn't apply to the individual products _inside_ an `addItems()` group — those must be numeric IDs, not SKUs.
 - **Quantity** — Must be a positive number (`addItem`, `addVariation`, `updateItem`)
 
 You can also use the validation functions directly:
@@ -90,6 +90,8 @@ validateEmail('not-an-email');     // throws ValidationError
 
 ## Adding Items
 
+> Product ID and quantity are converted to text before being sent (e.g. `2` becomes `"2"`) — that's just how the SDK talks to the server, nothing you need to do yourself.
+
 ### Add a Simple Product
 
 ```ts
@@ -98,6 +100,9 @@ const response = await client.cart().addItem(123, 2);
 
 // Shorthand
 const response = await client.cart().add(123, 2);
+
+// A SKU also works — the server resolves it to a product ID
+const response2 = await client.cart().addItem('BLUE-SHIRT-L', 1);
 ```
 
 ### Add with Options
@@ -244,6 +249,8 @@ const response = await client.cart().update({
 
 ### Get Totals
 
+> `getTotals(true)` doesn't just format the numbers from a regular cart fetch — it's a separate request to its own totals endpoint, with `html=true` added to it.
+
 ```ts
 // Raw values
 const response = await client.cart().getTotals();
@@ -253,6 +260,8 @@ const response = await client.cart().getTotals(true);
 ```
 
 ### Get Item Count
+
+> `getItemCount()`, `getItems()`, and `getItem()` below each hit their own dedicated endpoint, so they're genuinely lighter than fetching the whole cart — unlike several of the "get" methods elsewhere on this page (`getCustomer()`, `getShippingMethods()`, `getFees()`, `getCrossSells()`, `getCoupons()`), which quietly fetch the entire cart and only keep one part of it. Those cost the same as a full `cart.get()`.
 
 ```ts
 const response = await client.cart().getItemCount();
@@ -278,6 +287,8 @@ const response = await client.cart().getItem('abc123def456...');
 
 ### Apply a Coupon
 
+> Applying and removing a coupon work a little differently under the hood: applying sends the code in the request body, while removing puts the code directly in the URL instead. Worth knowing if you're building either of these as a [batch request](#batch-requests) by hand.
+
 ```ts
 const response = await client.cart().applyCoupon('SUMMER20');
 ```
@@ -289,6 +300,8 @@ const response = await client.cart().removeCoupon('SUMMER20');
 ```
 
 ### Get Applied Coupons
+
+> `getCoupons()` fetches the whole cart and keeps only the coupons — it costs the same as `cart.get()`, not less. See the note under [Get Item Count](#get-item-count) for which "get" methods on this page are actually lighter.
 
 ```ts
 const response = await client.cart().getCoupons();
@@ -343,6 +356,8 @@ const response = await client.cart().updateCustomer(
 
 ### Get Customer Details
 
+> This fetches the whole cart and keeps only the customer data — see the note under [Get Item Count](#get-item-count).
+
 ```ts
 const response = await client.cart().getCustomer();
 ```
@@ -351,6 +366,8 @@ const response = await client.cart().getCustomer();
 
 ### Get Available Shipping Methods
 
+> This fetches the whole cart and keeps only the shipping data — see the note under [Get Item Count](#get-item-count).
+
 ```ts
 const response = await client.cart().getShippingMethods();
 ```
@@ -358,6 +375,8 @@ const response = await client.cart().getShippingMethods();
 ### Set Shipping Method
 
 > Requires the CoCart Plus plugin.
+
+> `rateId`/`packageId` get renamed before they're sent — the request actually goes out as `rate_id`/`package_id`. Worth knowing if you're building this as a [batch request](#batch-requests) by hand.
 
 ```ts
 const response = await client.cart().setShippingMethod('flat_rate:1');
@@ -417,6 +436,8 @@ const response = await client.cart().batchRemoveItems([
 
 ### Get Cart Fees
 
+> This fetches the whole cart and keeps only the fees — see the note under [Get Item Count](#get-item-count).
+
 ```ts
 const response = await client.cart().getFees();
 ```
@@ -440,6 +461,8 @@ const response = await client.cart().removeFees();
 ## Cross-Sells
 
 **Cross-sells** are product recommendations based on what's currently in the cart. For example, if a customer has a laptop in their cart, cross-sells might suggest a laptop bag or mouse. These are configured in WooCommerce's product settings.
+
+> This fetches the whole cart and keeps only the cross-sells — see the note under [Get Item Count](#get-item-count).
 
 ```ts
 const response = await client.cart().getCrossSells();

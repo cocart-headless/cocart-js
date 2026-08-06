@@ -53,10 +53,10 @@ describe('Legacy Plugin Support', () => {
       expect(error).toBeInstanceOf(CoCartError);
     });
 
-    it('message contains method name and CoCart Basic', () => {
+    it('message contains method name and CoCart Starter', () => {
       const error = new VersionError('products()->findBySlug');
       expect(error.message).toContain('products()->findBySlug');
-      expect(error.message).toContain('CoCart Basic');
+      expect(error.message).toContain('CoCart Starter');
     });
 
     it('has cocart_version_required error code', () => {

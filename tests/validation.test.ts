@@ -25,8 +25,21 @@ describe('validateProductId', () => {
     expect(() => validateProductId(NaN)).toThrow(ValidationError);
   });
 
-  it('rejects non-numeric strings', () => {
-    expect(() => validateProductId('abc')).toThrow(ValidationError);
+  it('accepts non-numeric strings as potential SKUs', () => {
+    expect(() => validateProductId('abc')).not.toThrow();
+    expect(() => validateProductId('BLUE-SHIRT-L')).not.toThrow();
+    expect(() => validateProductId('123ABC')).not.toThrow();
+  });
+
+  it('rejects empty string', () => {
+    expect(() => validateProductId('')).toThrow(ValidationError);
+    expect(() => validateProductId('   ')).toThrow(ValidationError);
+  });
+
+  it('rejects numeric strings that are not positive integers', () => {
+    expect(() => validateProductId('0')).toThrow(ValidationError);
+    expect(() => validateProductId('-1')).toThrow(ValidationError);
+    expect(() => validateProductId('1.5')).toThrow(ValidationError);
   });
 
   it('error has correct error code', () => {

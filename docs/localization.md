@@ -107,7 +107,7 @@ registerLocale('fr', {
   'jwt.noRefreshToken': "Aucun token de rafraîchissement disponible. Veuillez vous connecter d'abord.",
 
   // Version
-  'version.requiresBasic': "{method}() nécessite CoCart Basic. Veuillez mettre à niveau depuis le plugin CoCart legacy.",
+  'version.requiresBasic': "{method}() nécessite CoCart Starter. Veuillez mettre à niveau depuis le plugin CoCart legacy.",
 
   // Endpoint
   'endpoint.pluginRequired': "Cette méthode n'est disponible qu'avec un autre plugin CoCart. Contactez le support.",
@@ -166,7 +166,7 @@ All 18 keys must be present. Interpolation placeholders (`{name}`) must be prese
 | `validation.invalidEmail` | — | Email address format is invalid |
 | `jwt.tokenMissing` | — | JWT token absent from login response |
 | `jwt.noRefreshToken` | — | No refresh token available |
-| `version.requiresBasic` | `{method}` | Method requires CoCart Basic |
+| `version.requiresBasic` | `{method}` | Method requires CoCart Starter |
 | `endpoint.pluginRequired` | — | Method requires an additional CoCart plugin |
 | `extension.nameConflict` | `{name}` | Extension name conflicts with existing client property |
 | `extension.notInstalled` | `{name}` | Extension has not been installed on the client |
@@ -219,5 +219,5 @@ import { t } from '@cocartheadless/sdk';
 
 t('validation.invalidProductId');                        // 'Product ID must be a positive integer'
 t('request.timeout', { timeout: 5000 });                // 'Request timed out after 5000ms'
-t('version.requiresBasic', { method: 'findBySlug' });   // 'findBySlug() requires CoCart Basic...'
+t('version.requiresBasic', { method: 'findBySlug' });   // 'findBySlug() requires CoCart Starter...'
 ```

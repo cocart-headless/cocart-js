@@ -21,6 +21,37 @@ describe('Products endpoint methods', () => {
     vi.restoreAllMocks();
   });
 
+  it('find() sends GET to products/{id} for a numeric ID', async () => {
+    const fetchMock = mockFetch(200, { id: 278 });
+    globalThis.fetch = fetchMock;
+
+    const client = new CoCart('https://store.com');
+    await client.products().find(278);
+
+    const [url, opts] = fetchMock.mock.calls[0];
+    expect(url).toContain('/products/278');
+    expect(opts.method).toBe('GET');
+  });
+
+  // find() accepting a SKU string was never actually broken at runtime —
+  // JS doesn't enforce parameter types, so this passes identically whether
+  // find()'s TypeScript signature is `productId: number` or
+  // `productId: string | number`. This test only covers that the request
+  // URL is built correctly for non-numeric input; it is NOT a regression
+  // test for the SKU-support fix (that was a type-level bug). The actual
+  // regression test lives in src/__type-tests__/products-find.types.ts,
+  // which `npm run typecheck` compiles.
+  it('find() sends GET to products/{value} using whatever string it is given', async () => {
+    const fetchMock = mockFetch(200, { sku: 'PCT-2024' });
+    globalThis.fetch = fetchMock;
+
+    const client = new CoCart('https://store.com');
+    await client.products().find('PCT-2024');
+
+    const [url] = fetchMock.mock.calls[0];
+    expect(url).toContain('/products/PCT-2024');
+  });
+
   it('findBySlug() sends GET to products/{slug}', async () => {
     const fetchMock = mockFetch(200, { slug: 'blue-hoodie' });
     globalThis.fetch = fetchMock;
