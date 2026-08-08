@@ -5,33 +5,47 @@ import type {
   CheckoutGatewayAdapter,
   CheckPaymentGatewayOptions,
   PayPalGatewayOptions,
+  StripeElementsInstance,
   StripeExpressGatewayOptions,
   StripeGatewayOptions,
+  StripeInstance,
+  WooPaymentsGatewayOptions,
 } from './types.js';
 
-export function createStripeGateway(options: StripeGatewayOptions): CheckoutGatewayAdapter {
-  const tokenize: CheckoutGatewayAdapter['tokenize'] = options.stripe
-    ? async ({ paymentContext, successUrl, returnUrl }) => {
-        const clientSecret = String(paymentContext?.client_secret ?? '');
-        const confirmParams: Record<string, unknown> = {};
-        if (successUrl) confirmParams.return_url = successUrl;
-        else if (returnUrl) confirmParams.return_url = returnUrl;
-        const { error, paymentIntent } = await options.stripe!.confirmPayment({
-          elements: options.elements!,
-          confirmParams,
-          redirect: 'if_required',
-        });
-        if (error) throw new Error(error.message ?? 'Stripe payment failed');
-        return { payment_intent_id: paymentIntent?.id ?? clientSecret };
-      }
-    : options.tokenize;
+/**
+ * Shared by createStripeGateway/createWooPaymentsGateway — both surface a `requires_action`
+ * PaymentIntent confirmation (`client_secret`/`intent_type`) through the same Stripe.js API,
+ * just from two different WooCommerce gateway plugins with their own redirect conventions
+ * server-side (decoded into the same envelope shape by their respective compat files).
+ */
+function createStripeStyleConfirmAction(
+  stripe: StripeInstance | undefined,
+  elements: StripeElementsInstance | undefined,
+  failureMessage: string,
+): CheckoutGatewayAdapter['confirmAction'] {
+  if (!stripe || !elements) return undefined;
+  return async ({ actionData, successUrl, returnUrl }) => {
+    const clientSecret = String(actionData.client_secret ?? '');
+    const confirmParams: Record<string, unknown> = {};
+    if (successUrl) confirmParams.return_url = successUrl;
+    else if (returnUrl) confirmParams.return_url = returnUrl;
+    const { error } = await stripe.confirmPayment({
+      elements,
+      clientSecret,
+      confirmParams,
+      redirect: 'if_required',
+    });
+    if (error) throw new Error(error.message ?? failureMessage);
+  };
+}
 
+export function createStripeGateway(options: StripeGatewayOptions): CheckoutGatewayAdapter {
   return {
     id: 'stripe',
     provider: 'stripe',
     label: options.label ?? 'Stripe',
     description: options.description ?? 'Card payments powered by Stripe Elements and Payment Intents.',
-    supports: ['payment_context', 'payment_intents', 'saved_cards'],
+    supports: ['requires_action', 'payment_intents', 'saved_cards'],
     getFields: ({ theme }) => [
       {
         name: 'payment_data.payment_element',
@@ -41,7 +55,39 @@ export function createStripeGateway(options: StripeGatewayOptions): CheckoutGate
         className: theme.paymentContainerClassName,
       },
     ],
-    tokenize,
+    // WooCommerce's Stripe gateway creates the PaymentIntent server-side during POST /checkout —
+    // there's no client_secret (or anything else) to gather before the first submission, so the
+    // pre-wired path sends no payment_data unless a manual `tokenize` was also provided.
+    tokenize: options.tokenize,
+    confirmAction: createStripeStyleConfirmAction(options.stripe, options.elements, 'Stripe payment confirmation failed'),
+  };
+}
+
+/**
+ * WooPayments (WooCommerce Payments) — a separate plugin from the standalone WooCommerce
+ * Stripe Gateway, but Stripe-based under the hood, so the client-side integration is
+ * identical: pass `stripe`/`elements` for the pre-wired path, same as `createStripeGateway`.
+ * The server-side compat integration decodes WooPayments' own redirect convention into the
+ * same `{ client_secret, intent_type }` envelope (`action_type: 'wcpay_confirm_payment'`).
+ */
+export function createWooPaymentsGateway(options: WooPaymentsGatewayOptions): CheckoutGatewayAdapter {
+  return {
+    id: 'woocommerce_payments',
+    provider: 'stripe',
+    label: options.label ?? 'WooPayments',
+    description: options.description ?? 'Card and local payment methods powered by WooPayments.',
+    supports: ['requires_action', 'payment_intents', 'saved_cards'],
+    getFields: ({ theme }) => [
+      {
+        name: 'payment_data.payment_element',
+        label: 'Card details',
+        type: 'gateway-element',
+        component: 'StripePaymentElement',
+        className: theme.paymentContainerClassName,
+      },
+    ],
+    tokenize: options.tokenize,
+    confirmAction: createStripeStyleConfirmAction(options.stripe, options.elements, 'WooPayments payment confirmation failed'),
   };
 }
 
@@ -62,7 +108,7 @@ export function createPayPalGateway(options: PayPalGatewayOptions): CheckoutGate
     provider: 'paypal',
     label: options.label ?? 'PayPal',
     description: options.description ?? 'Smart Buttons and PayPal order approval flow.',
-    supports: ['payment_context', 'buttons', 'redirectless_checkout'],
+    supports: ['buttons', 'redirectless_checkout'],
     getFields: ({ theme }) => [
       {
         name: 'payment_data.paypal_buttons',
@@ -115,7 +161,7 @@ export function createStripeExpressGateway(options: StripeExpressGatewayOptions)
     provider: 'stripe',
     label: options.label ?? 'Express Checkout',
     description: options.description ?? 'Pay with Apple Pay, Google Pay, or Link.',
-    supports: ['payment_context', 'payment_intents', 'express_checkout'],
+    supports: ['requires_action', 'payment_intents', 'express_checkout'],
     express: true,
     expressCheckoutPriority: options.expressCheckoutPriority ?? 10,
     getExpressFields: ({ theme, collectShippingAddress }) => [
@@ -128,18 +174,22 @@ export function createStripeExpressGateway(options: StripeExpressGatewayOptions)
         props: { requestShipping: collectShippingAddress },
       },
     ],
-    tokenize: async ({ paymentContext, successUrl, returnUrl }) => {
-      const clientSecret = String(paymentContext?.client_secret ?? '');
+    // The Express Checkout Element resolves a confirmed payment method entirely client-side
+    // (Apple Pay/Google Pay sheet) before submit() is ever called — no tokenize step needed here.
+    // Same as the standard Stripe gateway, submit() sends no payment_data on the first POST /checkout;
+    // confirmAction only comes into play on the rare case a wallet payment still needs 3D Secure.
+    confirmAction: async ({ actionData, successUrl, returnUrl }) => {
+      const clientSecret = String(actionData.client_secret ?? '');
       const confirmParams: Record<string, unknown> = {};
       if (successUrl) confirmParams.return_url = successUrl;
       else if (returnUrl) confirmParams.return_url = returnUrl;
-      const { error, paymentIntent } = await options.stripe.confirmPayment({
+      const { error } = await options.stripe.confirmPayment({
         elements: options.elements,
+        clientSecret,
         confirmParams,
         redirect: 'if_required',
       });
-      if (error) throw new Error(error.message ?? 'Stripe express payment failed');
-      return { payment_intent_id: paymentIntent?.id ?? clientSecret };
+      if (error) throw new Error(error.message ?? 'Stripe express payment confirmation failed');
     },
   };
 }

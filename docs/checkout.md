@@ -2,18 +2,22 @@
 
 Checkout now lives in a separate npm package: `@cocartheadless/checkout`.
 
-It plugs into `@cocartheadless/sdk` through the extension system and is designed around the CoCart Checkout API documented at `GET/POST/PUT /wp-json/cocart/v2/checkout`, plus:
+It plugs into `@cocartheadless/sdk` through the extension system and is designed around the CoCart Checkout API:
 
+- `GET`/`PUT`/`POST /wp-json/cocart/v2/checkout` — fetch, update, and process checkout (note: `PUT` updates, `POST` creates the order)
+- `GET /wp-json/cocart/v2/checkout/config` — form fields, locale, country, and store settings
 - `GET /wp-json/cocart/v2/checkout/payment-methods`
-- `POST /wp-json/cocart/v2/checkout/payment-context`
+- `GET /wp-json/cocart/v2/address/search` and `GET /wp-json/cocart/v2/address/details` — address autocomplete
+- `GET /wp-json/cocart/v2/order-received/{order_id}` and `POST /wp-json/cocart/v2/order-received/{order_id}/pay` — order confirmation and payment retry
 
 The package focuses on:
 
-- Stripe
-- PayPal
-- Authorize.Net
+- Stripe, WooPayments, PayPal, PayPal Payments, Authorize.Net
 - Headless checkout form definitions
 - Tailwind CSS 4 and shadcn-friendly theme presets
+
+> [!NOTE]
+> Not every gateway plugin reports an honest success/failure result to a REST client out of the box — see [Gateway Compatibility](checkout-gateway-compatibility.md) for which ones CoCart Plus covers and which SDK helper to use for each.
 
 ## Install
 
@@ -29,6 +33,7 @@ The checkout package now has its own docs set inside the package:
 - [Installation](../packages/checkout/docs/installation.md)
 - [Checkout Flow](../packages/checkout/docs/checkout-flow.md)
 - [Gateways](../packages/checkout/docs/gateways.md)
+- [Gateway Compatibility](checkout-gateway-compatibility.md)
 - [Frameworks](../packages/checkout/docs/frameworks.md)
 - [Themes](../packages/checkout/docs/themes.md)
 
@@ -45,11 +50,10 @@ import {
 const client = new CoCart('https://your-store.com').use(createCheckout({
   defaultTheme: shadcnCheckoutTheme,
   gatewayAdapters: [
-    createStripeGateway({
-      tokenize: async ({ paymentContext }) => ({
-        payment_intent_id: String(paymentContext?.client_secret ?? ''),
-      }),
-    }),
+    // Pass `stripe`/`elements` for the pre-wired path — no tokenize needed; if the
+    // gateway later returns requires_action (3D Secure/SCA), the adapter's built-in
+    // confirmAction handles it and submit() retries automatically.
+    createStripeGateway({ stripe, elements }),
   ],
 }));
 

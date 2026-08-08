@@ -23,11 +23,9 @@ import {
 export const cocart = new CoCart(process.env.NEXT_PUBLIC_STORE_URL!).use(createCheckout({
   defaultTheme: shadcnCheckoutTheme,
   gatewayAdapters: [
-    createStripeGateway({
-      tokenize: async ({ paymentContext }) => ({
-        payment_intent_id: String(paymentContext?.client_secret ?? ''),
-      }),
-    }),
+    // Pre-wired: no tokenize needed. 3D Secure/SCA (requires_action) is handled
+    // automatically via confirmAction — see docs/gateways.md.
+    createStripeGateway({ stripe, elements }),
   ],
 }));
 ```

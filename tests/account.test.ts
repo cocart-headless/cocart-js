@@ -124,6 +124,38 @@ describe('Account endpoint', () => {
     });
   });
 
+  it('register calls POST cocart/v2/register with requested_username/requested_password field names', async () => {
+    const client = new CoCart('https://store.com');
+    const requestRaw = vi.spyOn(client, 'requestRaw').mockResolvedValueOnce({
+      toObject: () => ({ user_id: 42, username: 'jane', message: 'Registration complete.' }),
+    } as never);
+
+    await client.account().register({
+      email: 'jane@example.com',
+      requestedUsername: 'jane',
+      requestedPassword: 'secret123',
+    });
+
+    expect(requestRaw).toHaveBeenCalledWith('POST', 'cocart/v2/register', undefined, {
+      email: 'jane@example.com',
+      requested_username: 'jane',
+      requested_password: 'secret123',
+    });
+  });
+
+  it('register omits requested_username/requested_password when not provided', async () => {
+    const client = new CoCart('https://store.com');
+    const requestRaw = vi.spyOn(client, 'requestRaw').mockResolvedValueOnce({
+      toObject: () => ({ user_id: 42, username: 'jane', message: 'Registration complete.' }),
+    } as never);
+
+    await client.account().register({ email: 'jane@example.com' });
+
+    expect(requestRaw).toHaveBeenCalledWith('POST', 'cocart/v2/register', undefined, {
+      email: 'jane@example.com',
+    });
+  });
+
   it('re-throws rest_no_route as cocart_plugin_required', async () => {
     const client = new CoCart('https://store.com', { username: 'user', password: 'pass' });
     vi.spyOn(client, 'requestRaw').mockRejectedValueOnce(

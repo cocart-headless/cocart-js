@@ -3,14 +3,16 @@
 The package ships focused helper factories for:
 
 - [Stripe](#stripe)
+- [WooPayments](#woopayments)
 - [PayPal](#paypal)
+- [PayPal Payments](#paypal-payments)
 - [Authorize.Net](#authorizenet)
 - [Direct Bank Transfer (BACS)](#direct-bank-transfer-bacs)
 - [Check Payment](#check-payment)
 - [Cash on Delivery](#cash-on-delivery)
 - [Express Checkout](#express-checkout)
 
-**Online gateways** (Stripe, PayPal, Authorize.Net) handle card/wallet tokenization and require provider SDKs. Each supports two modes:
+**Online gateways** (Stripe, WooPayments, PayPal, Authorize.Net) handle card/wallet tokenization and require provider SDKs. Each supports two modes:
 
 - **Pre-wired** — pass provider-specific options and `tokenize` is handled for you
 - **Manual** — supply your own `tokenize` callback for full control
@@ -18,6 +20,9 @@ The package ships focused helper factories for:
 **Offline gateways** (Direct Bank Transfer, Check Payment, Cash on Delivery) require no card input, no tokenization, and no provider SDK. The customer commits to pay outside the platform.
 
 These helpers do not replace the provider SDK. They give you the correct CoCart-facing adapter shape so your app can keep provider logic and CoCart logic cleanly separated.
+
+> [!TIP]
+> Not sure which of your installed WooCommerce gateways are actually supported? CoCart Plus tracks this in its own [gateway compatibility register](../../../docs/checkout-gateway-compatibility.md) — a per-plugin audit of which gateways report an honest `success`/`failed` result to a REST client versus needing a compat integration like the ones behind `createStripeGateway`/`createWooPaymentsGateway` below.
 
 ---
 
@@ -97,8 +102,11 @@ const { processResponse } = await client.checkout.submit({
   },
 });
 
-// submit() fetches checkout state, requests a client_secret from WooCommerce via the
-// payment-context endpoint, calls stripe.confirmPayment() for you, then processes the order.
+// submit() sends no payment_data on the first attempt — the WooCommerce Stripe gateway
+// creates the PaymentIntent server-side during processCheckout() and confirms it there too.
+// If it comes back requires_action (3D Secure/SCA), the pre-wired adapter's confirmAction
+// calls stripe.confirmPayment() with the returned client_secret automatically, and submit()
+// retries processCheckout() for you — see "3D Secure / SCA with requires_action" below.
 
 const result = processResponse.toObject();
 if (result.payment_result?.redirect_url) {
@@ -108,9 +116,7 @@ if (result.payment_result?.redirect_url) {
 
 ### Stripe: Manual
 
-Use this for non-standard flows (setup intents, saved cards, custom confirmation params).
-
-Set up the client and gateway:
+Use this for non-standard flows (setup intents, saved cards, custom confirmation params, or collecting a `payment_method_id` up front instead of relying on the deferred-intent pattern above).
 
 ```ts
 import { loadStripe } from '@stripe/stripe-js';
@@ -118,30 +124,21 @@ import { CoCart } from '@cocartheadless/sdk';
 import { createCheckout, createStripeGateway } from '@cocartheadless/checkout';
 
 const stripe = await loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
-let elements: ReturnType<typeof stripe.elements> | undefined;
+const elements = stripe.elements({ mode: 'payment', currency: 'usd', amount: 0 });
+const paymentElement = elements.create('payment');
+paymentElement.mount('#payment-element');
 
 const client = new CoCart('https://your-store.com').use(createCheckout({
   gatewayAdapters: [
     createStripeGateway({
-      tokenize: async ({ paymentContext, successUrl, returnUrl }) => {
-        // paymentContext.client_secret comes from WooCommerce via the payment-context endpoint.
-        // submit() fetches this automatically before calling tokenize.
-        const clientSecret = String(paymentContext?.client_secret ?? '');
-
-        // Re-initialize elements with the real clientSecret before confirming.
-        elements = stripe.elements({ clientSecret });
-        const paymentElement = elements.create('payment');
-        paymentElement.mount('#payment-element');
-
-        const { error, paymentIntent } = await stripe.confirmPayment({
-          elements,
-          // successUrl has {CHECKOUT_ID} already substituted; returnUrl is the fallback.
-          confirmParams: { return_url: successUrl ?? returnUrl ?? '' },
-          redirect: 'if_required',
-        });
-
+      // stripe/elements are still passed so confirmAction can handle requires_action —
+      // only the initial payment_data gathering is customized here.
+      stripe,
+      elements,
+      tokenize: async () => {
+        const { error, paymentMethod } = await stripe.createPaymentMethod({ elements });
         if (error) throw new Error(error.message);
-        return { payment_intent_id: paymentIntent?.id ?? clientSecret };
+        return { payment_method_id: paymentMethod.id };
       },
     }),
   ],
@@ -158,6 +155,61 @@ if (result.payment_result?.redirect_url) {
   window.location.href = result.payment_result.redirect_url;
 }
 ```
+
+### Confirming requires_action
+
+`submit()` handles this automatically for the pre-wired path (pass `stripe`/`elements`, nothing else to do). If `POST /checkout` returns `payment_result.payment_status: 'requires_action'`:
+
+1. `confirmAction` calls `stripe.confirmPayment({ elements, clientSecret: action_data.client_secret, confirmParams, redirect: 'if_required' })`.
+2. `submit()` calls `processCheckout()` again with the same cart/session — it lands on the same order rather than creating a duplicate.
+3. The final `result.processResponse` reflects the retry's outcome (`success` or `failed`), not the intermediate `requires_action`.
+
+If you're calling `processCheckout()` directly instead of `submit()`, you're responsible for this loop yourself — see [Checkout Flow → Resolving requires_action](checkout-flow.md#resolving-requires_action).
+
+---
+
+## WooPayments
+
+> [!IMPORTANT]
+> **What you still need to do yourself:**
+>
+> - Install and load `@stripe/stripe-js` (WooPayments is Stripe-based under the hood)
+> - Create a `stripe.elements()` instance and mount a `PaymentElement` to the DOM
+> - Handle any redirect from `payment_result.redirect_url` after submission
+
+WooPayments (WooCommerce Payments) is a separate plugin from the standalone WooCommerce Stripe Gateway above, but uses the same Stripe.js client-side API — `createWooPaymentsGateway()` is structurally identical to `createStripeGateway()`, just targeting the `woocommerce_payments` gateway ID.
+
+```ts
+import { loadStripe } from '@stripe/stripe-js';
+import { CoCart } from '@cocartheadless/sdk';
+import { createCheckout, createWooPaymentsGateway } from '@cocartheadless/checkout';
+
+const stripe = await loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
+const elements = stripe.elements({ mode: 'payment', currency: 'usd', amount: 0 });
+const paymentElement = elements.create('payment');
+paymentElement.mount('#payment-element');
+
+const client = new CoCart('https://your-store.com').use(createCheckout({
+  successUrl: 'https://your-store.com/order-complete?id={CHECKOUT_ID}',
+  returnUrl: 'https://your-store.com/checkout',
+  gatewayAdapters: [
+    createWooPaymentsGateway({ stripe, elements }),
+  ],
+}));
+
+const { processResponse } = await client.checkout.submit({ gatewayId: 'woocommerce_payments' });
+const result = processResponse.toObject();
+
+if (result.payment_result?.payment_status === 'on_hold' && result.payment_result.action_type === 'wcpay_multibanco_voucher') {
+  // Multibanco: order is placed (on_hold), nothing to retry — show the voucher details.
+  const { entity, reference, voucher_url, expires_at } = result.payment_result.action_data as never;
+  // ...render entity/reference (or link to voucher_url) with an expires_at deadline
+} else if (result.payment_result?.redirect_url) {
+  window.location.href = result.payment_result.redirect_url;
+}
+```
+
+3D Secure/SCA (`action_type: 'wcpay_confirm_payment'`) is handled automatically by `submit()`, the same as Stripe above. The manual path (custom `tokenize`) works the same way too — pass `stripe`/`elements` alongside your `tokenize` callback so `confirmAction` still has what it needs.
 
 ---
 
@@ -230,6 +282,50 @@ createPayPalGateway({
   },
 });
 ```
+
+---
+
+## PayPal Payments
+
+> [!NOTE]
+> **Not the same plugin as [PayPal](#paypal) above.** "PayPal Payments" (gateway IDs `ppcp-gateway` and `ppcp-credit-card-gateway`) is a separate WooCommerce plugin from the classic Smart Buttons integration `createPayPalGateway()` targets. There is no pre-wired factory for it — its `requires_action` cases are real `paypal.com` redirect URLs your app opens directly, not something a client SDK call confirms.
+
+`payment_result.action_type` for this gateway is `paypal_approve` (initial approval — `ppcp-gateway`) or `paypal_confirm_3ds` (Advanced Card Processing 3D Secure step-up — `ppcp-credit-card-gateway`), both with `action_data.redirect` as a URL. Register a manual adapter:
+
+```ts
+import { CoCart } from '@cocartheadless/sdk';
+import { createCheckout, createGatewayAdapter } from '@cocartheadless/checkout';
+
+const client = new CoCart('https://your-store.com').use(createCheckout({
+  gatewayAdapters: [
+    createGatewayAdapter({
+      id: 'ppcp-gateway', // or 'ppcp-credit-card-gateway'
+      provider: 'paypal',
+      label: 'PayPal',
+      confirmAction: async ({ actionType, actionData }) => {
+        const redirect = String(actionData.redirect ?? '');
+
+        if (actionType === 'paypal_confirm_3ds') {
+          // 3D Secure step-up: PayPal Payments matches the resumed request via a one-time
+          // nonce it generated — parse it out of the redirect URL's query string and send
+          // it back as payment_data on the retry, or this won't resolve to the same charge.
+          const nonce = new URL(redirect).searchParams.get('ppcp_resume_nonce');
+          window.location.href = redirect; // customer authenticates, then returns to your return_url
+          return nonce ? { ppcp_resume_nonce: nonce } : undefined;
+        }
+
+        // paypal_approve: async/webhook-driven completion. Open the approval URL; only
+        // retry POST /checkout once you know the order is actually paid (e.g. after the
+        // customer returns to your return_url, or via your own webhook-driven signal) —
+        // not immediately after the redirect returns.
+        window.location.href = redirect;
+      },
+    }),
+  ],
+}));
+```
+
+`submit()` calls `confirmAction` and retries `processCheckout()` automatically, same as any other gateway — but since both of these actions involve leaving the page (a real redirect, not an in-page confirmation like Stripe's), the "retry" in practice happens on page load after the customer returns, not synchronously within the same `submit()` call. Structure your `confirmAction` to read the returned `payment_data`/query string on that follow-up page and call `client.checkout.processCheckout()` yourself at that point, rather than relying on `submit()`'s single round trip.
 
 ---
 
@@ -368,9 +464,9 @@ if (result.payment_result?.redirect_url) {
 
 ## Offline Payments
 
-Offline gateways require no card input, no payment context, and no tokenization. The customer selects a payment method and WooCommerce marks the order accordingly. Payment happens outside the platform — via bank transfer, check, or cash on delivery.
+Offline gateways require no card input and no tokenization. The customer selects a payment method and WooCommerce marks the order accordingly. Payment happens outside the platform — via bank transfer, check, or cash on delivery.
 
-These factories return adapters with `supports: ['offline']` and no `tokenize` function. When used with `submit()`, no payment-context API call is made.
+These factories return adapters with `supports: ['offline']` and no `tokenize` function, so `submit()` sends no `payment_data` on the first `processCheckout()` call.
 
 ---
 

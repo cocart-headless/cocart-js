@@ -1,6 +1,6 @@
 # Account API
 
-The account endpoint gives authenticated customers access to their profile, order history, downloads, and reviews. All methods require the customer to be logged in via Basic Auth or JWT — guest access is not supported.
+The account endpoint gives authenticated customers access to their profile, order history, downloads, and reviews, plus an unauthenticated method for registering new customers. All methods except `register()` require the customer to be logged in via Basic Auth or JWT — guest access is not supported.
 
 Access the account endpoint via `client.account()`. The instance is lazy-loaded on first call and reused thereafter.
 
@@ -28,6 +28,68 @@ await client.login('customer@example.com', 'their-password');
 ```
 
 See [Authentication](./authentication.md) for the full guide including JWT auto-refresh.
+
+---
+
+## Registration
+
+Registers a new customer account. Unlike every other account method, `register()` does not require the customer to be logged in — it's the entry point before authentication, not after.
+
+```ts
+const client = new CoCart('https://your-store.com');
+
+const response = await client.account().register({
+  email: 'jane@example.com',
+  requestedUsername: 'jane',      // optional if the store generates usernames from email
+  requestedPassword: 'a-strong-password', // optional if the store generates passwords
+});
+
+const result = response.toObject();
+console.log(result.user_id);   // 42
+console.log(result.username);  // 'jane'
+console.log(result.message);   // 'Registration complete.'
+```
+
+**Input type:** `RegisterCustomerInput`
+
+| Field | Required | Description |
+|---|---|---|
+| `email` | Yes | Must not already be registered. |
+| `requestedUsername` | No | Only required if the store's "generate username from email" setting is disabled. |
+| `requestedPassword` | No | Only required if the store's "generate password" setting is disabled — otherwise a password is generated and emailed to the customer. |
+
+> [!NOTE]
+> On the wire these are sent as `requested_username`/`requested_password`, not `username`/`password`. This is deliberate: CoCart Starter's auth layer treats a request containing non-empty `username`/`password` fields as a Basic Auth attempt, which would collide with — and reject — this endpoint's own registration fields.
+
+**Response type:** `RegisteredCustomer`
+
+| Field | Type | Description |
+|---|---|---|
+| `user_id` | `number` | The new customer's WordPress user ID |
+| `username` | `string` | The (generated or provided) username |
+| `message` | `string` | Human-readable confirmation |
+
+### Errors
+
+| Status | Code | Meaning |
+|---|---|---|
+| `400` | `cocart_registration_error_reserved_username` | The requested username is on the store's reserved list (e.g. `admin`, `root`) |
+| `404` | `cocart_registration_invalid_email` | Email missing or invalid |
+| `404` | `registration-error-missing-password` | Password required by the store but not provided |
+| `405` | `cocart_registration_error_email_exists` | Email is already registered |
+| `405` | `cocart_registration_error_username_exists` | Username is already taken |
+
+```ts
+try {
+  await client.account().register({ email: 'jane@example.com' });
+} catch (error) {
+  if (error instanceof CoCartError && error.errorCode === 'cocart_registration_error_email_exists') {
+    // Prompt the customer to log in instead
+  }
+}
+```
+
+You can check whether registration is enabled, and whether username/password fields are required, via the checkout package's `getCheckoutConfig()` — see [Checkout Config](../packages/checkout/docs/checkout-flow.md#checkout-config) (`allow_registration`, `registration_generate_username`, `registration_generate_password`, `guest_checkout_enabled`).
 
 ---
 

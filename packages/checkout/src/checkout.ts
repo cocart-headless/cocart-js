@@ -2,6 +2,11 @@ import { CoCartError } from '@cocartheadless/sdk';
 import type { CoCart, Response } from '@cocartheadless/sdk';
 import { createCheckoutTheme } from './presets.js';
 import type {
+  AddressDetails,
+  AddressDetailsParams,
+  AddressSearchParams,
+  AddressSearchResult,
+  CheckoutConfig,
   CheckoutExpressBar,
   CheckoutFormDefinition,
   CheckoutFormField,
@@ -9,9 +14,9 @@ import type {
   CheckoutGatewayAdapter,
   CheckoutGatewayPresentation,
   CheckoutOrderSummary,
-  CheckoutPaymentContextRequest,
   CheckoutPaymentMethodsResponse,
   CheckoutProcessInput,
+  CheckoutProcessResponse,
   CheckoutSDK,
   CheckoutSDKOptions,
   CheckoutShippingPackage,
@@ -21,6 +26,10 @@ import type {
   CheckoutSubmitResult,
   CheckoutTheme,
   CheckoutUpdateInput,
+  OrderReceived,
+  PayForOrderInput,
+  PayForOrderResponse,
+  PaymentDataItem,
 } from './types.js';
 
 const DEFAULT_CONTACT_FIELDS: CheckoutFormField[] = [
@@ -57,6 +66,8 @@ const DEFAULT_NOTES_FIELDS: CheckoutFormField[] = [
 export class CheckoutClient implements CheckoutSDK {
   private readonly client: CoCart;
   private readonly routeBase: string;
+  /** Base for routes that sit alongside `/checkout` rather than under it (`/address/*`, `/order-received/*`). Derived from `routeBase` by stripping its trailing `/checkout` segment. */
+  private readonly apiBase: string;
   private readonly adapters = new Map<string, CheckoutGatewayAdapter>();
   private readonly defaultTheme: CheckoutTheme;
   private readonly defaultGateway?: string;
@@ -70,7 +81,8 @@ export class CheckoutClient implements CheckoutSDK {
 
   constructor(client: CoCart, options: CheckoutSDKOptions = {}) {
     this.client = client;
-    this.routeBase = (options.routeBase ?? 'cocart/preview/checkout').replace(/^\/+|\/+$/g, '');
+    this.routeBase = (options.routeBase ?? 'cocart/v2/checkout').replace(/^\/+|\/+$/g, '');
+    this.apiBase = this.routeBase.endsWith('/checkout') ? this.routeBase.slice(0, -'/checkout'.length) : 'cocart/v2';
     this.defaultTheme = options.defaultTheme ?? createCheckoutTheme();
     this.defaultGateway = options.defaultGateway;
     this.collectShippingAddress = options.collectShippingAddress ?? true;
@@ -174,15 +186,15 @@ export class CheckoutClient implements CheckoutSDK {
 
   async updateCheckout(data: CheckoutUpdateInput): Promise<Response<CheckoutState>> {
     try {
-      return this.client.requestRaw('POST', this.routeBase, this.withPreviewAuth(), data as Record<string, unknown>) as Promise<Response<CheckoutState>>;
+      return this.client.requestRaw('PUT', this.routeBase, this.withPreviewAuth(), data as Record<string, unknown>) as Promise<Response<CheckoutState>>;
     } catch (err) {
       throw wrapError(err, 'Failed to update checkout.', 'checkout_update_failed');
     }
   }
 
-  async processCheckout(data: CheckoutProcessInput): Promise<Response<CheckoutState>> {
+  async processCheckout(data: CheckoutProcessInput): Promise<Response<CheckoutProcessResponse>> {
     try {
-      return this.client.requestRaw('PUT', this.routeBase, this.withPreviewAuth(), data as Record<string, unknown>) as Promise<Response<CheckoutState>>;
+      return this.client.requestRaw('POST', this.routeBase, this.withPreviewAuth(), data as Record<string, unknown>) as Promise<Response<CheckoutProcessResponse>>;
     } catch (err) {
       throw wrapError(err, 'Failed to process checkout.', 'checkout_process_failed');
     }
@@ -196,11 +208,52 @@ export class CheckoutClient implements CheckoutSDK {
     }
   }
 
-  async createPaymentContext(request: CheckoutPaymentContextRequest): Promise<Response<Record<string, unknown>>> {
+  /** Public — does not require a cart session. Field/locale/country/shipping/account/store/validation config for building a checkout form. */
+  async getCheckoutConfig(): Promise<Response<CheckoutConfig>> {
     try {
-      return this.client.requestRaw('POST', `${this.routeBase}/payment-context`, this.withPreviewAuth(), request as Record<string, unknown>) as Promise<Response<Record<string, unknown>>>;
+      return this.client.requestRaw('GET', `${this.routeBase}/config`, this.withPreviewAuth()) as Promise<Response<CheckoutConfig>>;
     } catch (err) {
-      throw wrapError(err, 'Failed to create payment context.', 'checkout_payment_context_failed');
+      throw wrapError(err, 'Failed to retrieve checkout config.', 'checkout_config_failed');
+    }
+  }
+
+  /** Public — does not require a cart session. `query` must be at least 3 characters long. */
+  async searchAddresses(params: AddressSearchParams): Promise<Response<AddressSearchResult>> {
+    try {
+      return this.client.requestRaw('GET', `${this.apiBase}/address/search`, this.withPreviewAuth(toQueryParams(params))) as Promise<Response<AddressSearchResult>>;
+    } catch (err) {
+      throw wrapError(err, 'Failed to search addresses.', 'checkout_address_search_failed');
+    }
+  }
+
+  /** Public — does not require a cart session. Resolves a suggestion ID from `searchAddresses()` into full address details. */
+  async getAddressDetails(params: AddressDetailsParams): Promise<Response<AddressDetails>> {
+    try {
+      return this.client.requestRaw('GET', `${this.apiBase}/address/details`, this.withPreviewAuth(toQueryParams(params))) as Promise<Response<AddressDetails>>;
+    } catch (err) {
+      throw wrapError(err, 'Failed to retrieve address details.', 'checkout_address_details_failed');
+    }
+  }
+
+  /** Order confirmation data for the "order received" / thank-you page. `orderKey` must match the order's key. */
+  async getOrderReceived(orderId: number, orderKey: string): Promise<Response<OrderReceived>> {
+    try {
+      return this.client.requestRaw('GET', `${this.apiBase}/order-received/${orderId}`, this.withPreviewAuth({ order_key: orderKey })) as Promise<Response<OrderReceived>>;
+    } catch (err) {
+      throw wrapError(err, 'Failed to retrieve order.', 'checkout_order_received_failed');
+    }
+  }
+
+  /**
+   * Processes payment for an existing `pending` or `failed` order, e.g. to retry a failed payment.
+   * Unlike `processCheckout()`, a payment failure here raises a `cocart_payment_failed` error
+   * rather than being returned inline.
+   */
+  async payForOrder(orderId: number, orderKey: string, data: PayForOrderInput): Promise<Response<PayForOrderResponse>> {
+    try {
+      return this.client.requestRaw('POST', `${this.apiBase}/order-received/${orderId}/pay`, this.withPreviewAuth({ order_key: orderKey }), data as unknown as Record<string, unknown>) as Promise<Response<PayForOrderResponse>>;
+    } catch (err) {
+      throw wrapError(err, 'Failed to pay for order.', 'checkout_pay_for_order_failed');
     }
   }
 
@@ -234,10 +287,10 @@ export class CheckoutClient implements CheckoutSDK {
       throw wrapError(err, 'Failed to retrieve order summary.', 'checkout_summary_failed');
     }
 
-    const cartData = (state.cart ?? {}) as Record<string, unknown>;
-    const totalsData = (state.totals ?? {}) as Record<string, unknown>;
+    const itemsData = (state.items ?? {}) as Record<string, unknown>;
+    const totalsData = (state.cart_totals ?? {}) as Record<string, unknown>;
 
-    const items: CheckoutOrderSummary['items'] = Object.values(cartData)
+    const items: CheckoutOrderSummary['items'] = Object.values(itemsData)
       .filter((v): v is Record<string, unknown> => typeof v === 'object' && v !== null && 'item_key' in v)
       .map((item) => ({
         key: String(item['item_key'] ?? ''),
@@ -247,7 +300,7 @@ export class CheckoutClient implements CheckoutSDK {
         subtotal: String((item['totals'] as Record<string, unknown> | null)?.['subtotal'] ?? ''),
       }));
 
-    const couponsRaw = (state['coupons'] ?? (state.cart as Record<string, unknown> | undefined)?.['coupons'] ?? []) as unknown[];
+    const couponsRaw = (state.coupons ?? []) as unknown[];
     const coupons: CheckoutOrderSummary['coupons'] = Array.isArray(couponsRaw)
       ? couponsRaw.map((c) => {
           const coupon = c as Record<string, unknown>;
@@ -406,22 +459,14 @@ export class CheckoutClient implements CheckoutSDK {
 
     let checkoutState: CheckoutState | undefined;
     try {
-      checkoutState = input.hydratePaymentContext === false ? undefined : (await this.getCheckout()).toObject();
+      checkoutState = input.hydrateCheckoutState === false ? undefined : (await this.getCheckout()).toObject();
     } catch (err) {
       throw wrapError(err, 'Failed to load checkout state before submission.', 'checkout_submit_hydrate_failed');
     }
 
-    let paymentContext: Record<string, unknown> | undefined;
-    if (!skipPayment && gateway.tokenize) {
-      try {
-        paymentContext = (await this.createPaymentContext({ payment_method: input.gatewayId }))?.toObject() as Record<string, unknown> | undefined;
-      } catch (err) {
-        throw wrapError(err, 'Failed to create payment context.', 'checkout_payment_context_failed');
-      }
-    }
-
-    const checkoutId = String(checkoutState?.id ?? checkoutState?.cart_key ?? '');
+    const checkoutId = String(checkoutState?.cart_key ?? '');
     const successUrl = this.successUrl?.replace('{CHECKOUT_ID}', checkoutId);
+    const returnUrl = this.returnUrl;
 
     let paymentData: Record<string, unknown> | undefined;
     if (!skipPayment && gateway.tokenize) {
@@ -430,11 +475,10 @@ export class CheckoutClient implements CheckoutSDK {
           client: this.client,
           checkout: this,
           gatewayId: input.gatewayId,
-          paymentContext,
           checkoutState,
           input: input.process ?? { payment_method: input.gatewayId },
           successUrl,
-          returnUrl: this.returnUrl,
+          returnUrl,
         });
       } catch (err) {
         throw wrapError(err, 'Payment tokenization failed.', 'checkout_tokenize_failed');
@@ -450,7 +494,7 @@ export class CheckoutClient implements CheckoutSDK {
       ...(input.process ?? {}),
       ...updatePayload,
       payment_method: input.gatewayId,
-      payment_data: paymentData ?? input.process?.payment_data,
+      payment_data: paymentData ? toPaymentDataArray(paymentData) : input.process?.payment_data,
     };
 
     const hasExtraUpdateFields = Object.keys(input.update ?? {}).length > 0;
@@ -463,17 +507,48 @@ export class CheckoutClient implements CheckoutSDK {
       }
     }
 
-    let processResponse: Response<CheckoutState>;
+    let processResponse: Response<CheckoutProcessResponse>;
     try {
       processResponse = await this.processCheckout(processPayload);
     } catch (err) {
       throw wrapError(err, 'Failed to process payment.', 'checkout_process_failed');
     }
 
+    // The gateway needs the customer to do something else before the payment can complete
+    // (e.g. Stripe 3D Secure/SCA). The order and cart session are left intact server-side —
+    // resolve the action, then POST /checkout again to land on the same order.
+    const paymentResult = processResponse.toObject().payment_result;
+    if (paymentResult?.payment_status === 'requires_action' && gateway.confirmAction) {
+      let confirmData: Record<string, unknown> | void;
+      try {
+        confirmData = await gateway.confirmAction({
+          client: this.client,
+          checkout: this,
+          gatewayId: input.gatewayId,
+          actionType: String(paymentResult.action_type ?? ''),
+          actionData: paymentResult.action_data ?? {},
+          checkoutState,
+          successUrl,
+          returnUrl,
+        });
+      } catch (err) {
+        throw wrapError(err, 'Failed to confirm the required payment action.', 'checkout_confirm_action_failed');
+      }
+
+      const retryPayload = confirmData
+        ? { ...processPayload, payment_data: toPaymentDataArray(confirmData) }
+        : processPayload;
+
+      try {
+        processResponse = await this.processCheckout(retryPayload);
+      } catch (err) {
+        throw wrapError(err, 'Failed to process payment after confirming the required action.', 'checkout_process_failed');
+      }
+    }
+
     return {
       updateResponse,
       processResponse,
-      paymentContext,
       paymentData,
     };
   }
@@ -493,6 +568,25 @@ export class CheckoutClient implements CheckoutSDK {
       consumer_secret: consumerSecret,
     };
   }
+}
+
+/** Gateway adapters return `payment_data` as a plain object; the API expects an array of `{key, value}` pairs. */
+function toPaymentDataArray(data: Record<string, unknown>): PaymentDataItem[] {
+  return Object.entries(data).map(([key, value]) => ({
+    key,
+    value: value as string | boolean | number,
+  }));
+}
+
+/** Convert a typed params object to `Record<string, string>` for query-string building, dropping `undefined` values. */
+function toQueryParams(params: object): Record<string, string> {
+  const result: Record<string, string> = {};
+  for (const [key, value] of Object.entries(params)) {
+    if (value !== undefined && value !== null) {
+      result[key] = String(value);
+    }
+  }
+  return result;
 }
 
 function wrapError(err: unknown, fallbackMessage: string, code: string): CoCartError {

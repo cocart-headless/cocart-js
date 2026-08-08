@@ -30,7 +30,7 @@ When `needsPayment` is `undefined` or `true`, the payment section is included as
 
 ## Submitting a zero-total order
 
-Pass `zeroTotal: true` to `submit()`. This skips the payment-context API call and skips tokenization entirely. The order is processed with `payment_method` set but no `payment_data`:
+Pass `zeroTotal: true` to `submit()`. This skips tokenization entirely. The order is processed with `payment_method` set but no `payment_data`:
 
 ```ts
 const { processResponse } = await client.checkout.submit({

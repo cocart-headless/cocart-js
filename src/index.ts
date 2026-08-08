@@ -50,4 +50,5 @@ export type {
   // Account types
   AccountAddress, AccountUser, AccountProfile, AccountOrderSummary, AccountOrdersResponse,
   AccountOrderDetail, AccountDownload, AccountUpdateInput, AccountChangePasswordInput, AccountOrdersParams,
+  RegisterCustomerInput, RegisteredCustomer,
 } from './cocart.types.js';

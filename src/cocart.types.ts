@@ -640,3 +640,21 @@ export interface AccountOrdersParams {
   per_page?: number;
   order?: 'ASC' | 'DESC';
 }
+
+/**
+ * Input for `register()`. `requestedUsername`/`requestedPassword` are deliberately
+ * not named `username`/`password` on the wire — CoCart Starter's auth layer treats
+ * a request with non-empty `username`/`password` fields as a Basic Auth attempt,
+ * which would collide with these registration fields.
+ */
+export interface RegisterCustomerInput {
+  email: string;
+  requestedUsername?: string;
+  requestedPassword?: string;
+}
+
+export interface RegisteredCustomer {
+  user_id: number;
+  username: string;
+  message: string;
+}

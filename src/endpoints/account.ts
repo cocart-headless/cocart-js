@@ -8,9 +8,12 @@ import type {
   AccountOrdersResponse,
   AccountProfile,
   AccountUpdateInput,
+  RegisterCustomerInput,
+  RegisteredCustomer,
 } from '../cocart.types.js';
 
 const ROUTE_BASE = 'cocart/v2/my-account';
+const REGISTER_ROUTE = 'cocart/v2/register';
 
 /**
  * Account Endpoint
@@ -109,6 +112,20 @@ export class Account extends Endpoint {
   async getReviews(): Promise<Response<unknown>> {
     try {
       return (await this.client.requestRaw('GET', `${ROUTE_BASE}/reviews`)) as Response<unknown>;
+    } catch (e) {
+      this.handleNoRoute(e);
+    }
+  }
+
+  /**
+   * Register a new customer. Unauthenticated — does not require the customer to be logged in.
+   */
+  async register(data: RegisterCustomerInput): Promise<Response<RegisteredCustomer>> {
+    const body: Record<string, unknown> = { email: data.email };
+    if (data.requestedUsername !== undefined) body.requested_username = data.requestedUsername;
+    if (data.requestedPassword !== undefined) body.requested_password = data.requestedPassword;
+    try {
+      return (await this.client.requestRaw('POST', REGISTER_ROUTE, undefined, body)) as Response<RegisteredCustomer>;
     } catch (e) {
       this.handleNoRoute(e);
     }

@@ -185,6 +185,11 @@ Non-express gateways (standard card form, PayPal Buttons, offline methods) retur
 Any gateway adapter can support express checkout by setting `express: true` and implementing `getExpressFields()`:
 
 ```ts
+// The Express button's own onApprove callback resolves the payment method entirely
+// client-side, before submit() is ever called — capture it in a closure the same way
+// createPayPalGateway() does, rather than fetching anything from CoCart at tokenize time.
+let capturedOrderID: string | undefined;
+
 const paypalExpressAdapter = {
   id: 'paypal-express',
   provider: 'paypal',
@@ -199,11 +204,14 @@ const paypalExpressAdapter = {
       type: 'gateway-element',
       component: 'PayPalExpressButton',
       className: theme.paymentContainerClassName,
+      props: {
+        onApprove: (data: { orderID: string }) => {
+          capturedOrderID = data.orderID;
+        },
+      },
     },
   ],
-  tokenize: async ({ paymentContext }) => ({
-    order_id: String(paymentContext?.order_id ?? ''),
-  }),
+  tokenize: async () => ({ order_id: capturedOrderID }),
 };
 ```
 
