@@ -241,6 +241,30 @@ export class CoCart {
     return this;
   }
 
+  /** Get the currently configured authorization header name. */
+  getAuthHeaderName(): string {
+    return this.authHeaderName;
+  }
+
+  /**
+   * Get the computed authorization header value for the current auth state
+   * (e.g. `Bearer <jwt>` or `Basic <base64>`), or `null` if unauthenticated.
+   *
+   * Follows the same JWT > Basic Auth > Consumer Keys priority as
+   * `buildHeaders()`. Framework adapters use this to relay the current
+   * auth state to the server (see `attachAuthHeader`).
+   */
+  getAuthHeaderValue(): string | null {
+    if (this.jwtToken) {
+      return `Bearer ${this.jwtToken}`;
+    } else if (this.auth) {
+      return `Basic ${btoa(`${this.auth.username}:${this.auth.password}`)}`;
+    } else if (this.consumerKey && this.consumerSecret) {
+      return `Basic ${btoa(`${this.consumerKey}:${this.consumerSecret}`)}`;
+    }
+    return null;
+  }
+
   /** Enable or disable ETag conditional requests. */
   setETag(enabled: boolean): this {
     this.etagEnabled = enabled;
@@ -825,12 +849,9 @@ export class CoCart {
     };
 
     // Authentication
-    if (this.jwtToken) {
-      headers[this.authHeaderName] = `Bearer ${this.jwtToken}`;
-    } else if (this.auth) {
-      headers[this.authHeaderName] = `Basic ${btoa(`${this.auth.username}:${this.auth.password}`)}`;
-    } else if (this.consumerKey && this.consumerSecret) {
-      headers[this.authHeaderName] = `Basic ${btoa(`${this.consumerKey}:${this.consumerSecret}`)}`;
+    const authValue = this.getAuthHeaderValue();
+    if (authValue) {
+      headers[this.authHeaderName] = authValue;
     }
 
     // Send only the cart-key header name the configured plugin actually allows.

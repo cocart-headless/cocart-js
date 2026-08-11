@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `client.getAuthHeaderName()` / `client.getAuthHeaderValue()` — read the currently configured auth header name and its computed value (`Bearer <jwt>` / `Basic <base64>`), used by the new `attachAuthHeader` adapter helper.
+- `attachAuthHeader` — client-side helper for every framework adapter (Astro, Deno, Elysia.js, Fastify, Hono, Next.js, Nuxt, Remix, SvelteKit, TanStack Start, Vite), mirroring the existing `attachCartKeyHeader`. Wraps `fetch` to relay the current auth state to same-origin requests, so `createServerClient` can resolve the authenticated user without cookies. See `docs/authentication.md` for the security tradeoff this introduces (JWT/refresh tokens become browser-readable, same as the existing cart-key pattern).
+- `createServerClient` in every framework adapter now also reads the relayed auth header and applies it (`setJwtToken()`/`setAuth()`) to the returned server client.
+- `@cocartheadless/react` — new package providing `<CoCartProvider>` and `useAuth()`, a thin React binding over the existing `SessionManager`/`JwtManager` so authentication state is a single reactive value shared across components instead of each one calling `client.isAuthenticated()` independently.
+
 ## [1.2.1] - 2026-07-29
 
 ### Fixed

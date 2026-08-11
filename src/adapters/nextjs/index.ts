@@ -1,5 +1,6 @@
 import { CoCart, MemoryStorage } from '@cocartheadless/sdk';
 import type { CoCartOptions } from '@cocartheadless/sdk';
+import { applyAuthHeader } from '../shared/apply-auth-header.js';
 
 /**
  * Create a browser-side CoCart client for Next.js.
@@ -38,11 +39,16 @@ export function createServerClient(
 ): CoCart {
   const cartKey = headers.get('X-Cart-Key') ?? undefined;
 
-  return new CoCart(storeUrl, {
+  const client = new CoCart(storeUrl, {
     storage: new MemoryStorage(),
     cartKey,
     ...options,
   });
+
+  applyAuthHeader(client, headers.get(client.getAuthHeaderName()));
+
+  return client;
 }
 
 export { attachCartKeyHeader } from '../shared/attach-cart-key-header.js';
+export { attachAuthHeader } from '../shared/attach-auth-header.js';

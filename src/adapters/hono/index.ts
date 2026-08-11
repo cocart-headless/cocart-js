@@ -1,5 +1,6 @@
 import { CoCart, MemoryStorage } from '@cocartheadless/sdk';
 import type { CoCartOptions } from '@cocartheadless/sdk';
+import { applyAuthHeader } from '../shared/apply-auth-header.js';
 
 /** Minimal duck-type for a Hono Context — avoids a hard dependency on `hono`. */
 interface HonoContext {
@@ -50,11 +51,16 @@ export function createServerClient(
 ): CoCart {
   const cartKey = c.req.header('X-Cart-Key') ?? undefined;
 
-  return new CoCart(storeUrl, {
+  const client = new CoCart(storeUrl, {
     storage: new MemoryStorage(),
     cartKey,
     ...options,
   });
+
+  applyAuthHeader(client, c.req.header(client.getAuthHeaderName()));
+
+  return client;
 }
 
 export { attachCartKeyHeader } from '../shared/attach-cart-key-header.js';
+export { attachAuthHeader } from '../shared/attach-auth-header.js';

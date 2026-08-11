@@ -114,6 +114,9 @@
     "typecheck:gtm": "npm run typecheck --workspace @cocartheadless/analytics-gtm",
     "build:gtm": "npm run build --workspace @cocartheadless/analytics-gtm",
     "test:gtm": "npm run test --workspace @cocartheadless/analytics-gtm",
+    "typecheck:react": "npm run typecheck --workspace @cocartheadless/react",
+    "build:react": "npm run build --workspace @cocartheadless/react",
+    "test:react": "npm run test --workspace @cocartheadless/react",
     "lint": "tsc --noEmit",
     "release": "node scripts/release.mjs"
   },

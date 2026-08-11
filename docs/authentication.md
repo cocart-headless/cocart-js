@@ -283,6 +283,67 @@ try {
 }
 ```
 
+## SSR / Framework Adapters
+
+Every framework adapter (`@cocartheadless/sdk/nextjs`, `/nuxt`, `/remix`, `/svelte`, `/astro`, `/tanstack-start`, `/deno`, `/elysiajs`, `/fastify`, `/hono`) already relays the cart key from browser to server via an `X-Cart-Key` request header, read back out by `createServerClient`. `attachAuthHeader` does the same for the current auth state (JWT or Basic Auth), so a Server Component, loader, or server route can resolve the authenticated user without cookies:
+
+```ts
+// Client
+import { createBrowserClient, attachAuthHeader } from '@cocartheadless/sdk/nextjs';
+
+const client = createBrowserClient('https://your-store.com', { encryptionKey: '...' });
+await client.restoreSession();
+attachAuthHeader(client); // wraps fetch to stamp the current auth header on same-origin requests
+```
+
+```ts
+// Server Component / Route Handler
+import { headers } from 'next/headers';
+import { createServerClient } from '@cocartheadless/sdk/nextjs';
+
+const headersList = await headers();
+const client = createServerClient('https://your-store.com', headersList);
+
+client.isAuthenticated(); // reflects the calling browser's auth state
+```
+
+`createServerClient` reads the header named by the client's configured `authHeaderName` (`Authorization` by default — see [Custom Auth Header Name](#custom-auth-header-name)), parses a `Bearer <jwt>` or `Basic <base64>` value, and applies it to the returned client via `setJwtToken()`/`setAuth()`.
+
+### Security tradeoff
+
+`attachAuthHeader` puts the JWT (access **and refresh** tokens) in browser-readable storage, echoed back to the server via a header set from JS — the same tradeoff `attachCartKeyHeader` makes for the cart key, but with a materially more sensitive credential: a cart key identifies a cart, a refresh token is a standing credential for a user account. This is a deliberate choice to stay consistent with the SDK's existing no-cookie, GDPR-conscious adapter design, not an oversight.
+
+To bound the exposure:
+
+- Keep the JWT access-token TTL short server-side (configured in the [CoCart JWT Authentication](https://wordpress.org/plugins/cocart-jwt-authentication/) plugin, not in this SDK).
+- Always use `client.jwt().withAutoRefresh()` — a leaked, expired access token is far less useful than a long-lived one.
+- Use `EncryptedStorage` for the browser-side client so tokens aren't sitting in plaintext `localStorage` at rest — this doesn't stop a live XSS payload from calling `client.getJwtToken()`, but it does protect against offline extraction (browser extensions, disk access, log scraping).
+
+If a store's threat model requires eliminating this exposure entirely (e.g. storing the refresh token in an httpOnly cookie instead), that's a deliberate architectural fork from the header-passthrough pattern this SDK uses everywhere else — raise it with the CoCart team building the JWT Authentication plugin rather than working around it in application code, since it changes how the server needs to issue and rotate tokens.
+
+## React Bindings (`@cocartheadless/react`)
+
+For React apps, [`@cocartheadless/react`](https://www.npmjs.com/package/@cocartheadless/react) wraps `SessionManager` in a `<CoCartProvider>` + `useAuth()` hook, so auth state is a single reactive value instead of every component calling `client.isAuthenticated()` independently:
+
+```tsx
+import { CoCartProvider, useAuth } from '@cocartheadless/react';
+
+function App() {
+  return (
+    <CoCartProvider client={client}>
+      <NavBar />
+    </CoCartProvider>
+  );
+}
+
+function NavBar() {
+  const { user, isAuthenticated, isLoading, login, logout } = useAuth();
+  // login() acquires JWT tokens and merges the guest cart automatically (via SessionManager.loginWithJwt)
+}
+```
+
+Logging in from one component (e.g. a modal) is reflected everywhere `useAuth()` is read (e.g. the nav bar), without manual state syncing. See the package's own README for the full API and the same security tradeoff noted above.
+
 ## Consumer Keys (Admin)
 
 **Consumer keys** are API credentials generated in the WooCommerce admin panel (WooCommerce > Settings > Advanced > REST API). They are different from a customer's username/password — they're meant for server-to-server access and administrative operations like managing cart sessions.

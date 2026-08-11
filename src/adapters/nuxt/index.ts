@@ -1,5 +1,6 @@
 import { CoCart, MemoryStorage } from '@cocartheadless/sdk';
 import type { CoCartOptions } from '@cocartheadless/sdk';
+import { applyAuthHeader } from '../shared/apply-auth-header.js';
 
 /** Minimal duck-type for an h3 H3Event — avoids a hard dependency on `h3`. */
 interface H3Event {
@@ -50,11 +51,17 @@ export function createServerClient(
   const raw = event.node.req.headers['x-cart-key'];
   const cartKey = Array.isArray(raw) ? raw[0] : (raw ?? undefined);
 
-  return new CoCart(storeUrl, {
+  const client = new CoCart(storeUrl, {
     storage: new MemoryStorage(),
     cartKey,
     ...options,
   });
+
+  const rawAuth = event.node.req.headers[client.getAuthHeaderName().toLowerCase()];
+  applyAuthHeader(client, Array.isArray(rawAuth) ? rawAuth[0] : rawAuth);
+
+  return client;
 }
 
 export { attachCartKeyHeader } from '../shared/attach-cart-key-header.js';
+export { attachAuthHeader } from '../shared/attach-auth-header.js';

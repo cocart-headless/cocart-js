@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
-import { createBrowserClient, createServerClient, attachCartKeyHeader } from './index.js';
+import { createBrowserClient, createServerClient, attachCartKeyHeader, attachAuthHeader } from './index.js';
 
 describe('Next.js adapter', () => {
   describe('createBrowserClient', () => {
@@ -32,6 +32,21 @@ describe('Next.js adapter', () => {
       const headers = new Headers();
       const client = createServerClient('https://store.example.com', headers);
       expect(typeof client.getCartKey).toBe('function');
+    });
+
+    it('reads a Bearer Authorization header and authenticates the client', () => {
+      const headers = new Headers({ Authorization: 'Bearer jwt-from-server' });
+      const client = createServerClient('https://store.example.com', headers);
+
+      expect(client.isAuthenticated()).toBe(true);
+      expect(client.getJwtToken()).toBe('jwt-from-server');
+    });
+
+    it('leaves the client as a guest when no Authorization header is present', () => {
+      const headers = new Headers();
+      const client = createServerClient('https://store.example.com', headers);
+
+      expect(client.isAuthenticated()).toBe(false);
     });
   });
 
@@ -96,6 +111,37 @@ describe('Next.js adapter', () => {
 
       const calledHeaders = new Headers((mockFetch.mock.calls[0] as [string, RequestInit])[1]?.headers);
       expect(calledHeaders.get('X-Cart-Key')).toBe('key-from-server');
+    });
+  });
+
+  describe('attachAuthHeader', () => {
+    let originalFetch: typeof globalThis.fetch;
+
+    beforeEach(() => {
+      originalFetch = globalThis.fetch;
+      Object.defineProperty(globalThis, 'location', {
+        value: { origin: 'https://app.example.com' },
+        configurable: true,
+      });
+    });
+
+    afterEach(() => {
+      globalThis.fetch = originalFetch;
+      vi.restoreAllMocks();
+    });
+
+    it('injects the Authorization header relayed from the server client', async () => {
+      const mockFetch = vi.fn().mockResolvedValue(new Response());
+      globalThis.fetch = mockFetch;
+
+      const headers = new Headers({ Authorization: 'Bearer jwt-from-server' });
+      const client = createServerClient('https://store.example.com', headers);
+      attachAuthHeader(client);
+
+      await globalThis.fetch('https://app.example.com/api/account');
+
+      const calledHeaders = new Headers((mockFetch.mock.calls[0] as [string, RequestInit])[1]?.headers);
+      expect(calledHeaders.get('Authorization')).toBe('Bearer jwt-from-server');
     });
   });
 });

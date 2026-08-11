@@ -41,6 +41,21 @@ describe('Nuxt adapter', () => {
       const client = createServerClient('https://store.example.com', makeH3Event());
       expect(typeof client.getCartKey).toBe('function');
     });
+
+    it('reads a lowercase authorization header and authenticates the client', () => {
+      const event = { node: { req: { headers: { authorization: 'Bearer jwt-from-server' } } } };
+      const client = createServerClient('https://store.example.com', event);
+
+      expect(client.isAuthenticated()).toBe(true);
+      expect(client.getJwtToken()).toBe('jwt-from-server');
+    });
+
+    it('normalises an array authorization header to a single value', () => {
+      const event = { node: { req: { headers: { authorization: ['Bearer first', 'Bearer second'] } } } };
+      const client = createServerClient('https://store.example.com', event);
+
+      expect(client.getJwtToken()).toBe('first');
+    });
   });
 
   describe('attachCartKeyHeader', () => {

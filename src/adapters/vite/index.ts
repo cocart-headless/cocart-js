@@ -30,3 +30,4 @@ export function createBrowserClient(
 }
 
 export { attachCartKeyHeader } from '../shared/attach-cart-key-header.js';
+export { attachAuthHeader } from '../shared/attach-auth-header.js';
