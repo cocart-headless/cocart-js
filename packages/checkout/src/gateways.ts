@@ -13,28 +13,51 @@ import type {
 } from './types.js';
 
 /**
+ * Shared by createStripeGateway/createWooPaymentsGateway's pre-wired path — tokenizes
+ * whatever's mounted in `elements` (a deferred-mode Payment Element, no clientSecret needed
+ * yet) into a PaymentMethod, then returns it under the literal `$_POST` key the WooCommerce
+ * gateway's `process_payment()` actually reads: `wc-stripe-payment-method`, verified against
+ * `WC_Stripe_UPE_Payment_Gateway::prepare_payment_information_from_request()`
+ * (`class-wc-stripe-upe-payment-gateway.php:3304`); `wcpay-payment-method` for WooPayments,
+ * verified against `class-payment-information.php:311`. Without this, `process_payment()` has
+ * no PaymentMethod to charge and fails outright on the first attempt — there is no
+ * bootstrap-free path for the default (non-"Optimized Checkout") flow.
+ */
+function createStripeStyleTokenize(
+  stripe: StripeInstance | undefined,
+  elements: StripeElementsInstance | undefined,
+  paymentMethodDataKey: string,
+): CheckoutGatewayAdapter['tokenize'] {
+  if (!stripe || !elements) return undefined;
+  return async () => {
+    const { error, paymentMethod } = await stripe.createPaymentMethod({ elements });
+    if (error) throw new Error(error.message ?? 'Failed to process card details.');
+    return { [paymentMethodDataKey]: paymentMethod.id };
+  };
+}
+
+/**
  * Shared by createStripeGateway/createWooPaymentsGateway — both surface a `requires_action`
- * PaymentIntent confirmation (`client_secret`/`intent_type`) through the same Stripe.js API,
- * just from two different WooCommerce gateway plugins with their own redirect conventions
- * server-side (decoded into the same envelope shape by their respective compat files).
+ * PaymentIntent/SetupIntent confirmation (`client_secret`/`intent_type`) through the same
+ * Stripe.js API, just from two different WooCommerce gateway plugins with their own redirect
+ * conventions server-side (decoded into the same envelope shape by their respective compat
+ * files). Uses `confirmCardPayment`/`confirmCardSetup`, not `confirmPayment({ elements })` —
+ * the PaymentMethod was already attached to the intent server-side by the initial charge
+ * attempt, so no `elements` rebind against the new `clientSecret` is needed (and `elements`
+ * was never initialized with one to rebind to in the first place, per the deferred-mode setup
+ * above).
  */
 function createStripeStyleConfirmAction(
   stripe: StripeInstance | undefined,
-  elements: StripeElementsInstance | undefined,
   failureMessage: string,
 ): CheckoutGatewayAdapter['confirmAction'] {
-  if (!stripe || !elements) return undefined;
-  return async ({ actionData, successUrl, returnUrl }) => {
+  if (!stripe) return undefined;
+  return async ({ actionData }) => {
     const clientSecret = String(actionData.client_secret ?? '');
-    const confirmParams: Record<string, unknown> = {};
-    if (successUrl) confirmParams.return_url = successUrl;
-    else if (returnUrl) confirmParams.return_url = returnUrl;
-    const { error } = await stripe.confirmPayment({
-      elements,
-      clientSecret,
-      confirmParams,
-      redirect: 'if_required',
-    });
+    const { error } =
+      actionData.intent_type === 'setup_intent'
+        ? await stripe.confirmCardSetup(clientSecret)
+        : await stripe.confirmCardPayment(clientSecret);
     if (error) throw new Error(error.message ?? failureMessage);
   };
 }
@@ -55,11 +78,10 @@ export function createStripeGateway(options: StripeGatewayOptions): CheckoutGate
         className: theme.paymentContainerClassName,
       },
     ],
-    // WooCommerce's Stripe gateway creates the PaymentIntent server-side during POST /checkout —
-    // there's no client_secret (or anything else) to gather before the first submission, so the
-    // pre-wired path sends no payment_data unless a manual `tokenize` was also provided.
-    tokenize: options.tokenize,
-    confirmAction: createStripeStyleConfirmAction(options.stripe, options.elements, 'Stripe payment confirmation failed'),
+    tokenize:
+      options.tokenize ??
+      createStripeStyleTokenize(options.stripe, options.elements, 'wc-stripe-payment-method'),
+    confirmAction: createStripeStyleConfirmAction(options.stripe, 'Stripe payment confirmation failed'),
   };
 }
 
@@ -86,8 +108,10 @@ export function createWooPaymentsGateway(options: WooPaymentsGatewayOptions): Ch
         className: theme.paymentContainerClassName,
       },
     ],
-    tokenize: options.tokenize,
-    confirmAction: createStripeStyleConfirmAction(options.stripe, options.elements, 'WooPayments payment confirmation failed'),
+    tokenize:
+      options.tokenize ??
+      createStripeStyleTokenize(options.stripe, options.elements, 'wcpay-payment-method'),
+    confirmAction: createStripeStyleConfirmAction(options.stripe, 'WooPayments payment confirmation failed'),
   };
 }
 

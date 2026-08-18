@@ -102,11 +102,16 @@ const { processResponse } = await client.checkout.submit({
   },
 });
 
-// submit() sends no payment_data on the first attempt — the WooCommerce Stripe gateway
-// creates the PaymentIntent server-side during processCheckout() and confirms it there too.
-// If it comes back requires_action (3D Secure/SCA), the pre-wired adapter's confirmAction
-// calls stripe.confirmPayment() with the returned client_secret automatically, and submit()
-// retries processCheckout() for you — see "3D Secure / SCA with requires_action" below.
+// submit() calls stripe.createPaymentMethod({ elements }) and sends the result as
+// payment_data: [{ key: 'wc-stripe-payment-method', value: paymentMethod.id }] — the literal
+// $_POST key WC_Gateway_Stripe::process_payment() reads. Without it the charge fails outright
+// on the first attempt; there's no bootstrap-free path for the default (non-"Optimized
+// Checkout") flow. If it comes back requires_action (3D Secure/SCA), the pre-wired adapter's
+// confirmAction calls stripe.confirmCardPayment() (or confirmCardSetup() for a setup_intent)
+// with the returned client_secret automatically — no elements needed for this step, the
+// PaymentMethod is already attached to the intent server-side — and submit() retries
+// processCheckout() for you, with no payment_data needed on retry — see "3D Secure / SCA with
+// requires_action" below.
 
 const result = processResponse.toObject();
 if (result.payment_result?.redirect_url) {
@@ -116,7 +121,8 @@ if (result.payment_result?.redirect_url) {
 
 ### Stripe: Manual
 
-Use this for non-standard flows (setup intents, saved cards, custom confirmation params, or collecting a `payment_method_id` up front instead of relying on the deferred-intent pattern above).
+Use this for non-standard flows (saved payment tokens, custom confirmation params, or a
+different tokenization call than the pre-wired path's `stripe.createPaymentMethod({ elements })`).
 
 ```ts
 import { loadStripe } from '@stripe/stripe-js';
@@ -131,14 +137,17 @@ paymentElement.mount('#payment-element');
 const client = new CoCart('https://your-store.com').use(createCheckout({
   gatewayAdapters: [
     createStripeGateway({
-      // stripe/elements are still passed so confirmAction can handle requires_action —
+      // stripe is still passed so confirmAction can handle requires_action —
       // only the initial payment_data gathering is customized here.
       stripe,
       elements,
       tokenize: async () => {
         const { error, paymentMethod } = await stripe.createPaymentMethod({ elements });
         if (error) throw new Error(error.message);
-        return { payment_method_id: paymentMethod.id };
+        // 'wc-stripe-payment-method' is the literal $_POST key
+        // WC_Gateway_Stripe::process_payment() reads — any other key name is silently ignored
+        // and the charge fails.
+        return { 'wc-stripe-payment-method': paymentMethod.id };
       },
     }),
   ],
@@ -160,7 +169,7 @@ if (result.payment_result?.redirect_url) {
 
 `submit()` handles this automatically for the pre-wired path (pass `stripe`/`elements`, nothing else to do). If `POST /checkout` returns `payment_result.payment_status: 'requires_action'`:
 
-1. `confirmAction` calls `stripe.confirmPayment({ elements, clientSecret: action_data.client_secret, confirmParams, redirect: 'if_required' })`.
+1. `confirmAction` calls `stripe.confirmCardPayment(action_data.client_secret)` — or `stripe.confirmCardSetup(action_data.client_secret)` when `action_data.intent_type === 'setup_intent'` (order total is 0 — free trial/100%-off coupon). No `elements` needed for this step: the PaymentMethod is already attached to the intent server-side by the initial charge attempt.
 2. `submit()` calls `processCheckout()` again with the same cart/session — it lands on the same order rather than creating a duplicate.
 3. The final `result.processResponse` reflects the retry's outcome (`success` or `failed`), not the intermediate `requires_action`.
 

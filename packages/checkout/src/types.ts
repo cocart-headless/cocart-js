@@ -656,7 +656,7 @@ export interface CheckoutGatewayAdapter {
   /**
    * Called by `submit()` when `POST /checkout` returns `payment_result.payment_status: 'requires_action'`
    * (e.g. 3D Secure/SCA). Should perform whatever client-side confirmation the gateway needs — for Stripe,
-   * `stripe.confirmPayment()` using `actionData.client_secret`. `submit()` then calls `processCheckout()`
+   * `stripe.confirmCardPayment()`/`confirmCardSetup()` using `actionData.client_secret`. `submit()` then calls `processCheckout()`
    * again automatically; return additional `payment_data` to merge into that retry, or nothing if it
    * needs none. If a gateway has no `confirmAction`, `submit()` returns the `requires_action` response
    * as-is for the caller to handle.
@@ -758,13 +758,37 @@ export type CheckoutExtension = CoCartExtension<'checkout', CheckoutSDK>;
 
 /** Minimal Stripe.js interface required by the pre-wired gateway helper. */
 export interface StripeInstance {
+  /** Used only by `createStripeExpressGateway` — the Express Checkout Element manages its own PaymentIntent lifecycle and needs `elements` to confirm. */
   confirmPayment(options: {
     elements: StripeElementsInstance;
-    /** Required when confirming a PaymentIntent created server-side (the "deferred intent" pattern) rather than one `elements` was initialized with — this is how `confirmAction` resolves `requires_action`, using `actionData.client_secret`. */
     clientSecret?: string;
     confirmParams?: Record<string, unknown>;
     redirect: 'if_required';
   }): Promise<{ error?: { message?: string }; paymentIntent?: { id: string } }>;
+  /**
+   * Tokenizes whatever's mounted in `elements` (a deferred-mode Payment Element — no
+   * PaymentIntent/clientSecret needed yet) into a PaymentMethod. Used by
+   * `createStripeGateway`/`createWooPaymentsGateway`'s pre-wired `tokenize` to produce the
+   * `wc-stripe-payment-method`/`wcpay-payment-method` value WooCommerce's gateway reads on the
+   * first `POST /checkout`.
+   */
+  createPaymentMethod(options: {
+    elements: StripeElementsInstance;
+  }): Promise<{ error?: { message?: string }; paymentMethod: { id: string } }>;
+  /**
+   * Confirms a PaymentIntent by client secret alone — no `elements` needed, since the
+   * PaymentMethod was already attached to the intent server-side by the initial charge
+   * attempt. Used by `createStripeGateway`/`createWooPaymentsGateway`'s pre-wired
+   * `confirmAction` to resolve `requires_action`/`{stripe,wcpay}_confirm_payment` when
+   * `action_data.intent_type === 'payment_intent'`.
+   */
+  confirmCardPayment(
+    clientSecret: string,
+  ): Promise<{ error?: { message?: string }; paymentIntent?: { id: string; status?: string } }>;
+  /** Same as `confirmCardPayment`, for the `action_data.intent_type === 'setup_intent'` case (order total is 0 — free trial/100%-off coupon). */
+  confirmCardSetup(
+    clientSecret: string,
+  ): Promise<{ error?: { message?: string }; setupIntent?: { id: string; status?: string } }>;
 }
 
 /** Minimal Stripe Elements interface required by the pre-wired gateway helper. */
@@ -775,15 +799,21 @@ export interface StripeElementsInstance {
 /**
  * Options for `createStripeGateway`.
  *
- * **Pre-wired path** — pass `stripe` and `elements` for a ready-to-use integration.
- * No `payment_data` is sent on the first `POST /checkout` (the order's PaymentIntent is
- * created server-side by the WooCommerce Stripe gateway). If the response comes back
- * `requires_action` (3D Secure/SCA), `confirmAction` calls `stripe.confirmPayment()` with
- * `action_data.client_secret`, then `submit()` retries `processCheckout()` automatically.
+ * **Pre-wired path** — pass `stripe` and `elements` (a deferred-mode Payment Element, no
+ * PaymentIntent/clientSecret needed yet) for a ready-to-use integration. On the first
+ * `POST /checkout`, `tokenize` calls `stripe.createPaymentMethod({ elements })` and sends the
+ * result as `payment_data: [{ key: 'wc-stripe-payment-method', value: paymentMethod.id }]` —
+ * the literal `$_POST` key `WC_Gateway_Stripe::process_payment()` reads; without it the charge
+ * fails outright, there is no bootstrap-free path. If the response comes back
+ * `requires_action` (3D Secure/SCA), `confirmAction` calls `stripe.confirmCardPayment()` (or
+ * `confirmCardSetup()` for a `setup_intent`) with `action_data.client_secret` — no `elements`
+ * needed for this step, the PaymentMethod is already attached to the intent server-side — then
+ * `submit()` retries `processCheckout()` automatically, with no `payment_data` needed on retry.
  *
  * **Manual path** — provide a custom `tokenize` callback for full control over the initial
- * `payment_data` (e.g. a `payment_method_id` collected up front). `confirmAction` still
- * defaults to the same 3D Secure handling as long as `stripe`/`elements` are also passed.
+ * `payment_data` (e.g. a saved payment token collected up front, keyed
+ * `wc-stripe-payment-token`). `confirmAction` still defaults to the same 3D Secure handling as
+ * long as `stripe` is also passed.
  */
 export type StripeGatewayOptions =
   | {
@@ -799,9 +829,10 @@ export type StripeGatewayOptions =
       stripe?: StripeInstance;
       elements?: StripeElementsInstance;
       tokenize: (context: CheckoutGatewayTokenizeContext) => Promise<{
-        payment_intent_id?: string;
-        payment_method_id?: string;
-        setup_future_usage?: string;
+        /** The `$_POST` key `WC_Gateway_Stripe::process_payment()` reads for a PaymentMethod id (`pm_...`) obtained via `stripe.createPaymentMethod()`. */
+        'wc-stripe-payment-method'?: string;
+        /** Alternative to `wc-stripe-payment-method` — a ConfirmationToken id (`ctoken_...`) obtained via `stripe.createConfirmationToken()`. Only one of the two should be sent. */
+        'wc-stripe-confirmation-token'?: string;
         [key: string]: unknown;
       }>;
     };

@@ -119,9 +119,11 @@ describe('@cocartheadless/checkout', () => {
     expect(authorizenet.id).toBe('authorizenet');
   });
 
-  it('pre-wired stripe gateway sends no payment_data on the first attempt and no requires_action retry when payment succeeds outright', async () => {
-    const confirmPayment = vi.fn();
-    const mockStripe = { confirmPayment };
+  it('pre-wired stripe gateway tokenizes via createPaymentMethod and sends it as wc-stripe-payment-method, no requires_action retry when payment succeeds outright', async () => {
+    const createPaymentMethod = vi.fn().mockResolvedValue({ paymentMethod: { id: 'pm_123' } });
+    const confirmCardPayment = vi.fn();
+    const confirmCardSetup = vi.fn();
+    const mockStripe = { createPaymentMethod, confirmCardPayment, confirmCardSetup, confirmPayment: vi.fn() };
     const mockElements = {};
 
     const client = new CoCart('https://store.com').use(createCheckout({
@@ -138,21 +140,25 @@ describe('@cocartheadless/checkout', () => {
 
     const result = await client.checkout.submit({ gatewayId: 'stripe' });
 
-    expect(confirmPayment).not.toHaveBeenCalled();
+    expect(createPaymentMethod).toHaveBeenCalledWith({ elements: mockElements });
+    expect(confirmCardPayment).not.toHaveBeenCalled();
+    expect(confirmCardSetup).not.toHaveBeenCalled();
     expect(requestRaw).toHaveBeenCalledTimes(2);
     expect(requestRaw).toHaveBeenNthCalledWith(2,
       'POST',
       'cocart/v2/checkout',
       expect.any(Object),
-      expect.objectContaining({ payment_data: undefined }),
+      expect.objectContaining({ payment_data: [{ key: 'wc-stripe-payment-method', value: 'pm_123' }] }),
     );
-    expect(result.paymentData).toBeUndefined();
+    expect(result.paymentData).toEqual({ 'wc-stripe-payment-method': 'pm_123' });
     expect(result.processResponse.toObject().payment_result?.payment_status).toBe('success');
   });
 
-  it('pre-wired stripe gateway resolves requires_action (3D Secure) via confirmAction and retries processCheckout', async () => {
-    const confirmPayment = vi.fn().mockResolvedValue({ paymentIntent: { id: 'pi_confirmed' } });
-    const mockStripe = { confirmPayment };
+  it('pre-wired stripe gateway resolves requires_action (3D Secure) via confirmCardPayment and retries processCheckout', async () => {
+    const createPaymentMethod = vi.fn().mockResolvedValue({ paymentMethod: { id: 'pm_123' } });
+    const confirmCardPayment = vi.fn().mockResolvedValue({ paymentIntent: { id: 'pi_confirmed' } });
+    const confirmCardSetup = vi.fn();
+    const mockStripe = { createPaymentMethod, confirmCardPayment, confirmCardSetup, confirmPayment: vi.fn() };
     const mockElements = {};
 
     const client = new CoCart('https://store.com').use(createCheckout({
@@ -178,11 +184,8 @@ describe('@cocartheadless/checkout', () => {
 
     const result = await client.checkout.submit({ gatewayId: 'stripe' });
 
-    expect(confirmPayment).toHaveBeenCalledWith(expect.objectContaining({
-      elements: mockElements,
-      clientSecret: 'pi_secret_123',
-      redirect: 'if_required',
-    }));
+    expect(confirmCardPayment).toHaveBeenCalledWith('pi_secret_123');
+    expect(confirmCardSetup).not.toHaveBeenCalled();
     expect(requestRaw).toHaveBeenCalledTimes(3);
     expect(result.processResponse.toObject().payment_result?.payment_status).toBe('success');
   });
@@ -239,9 +242,11 @@ describe('@cocartheadless/checkout', () => {
     expect(result.processResponse.toObject().payment_result?.payment_status).toBe('on_hold');
   });
 
-  it('createWooPaymentsGateway sends no payment_data on the first attempt and confirms via Stripe.js on requires_action', async () => {
-    const confirmPayment = vi.fn().mockResolvedValue({ paymentIntent: { id: 'pi_confirmed' } });
-    const mockStripe = { confirmPayment };
+  it('createWooPaymentsGateway sends wcpay-payment-method on the first attempt and confirms via confirmCardPayment on requires_action', async () => {
+    const createPaymentMethod = vi.fn().mockResolvedValue({ paymentMethod: { id: 'pm_456' } });
+    const confirmCardPayment = vi.fn().mockResolvedValue({ paymentIntent: { id: 'pi_confirmed' } });
+    const confirmCardSetup = vi.fn();
+    const mockStripe = { createPaymentMethod, confirmCardPayment, confirmCardSetup, confirmPayment: vi.fn() };
     const mockElements = {};
 
     const client = new CoCart('https://store.com').use(createCheckout({
@@ -267,28 +272,31 @@ describe('@cocartheadless/checkout', () => {
 
     const result = await client.checkout.submit({ gatewayId: 'woocommerce_payments' });
 
-    expect(confirmPayment).toHaveBeenCalledWith(expect.objectContaining({
-      elements: mockElements,
-      clientSecret: 'pi_secret_456',
-      redirect: 'if_required',
-    }));
+    expect(createPaymentMethod).toHaveBeenCalledWith({ elements: mockElements });
+    expect(confirmCardPayment).toHaveBeenCalledWith('pi_secret_456');
+    expect(confirmCardSetup).not.toHaveBeenCalled();
     expect(requestRaw).toHaveBeenCalledTimes(3);
     expect(requestRaw).toHaveBeenNthCalledWith(2,
       'POST',
       'cocart/v2/checkout',
       expect.any(Object),
-      expect.objectContaining({ payment_method: 'woocommerce_payments', payment_data: undefined }),
+      expect.objectContaining({
+        payment_method: 'woocommerce_payments',
+        payment_data: [{ key: 'wcpay-payment-method', value: 'pm_456' }],
+      }),
     );
     expect(result.processResponse.toObject().payment_result?.payment_status).toBe('success');
   });
 
   it('createWooPaymentsGateway surfaces a Multibanco voucher on_hold result without retrying', async () => {
-    const confirmPayment = vi.fn();
+    const createPaymentMethod = vi.fn().mockResolvedValue({ paymentMethod: { id: 'pm_789' } });
+    const confirmCardPayment = vi.fn();
+    const confirmCardSetup = vi.fn();
     const client = new CoCart('https://store.com').use(createCheckout({
       consumerKey: 'ck_test',
       consumerSecret: 'cs_test',
       gatewayAdapters: [
-        createWooPaymentsGateway({ stripe: { confirmPayment }, elements: {} }),
+        createWooPaymentsGateway({ stripe: { createPaymentMethod, confirmCardPayment, confirmCardSetup, confirmPayment: vi.fn() }, elements: {} }),
       ],
     }));
 
@@ -307,7 +315,8 @@ describe('@cocartheadless/checkout', () => {
 
     const result = await client.checkout.submit({ gatewayId: 'woocommerce_payments' });
 
-    expect(confirmPayment).not.toHaveBeenCalled();
+    expect(confirmCardPayment).not.toHaveBeenCalled();
+    expect(confirmCardSetup).not.toHaveBeenCalled();
     expect(requestRaw).toHaveBeenCalledTimes(2);
     const paymentResult = result.processResponse.toObject().payment_result;
     expect(paymentResult?.payment_status).toBe('on_hold');
@@ -576,7 +585,12 @@ describe('@cocartheadless/checkout', () => {
   });
 
   it('listExpressGateways returns only adapters with express: true', () => {
-    const mockStripe = { confirmPayment: vi.fn() };
+    const mockStripe = {
+      confirmPayment: vi.fn(),
+      createPaymentMethod: vi.fn(),
+      confirmCardPayment: vi.fn(),
+      confirmCardSetup: vi.fn(),
+    };
     const mockElements = {};
     const client = new CoCart('https://store.com').use(createCheckout({
       gatewayAdapters: [
@@ -591,7 +605,12 @@ describe('@cocartheadless/checkout', () => {
   });
 
   it('listExpressGateways sorts by expressCheckoutPriority ascending', () => {
-    const mockStripe = { confirmPayment: vi.fn() };
+    const mockStripe = {
+      confirmPayment: vi.fn(),
+      createPaymentMethod: vi.fn(),
+      confirmCardPayment: vi.fn(),
+      confirmCardSetup: vi.fn(),
+    };
     const mockElements = {};
     const client = new CoCart('https://store.com').use(createCheckout({
       gatewayAdapters: [
@@ -606,7 +625,12 @@ describe('@cocartheadless/checkout', () => {
   });
 
   it('createExpressCheckoutBar returns gateways with fields from getExpressFields', () => {
-    const mockStripe = { confirmPayment: vi.fn() };
+    const mockStripe = {
+      confirmPayment: vi.fn(),
+      createPaymentMethod: vi.fn(),
+      confirmCardPayment: vi.fn(),
+      confirmCardSetup: vi.fn(),
+    };
     const mockElements = {};
     const client = new CoCart('https://store.com').use(createCheckout({
       gatewayAdapters: [
@@ -629,7 +653,12 @@ describe('@cocartheadless/checkout', () => {
   });
 
   it('createStripeExpressGateway returns adapter with express: true and express_checkout support', () => {
-    const mockStripe = { confirmPayment: vi.fn() };
+    const mockStripe = {
+      confirmPayment: vi.fn(),
+      createPaymentMethod: vi.fn(),
+      confirmCardPayment: vi.fn(),
+      confirmCardSetup: vi.fn(),
+    };
     const mockElements = {};
     const adapter = createStripeExpressGateway({ stripe: mockStripe, elements: mockElements });
 

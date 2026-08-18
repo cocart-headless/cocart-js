@@ -70,13 +70,13 @@ await client.checkout.processCheckout({
   payment_method: 'stripe',
   shipping_method: 'flat_rate:1',
   payment_data: [
-    { key: 'payment_intent_id', value: 'pi_123' },
+    { key: 'wc-stripe-payment-method', value: 'pm_123' },
   ],
 });
 ```
 
 > [!NOTE]
-> `payment_data` is an array of `{ key, value }` pairs on the wire, not a plain object. `submit()` (below) handles this conversion for you — gateway adapters' `tokenize()` still returns a plain object like `{ payment_intent_id: 'pi_123' }`, which `submit()` converts before sending. Only convert it yourself if you call `processCheckout()` directly.
+> `payment_data` is an array of `{ key, value }` pairs on the wire, not a plain object. `submit()` (below) handles this conversion for you — gateway adapters' `tokenize()` still returns a plain object like `{ 'wc-stripe-payment-method': 'pm_123' }`, which `submit()` converts before sending. Only convert it yourself if you call `processCheckout()` directly. The `key` must match the literal `$_POST` field the target WooCommerce gateway reads (e.g. `wc-stripe-payment-method` for the WooCommerce Stripe Gateway, `wcpay-payment-method` for WooPayments) — an arbitrary key like `payment_intent_id` is silently ignored.
 
 ## Handling `payment_result`
 
@@ -109,7 +109,7 @@ The order and cart session are deliberately left intact when `requires_action` c
 
 | `action_type` | Gateway | `action_data` | What to do |
 |---|---|---|---|
-| `stripe_confirm_payment` | WooCommerce Stripe Gateway | `client_secret`, `intent_type` | `stripe.confirmPayment({ clientSecret, elements, redirect: 'if_required' })`, then retry. Handled automatically by `createStripeGateway`'s `confirmAction`. |
+| `stripe_confirm_payment` | WooCommerce Stripe Gateway | `client_secret`, `intent_type` | `stripe.confirmCardPayment(clientSecret)` (or `confirmCardSetup(clientSecret)` if `intent_type === 'setup_intent'`) — no `elements` needed, the PaymentMethod is already attached to the intent server-side — then retry. Handled automatically by `createStripeGateway`'s `confirmAction`. |
 | `wcpay_confirm_payment` | WooPayments | `client_secret`, `intent_type` | Same as above — WooPayments is Stripe-based too. Handled automatically by `createWooPaymentsGateway`'s `confirmAction`. |
 | `paypal_approve` | PayPal Payments (`ppcp-gateway`) | `redirect` — a URL | Open the PayPal-hosted approval URL. Completion is async (webhook-driven) — retry once the order is actually paid, not immediately after the redirect returns. No pre-wired factory; see [Gateways → PayPal Payments](gateways.md#paypal-payments). |
 | `paypal_confirm_3ds` | PayPal Payments (`ppcp-credit-card-gateway`) | `redirect` — a URL | Open PayPal's 3D Secure step-up URL. The return URL must carry the same `ppcp_resume_nonce` PayPal generated — send it back in `payment_data` on retry. |
@@ -289,7 +289,7 @@ If `needs_payment` is `true` (e.g. the customer abandoned checkout on a `pending
 ```ts
 const payResponse = await client.checkout.payForOrder(order.order_id, order.order_key, {
   payment_method: 'stripe',
-  payment_data: [{ key: 'payment_intent_id', value: 'pi_123' }],
+  payment_data: [{ key: 'wc-stripe-payment-method', value: 'pm_123' }],
 });
 const { success, redirect_url } = payResponse.toObject();
 ```
