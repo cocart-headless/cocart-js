@@ -2,9 +2,11 @@ import type {
   AuthorizeNetGatewayOptions,
   BankTransferGatewayOptions,
   CashOnDeliveryGatewayOptions,
+  CheckoutAddressInput,
   CheckoutGatewayAdapter,
   CheckPaymentGatewayOptions,
   PayPalGatewayOptions,
+  StripeBillingDetails,
   StripeElementsInstance,
   StripeExpressGatewayOptions,
   StripeGatewayOptions,
@@ -29,10 +31,46 @@ function createStripeStyleTokenize(
   paymentMethodDataKey: string,
 ): CheckoutGatewayAdapter['tokenize'] {
   if (!stripe || !elements) return undefined;
-  return async () => {
-    const { error, paymentMethod } = await stripe.createPaymentMethod({ elements });
+  return async ({ input }) => {
+    // Stripe requires elements.submit() before createPaymentMethod() in deferred mode: it
+    // validates the form and collects wallet details. Mocks and older shims may not have it.
+    if (typeof elements.submit === 'function') {
+      const submitted = await elements.submit();
+      if (submitted?.error) throw new Error(submitted.error.message ?? 'Check your card details.');
+    }
+
+    // The checkout's billing address, so it also works when the Payment Element hides its own
+    // billing fields (`fields.billingDetails: 'never'`), which makes Stripe require them here.
+    const billingDetails = toStripeBillingDetails(input.billing_address);
+    const { error, paymentMethod } = await stripe.createPaymentMethod(
+      billingDetails ? { elements, params: { billing_details: billingDetails } } : { elements },
+    );
     if (error) throw new Error(error.message ?? 'Failed to process card details.');
     return { [paymentMethodDataKey]: paymentMethod.id };
+  };
+}
+
+/**
+ * A checkout billing address as Stripe `billing_details`; undefined when there's no address.
+ * Every field is sent, empty ones as `null`: when the Payment Element hides billing fields
+ * (`'never'`), Stripe rejects createPaymentMethod() unless each hidden field is passed, even
+ * when the customer left it blank (e.g. an optional phone).
+ */
+function toStripeBillingDetails(address: CheckoutAddressInput | undefined): StripeBillingDetails | undefined {
+  if (!address || Object.keys(address).length === 0) return undefined;
+  const text = (value: unknown) => (typeof value === 'string' && value.trim() !== '' ? value.trim() : null);
+  return {
+    name: [text(address.first_name), text(address.last_name)].filter(Boolean).join(' ') || null,
+    email: text(address.email),
+    phone: text(address.phone),
+    address: {
+      line1: text(address.address_1),
+      line2: text(address.address_2),
+      city: text(address.city),
+      state: text(address.state),
+      postal_code: text(address.postcode),
+      country: text(address.country),
+    },
   };
 }
 

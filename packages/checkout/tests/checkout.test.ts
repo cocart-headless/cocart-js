@@ -154,6 +154,64 @@ describe('@cocartheadless/checkout', () => {
     expect(result.processResponse.toObject().payment_result?.payment_status).toBe('success');
   });
 
+  it('pre-wired stripe gateway calls elements.submit() first and sends the checkout billing address as billing_details', async () => {
+    const calls: string[] = [];
+    const submit = vi.fn(async () => {
+      calls.push('submit');
+      return {};
+    });
+    const createPaymentMethod = vi.fn(async () => {
+      calls.push('createPaymentMethod');
+      return { paymentMethod: { id: 'pm_123' } };
+    });
+    const mockStripe = { createPaymentMethod, confirmCardPayment: vi.fn(), confirmCardSetup: vi.fn(), confirmPayment: vi.fn() };
+    const mockElements = { submit };
+
+    const client = new CoCart('https://store.com').use(createCheckout({
+      gatewayAdapters: [createStripeGateway({ stripe: mockStripe, elements: mockElements })],
+    }));
+    vi.spyOn(client, 'requestRaw')
+      .mockResolvedValueOnce({ toObject: () => ({}) } as never) // PUT /checkout (update)
+      .mockResolvedValueOnce({ toObject: () => ({ payment_result: { payment_status: 'success' } }) } as never);
+
+    await client.checkout.submit({
+      gatewayId: 'stripe',
+      hydrateCheckoutState: false,
+      update: {
+        billing_address: { first_name: 'Jane', last_name: 'Doe', email: 'jane@example.com', phone: '', address_1: '1 Main St', city: 'Paris', postcode: '75001', country: 'FR' },
+      },
+    });
+
+    expect(calls).toEqual(['submit', 'createPaymentMethod']);
+    expect(createPaymentMethod).toHaveBeenCalledWith({
+      elements: mockElements,
+      params: {
+        // Blank fields are sent as null: Stripe requires every field the Payment Element hides.
+        billing_details: {
+          name: 'Jane Doe',
+          email: 'jane@example.com',
+          phone: null,
+          address: { line1: '1 Main St', line2: null, city: 'Paris', state: null, postal_code: '75001', country: 'FR' },
+        },
+      },
+    });
+  });
+
+  it('pre-wired stripe gateway stops before creating a PaymentMethod when elements.submit() reports an error', async () => {
+    const createPaymentMethod = vi.fn();
+    const mockStripe = { createPaymentMethod, confirmCardPayment: vi.fn(), confirmCardSetup: vi.fn(), confirmPayment: vi.fn() };
+    const mockElements = { submit: vi.fn().mockResolvedValue({ error: { message: 'Your card number is incomplete.' } }) };
+
+    const client = new CoCart('https://store.com').use(createCheckout({
+      gatewayAdapters: [createStripeGateway({ stripe: mockStripe, elements: mockElements })],
+    }));
+    const requestRaw = vi.spyOn(client, 'requestRaw');
+
+    await expect(client.checkout.submit({ gatewayId: 'stripe', hydrateCheckoutState: false })).rejects.toThrow('Your card number is incomplete.');
+    expect(createPaymentMethod).not.toHaveBeenCalled();
+    expect(requestRaw).not.toHaveBeenCalled();
+  });
+
   it('pre-wired stripe gateway resolves requires_action (3D Secure) via confirmCardPayment and retries processCheckout', async () => {
     const createPaymentMethod = vi.fn().mockResolvedValue({ paymentMethod: { id: 'pm_123' } });
     const confirmCardPayment = vi.fn().mockResolvedValue({ paymentIntent: { id: 'pi_confirmed' } });

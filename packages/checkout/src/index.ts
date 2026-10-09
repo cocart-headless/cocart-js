@@ -37,6 +37,7 @@ export type {
   OfflineGatewayOptions,
   StripeExpressGatewayOptions,
   StripeInstance,
+  StripeBillingDetails,
   StripeElementsInstance,
   CheckoutAddressInput,
   CheckoutExtension,

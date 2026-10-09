@@ -518,7 +518,9 @@ export class CheckoutClient implements CheckoutSDK {
           checkout: this,
           gatewayId: input.gatewayId,
           checkoutState,
-          input: input.process ?? { payment_method: input.gatewayId },
+          // What POST /checkout will receive (update fields win, as below), so a gateway can use
+          // the billing address even when it was passed in `update` only.
+          input: { ...(input.process ?? {}), ...(input.update ?? {}), payment_method: input.gatewayId },
           successUrl,
           returnUrl,
         });

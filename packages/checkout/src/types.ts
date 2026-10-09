@@ -846,6 +846,7 @@ export interface StripeInstance {
    */
   createPaymentMethod(options: {
     elements: StripeElementsInstance;
+    params?: { billing_details?: StripeBillingDetails };
   }): Promise<{ error?: { message?: string }; paymentMethod: { id: string } }>;
   /**
    * Confirms a PaymentIntent by client secret alone — no `elements` needed, since the
@@ -865,7 +866,17 @@ export interface StripeInstance {
 
 /** Minimal Stripe Elements interface required by the pre-wired gateway helper. */
 export interface StripeElementsInstance {
+  /** Validates the Payment Element and collects wallet details; Stripe requires it before `createPaymentMethod()` in deferred mode. */
+  submit?(): Promise<{ error?: { message?: string } }>;
   [key: string]: unknown;
+}
+
+/** Billing details passed to `stripe.createPaymentMethod()`, built from the checkout's billing address. */
+export interface StripeBillingDetails {
+  name?: string | null;
+  email?: string | null;
+  phone?: string | null;
+  address?: { line1?: string | null; line2?: string | null; city?: string | null; state?: string | null; postal_code?: string | null; country?: string | null };
 }
 
 /**
@@ -873,7 +884,8 @@ export interface StripeElementsInstance {
  *
  * **Pre-wired path** — pass `stripe` and `elements` (a deferred-mode Payment Element, no
  * PaymentIntent/clientSecret needed yet) for a ready-to-use integration. On the first
- * `POST /checkout`, `tokenize` calls `stripe.createPaymentMethod({ elements })` and sends the
+ * `POST /checkout`, `tokenize` calls `elements.submit()`, then `stripe.createPaymentMethod({ elements, params: { billing_details } })`
+ * with the checkout's billing address (so the Payment Element can hide its own billing fields), and sends the
  * result as `payment_data: [{ key: 'wc-stripe-payment-method', value: paymentMethod.id }]` —
  * the literal `$_POST` key `WC_Gateway_Stripe::process_payment()` reads; without it the charge
  * fails outright, there is no bootstrap-free path. If the response comes back
