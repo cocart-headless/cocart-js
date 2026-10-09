@@ -138,6 +138,22 @@ session.isGuest();         // true if no auth credentials
 session.getCartKey();      // current cart key or null
 ```
 
+### CookieStorage
+
+Keeps values in first-party browser cookies instead of `localStorage`. Use it for **server-rendered frontends**: the browser sends the cart key cookie with every page request, so a server render can read the same cart — the framework adapters' `createServerClient()` reads the cart key cookie (named after `storageKey`, default `cocart_cart_key`) when there's no `X-Cart-Key` header. `localStorage` never leaves the browser, so a plain page load can't see it.
+
+```typescript
+import { CookieStorage } from '@cocartheadless/sdk';
+
+const storage = new CookieStorage({
+  maxAge: 60 * 60 * 24 * 30, // seconds, default 30 days
+  sameSite: 'Lax',           // default
+  // secure defaults to true outside http://localhost; prefix, path and domain are optional
+});
+```
+
+Cookies are readable by page scripts, and anything else the client stores (including JWT tokens) goes into them too. If you log customers in, keep tokens server-side.
+
 ### Custom Storage Key
 
 ```ts

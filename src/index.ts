@@ -34,6 +34,8 @@ export type { StorageInterface } from './storage/storage.interface.js';
 export { MemoryStorage } from './storage/memory-storage.js';
 export { LocalStorage } from './storage/local-storage.js';
 export { EncryptedStorage } from './storage/encrypted-storage.js';
+export { CookieStorage, readCookie } from './storage/cookie-storage.js';
+export type { CookieStorageOptions } from './storage/cookie-storage.js';
 
 // Types
 export type {

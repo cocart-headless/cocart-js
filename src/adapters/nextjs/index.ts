@@ -1,4 +1,4 @@
-import { CoCart, MemoryStorage } from '@cocartheadless/sdk';
+import { CoCart, MemoryStorage, readCookie } from '@cocartheadless/sdk';
 import type { CoCartOptions } from '@cocartheadless/sdk';
 
 /**
@@ -20,7 +20,11 @@ export function createBrowserClient(
  * Create a server-side CoCart client for Next.js (App Router, RSC, API routes).
  *
  * Uses MemoryStorage (per-request). Reads the cart key from the
- * provided request headers — no cookies needed.
+ * `X-Cart-Key` request header (sent by `attachCartKeyHeader()` on the app's
+ * own fetch calls), or else from the cart key cookie (named after
+ * `storageKey`, default `cocart_cart_key`) when the browser client stores it
+ * with `CookieStorage`. The cookie is what lets a plain page request — which
+ * carries no custom headers — render the visitor's cart on the server.
  *
  * Usage in a Server Component or Route Handler:
  * ```ts
@@ -36,7 +40,10 @@ export function createServerClient(
   headers: Headers,
   options: CoCartOptions = {},
 ): CoCart {
-  const cartKey = headers.get('X-Cart-Key') ?? undefined;
+  const cartKey =
+    headers.get('X-Cart-Key') ??
+    readCookie(headers.get('cookie'), options.storageKey ?? 'cocart_cart_key') ??
+    undefined;
 
   return new CoCart(storeUrl, {
     storage: new MemoryStorage(),

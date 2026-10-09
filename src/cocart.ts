@@ -103,6 +103,11 @@ export class CoCart {
     if (options.etag !== undefined) this.etagEnabled = options.etag;
     if (options.mainPlugin) this.mainPlugin = options.mainPlugin;
 
+    // Sync storage (LocalStorage, CookieStorage, MemoryStorage) is read straight away, so a
+    // browser client picks up the cart key from the previous page load on its own. Async
+    // storage (EncryptedStorage) still needs `await restoreSession()`.
+    if (this.cartKey === null) this.restoreSessionSync();
+
     if (options.extensions) {
       for (const extension of options.extensions) {
         this.use(extension);
@@ -119,12 +124,28 @@ export class CoCart {
 
   /**
    * Restore the cart key from storage.
-   * Call this once after construction if using async storage (e.g. EncryptedStorage).
+   * Sync storage is restored by the constructor; call this once after construction if using
+   * async storage (e.g. EncryptedStorage). Safe to call either way.
    */
   async restoreSession(): Promise<void> {
     if (this.cartKey === null) {
       const stored = await this.storage.get(this.storageKey);
       if (stored) this.cartKey = stored;
+    }
+  }
+
+  /** Reads the cart key from storage when the adapter answers synchronously; async adapters are left to restoreSession(). */
+  private restoreSessionSync(): void {
+    try {
+      const stored = this.storage.get(this.storageKey);
+      if (typeof stored === 'string' && stored) {
+        this.cartKey = stored;
+      } else if (stored && typeof (stored as Promise<string | null>).then === 'function') {
+        // Not awaited here; restoreSession() reads it again. Don't leave a rejection unhandled.
+        (stored as Promise<string | null>).catch(() => {});
+      }
+    } catch {
+      // Storage unavailable (e.g. cookies or localStorage blocked): start without a cart key.
     }
   }
 

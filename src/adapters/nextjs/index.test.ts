@@ -33,6 +33,24 @@ describe('Next.js adapter', () => {
       const client = createServerClient('https://store.example.com', headers);
       expect(typeof client.getCartKey).toBe('function');
     });
+
+    it('falls back to the cart key cookie when there is no X-Cart-Key header (a plain page request)', () => {
+      const headers = new Headers({ cookie: 'theme=dark; cocart_cart_key=t_from_cookie' });
+      const client = createServerClient('https://store.example.com', headers);
+      expect(client.getCartKey()).toBe('t_from_cookie');
+    });
+
+    it('reads the cookie named after a custom storageKey', () => {
+      const headers = new Headers({ cookie: 'my_cart=t_custom' });
+      const client = createServerClient('https://store.example.com', headers, { storageKey: 'my_cart' });
+      expect(client.getCartKey()).toBe('t_custom');
+    });
+
+    it('prefers X-Cart-Key over the cookie', () => {
+      const headers = new Headers({ 'X-Cart-Key': 't_header', cookie: 'cocart_cart_key=t_cookie' });
+      const client = createServerClient('https://store.example.com', headers);
+      expect(client.getCartKey()).toBe('t_header');
+    });
   });
 
   describe('attachCartKeyHeader', () => {

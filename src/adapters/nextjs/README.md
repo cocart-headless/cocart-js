@@ -65,6 +65,22 @@ export async function getSession() {
 
 ---
 
+## Sharing the cart with server renders (cookies)
+
+`X-Cart-Key` only rides on the app's own `fetch()` calls; a plain page request carries no custom headers, so a Server Component rendering the page can't see a cart kept in `localStorage`. To render the visitor's cart on the server (e.g. the cart count in the header on first paint), keep the cart key in a cookie:
+
+```ts
+'use client';
+import { CookieStorage } from '@cocartheadless/sdk';
+import { createBrowserClient } from '@cocartheadless/sdk/nextjs';
+
+export const client = createBrowserClient(process.env.NEXT_PUBLIC_COCART_STORE_URL!, {
+  storage: new CookieStorage(),
+});
+```
+
+`createServerClient(storeUrl, await headers())` then picks the cart key up from the request's `Cookie` header (named after `storageKey`, default `cocart_cart_key`) whenever there's no `X-Cart-Key` header.
+
 ## Server Client (App Router)
 
 **Server Components** run on the server (no `'use client'` directive). They can't access `localStorage` or browser APIs, but they can read incoming request headers. The server client reads the `X-Cart-Key` header to identify the cart:
