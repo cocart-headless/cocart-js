@@ -118,6 +118,8 @@ const response = await client.cart().addItem(123, 1, {
 });
 ```
 
+With CoCart Plus, the options also carry a subscription plan (`convert_to_sub`), a gift recipient (`recipient_email`) or a warranty (`item_data.warranty`), and `changePlan(itemKey, value)` switches a cart item's plan. See [Extension Data](extension-data.md#sending-the-customers-choices).
+
 ### Add a Variable Product
 
 A **variable product** is a product with options like size or color. In WooCommerce, these are called "variations." When adding a variable product, you specify which variation the customer chose:

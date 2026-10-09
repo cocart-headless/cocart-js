@@ -43,6 +43,32 @@ const recurring = response.getExtensions().recurring_totals ?? {};
 
 Every key is optional, since a plugin's data is only there when the plugin is active and it applies.
 
+## Sending the customer's choices
+
+Some of this data describes a choice: which subscription plan, who receives a gift, which warranty. Send the choice when adding the item, in `addItem()`'s options:
+
+```ts
+const product = (await client.products().find(306)).toObject();
+
+// Subscription plans: an option's `value` ('0' is one-time). Without it, the product's default applies.
+const monthly = product.extensions.subscription_schemes?.find((o) => o.period === '/ month');
+await client.cart().addItem(306, 1, { convert_to_sub: monthly?.value });
+
+// Gifting: the recipient's email.
+await client.cart().addItem(302, 1, { recipient_email: 'friend@example.com' });
+
+// Warranty: an option's `key` from the product's `extensions.warranty.options`.
+await client.cart().addItem(154, 1, { item_data: { warranty: '1-year' } });
+```
+
+`subscription_schemes` is listed only when there's a choice to make: a one-time option, or more than one plan. On a cart item the current option is `selected`; switch it with `changePlan()`:
+
+```ts
+const item = (await client.cart().get()).getItems()[0];
+const other = item.extensions.subscription_schemes?.find((o) => !o.selected);
+if (other) await client.cart().changePlan(item.item_key, other.value);
+```
+
 ## Data from other plugins
 
 Any plugin can add data with CoCart's filters: `cocart_cart_extensions`, `cocart_cart_item_extensions` and `cocart_product_extensions`. Declare its shape once and the SDK types it everywhere:

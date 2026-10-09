@@ -351,6 +351,35 @@ export interface CartGetParams {
 }
 
 /**
+ * Options for `cart().addItem()`, beside the product and quantity. Other plugins' fields can be passed too.
+ */
+export interface AddItemOptions {
+  /** Variation attributes, e.g. `{ attribute_pa_color: 'blue' }`. */
+  variation?: Record<string, string>;
+  /** Extra data saved on the item; items with different data are separate lines. */
+  item_data?: Record<string, unknown> & {
+    /** WooCommerce Warranty (CoCart Plus): the option's `key` from the product's `extensions.warranty.options`, or its index. */
+    warranty?: string;
+  };
+  /** The customer's billing email. */
+  email?: string;
+  /** The customer's billing phone number. */
+  phone?: string;
+  /** A custom price for the item, where the store allows it (CoCart Plus). */
+  price?: string;
+  /** Return the added item instead of the cart. */
+  return_item?: boolean;
+  /**
+   * Subscription plans (CoCart Plus): the `value` of one of the product's `extensions.subscription_schemes`
+   * options (`'0'` for one-time). Without it the product's default option applies.
+   */
+  convert_to_sub?: string;
+  /** Gifting for WooCommerce Subscriptions (CoCart Plus): who receives the subscription. */
+  recipient_email?: string;
+  [key: string]: unknown;
+}
+
+/**
  * A single sub-request within a batch call to `cocart/batch` (requires CoCart Plus).
  *
  * `path` must be a full REST route relative to the site root (e.g. `/cocart/v2/cart/item/{key}`).

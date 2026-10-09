@@ -168,6 +168,7 @@ console.log(cart.get('totals.total')); // Reach into nested data with dot notati
 | [Sessions API](docs/sessions.md) | Admin sessions, SessionManager, storage adapters |
 | [Error Handling](docs/error-handling.md) | Error hierarchy, catching errors, common scenarios |
 | [Utilities](docs/utilities.md) | Currency formatter, timezone helper, response transformer |
+| [Extension Data](docs/extension-data.md) | Typed plugin data under `extensions` (CoCart Plus integrations), sending a plan, gift or warranty choice, and declaring your own |
 | [Writing Extensions](docs/extensions.md) | Create custom extensions, subscribe to client events, publish as npm |
 | [Datafast Analytics](packages/analytics-datafast/README.md) | Auto-track cart and checkout events with Datafast |
 | [Google Tag Manager](packages/analytics-gtm/README.md) | Push GA4 ecommerce events to window.dataLayer via GTM |

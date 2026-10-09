@@ -48,7 +48,7 @@ export type {
   CoCartSchemas, CartTotalsBreakdown, CartBillingAddress, CartShippingAddress, CartShipping, CartTax,
   ProductAttributeDetail, ProductVariationSummary, ProductCategoryDetail,
   // Parameter types
-  PaginationParams, SortOrder, ProductOrderBy, ProductListParams, ProductParams, CartGetParams,
+  PaginationParams, SortOrder, ProductOrderBy, ProductListParams, ProductParams, CartGetParams, AddItemOptions,
   // Event types
   RequestEvent, ResponseEvent, ErrorEvent, RetryEvent, CoCartEventMap, CoCartEventListener,
   // Account types

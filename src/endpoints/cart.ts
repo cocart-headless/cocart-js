@@ -1,6 +1,6 @@
 import { Endpoint } from './endpoint.js';
 import type { Response } from '../response.js';
-import type { BatchRequestItem, CartGetParams, CartResponse } from '../cocart.types.js';
+import type { AddItemOptions, BatchRequestItem, CartGetParams, CartResponse } from '../cocart.types.js';
 import { validateProductId, validateQuantity } from '../validation.js';
 import { ValidationError } from '../exceptions/validation-error.js';
 
@@ -56,14 +56,22 @@ export class Cart extends Endpoint {
    * numeric but not a positive integer) and otherwise passes a non-numeric
    * string through for the server to resolve.
    *
+   * Choices CoCart Plus takes for its supported plugins go in `options` too: a subscription plan
+   * (`convert_to_sub`), a gift recipient (`recipient_email`) and a warranty (`item_data.warranty`).
+   *
+   * @example
+   * const product = (await client.products().find(306)).toObject();
+   * const monthly = product.extensions.subscription_schemes?.find((o) => o.period === '/ month');
+   * await client.cart().addItem(306, 1, { convert_to_sub: monthly?.value });
+   *
    * @param productId Product/variation ID (number or numeric string), or a SKU
    * @param quantity  Quantity to add (default: 1)
-   * @param options   Additional options (variation, item_data, email, return_item, etc.)
+   * @param options   Additional options (variation, item_data, email, return_item, plugin choices, etc.)
    */
   async addItem(
     productId: string | number,
     quantity: number = 1,
-    options: Record<string, unknown> = {},
+    options: AddItemOptions = {},
   ): Promise<Response> {
     validateProductId(productId, this.client.getLocale());
     validateQuantity(quantity, this.client.getLocale());
@@ -292,6 +300,27 @@ export class Cart extends Endpoint {
   /** Update the entire cart. */
   async update(data: Record<string, unknown>): Promise<Response> {
     return this.post('update', data);
+  }
+
+  /**
+   * Switch a cart item to another purchase option: a subscription plan, or one-time (requires CoCart Plus).
+   *
+   * Pass the `value` of one of the item's `extensions.subscription_schemes` options; `'0'` is one-time.
+   * Returns the updated cart, with a notice saying the option changed.
+   *
+   * @example
+   * const item = (await client.cart().get()).getItems()[0];
+   * const option = item.extensions.subscription_schemes?.find((o) => !o.selected);
+   * if (option) await client.cart().changePlan(item.item_key, option.value);
+   *
+   * @param itemKey The cart item's key.
+   * @param value   The option's `value`.
+   */
+  async changePlan(itemKey: string, value: string): Promise<Response> {
+    if (!itemKey) {
+      throw new ValidationError('changePlan() requires an item key.');
+    }
+    return this.update({ namespace: 'update-item-schema', item_key: itemKey, convert_to_sub: String(value) });
   }
 
   // --- Coupons (CoCart Plus) ---

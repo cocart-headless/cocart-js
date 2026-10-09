@@ -94,6 +94,70 @@ describe('Cart endpoint methods', () => {
     });
   });
 
+  describe('addItem() with CoCart Plus choices', () => {
+    it('sends a subscription plan, a gift recipient and a warranty as CoCart Plus reads them', async () => {
+      const fetchMock = mockFetch(200, { cart_key: 'ck_1' });
+      globalThis.fetch = fetchMock;
+
+      const client = new CoCart('https://store.com');
+      await client.cart().addItem(306, 1, {
+        convert_to_sub: 'eefc3771-281d-41c7-8851-b9aa53d69233',
+        recipient_email: 'friend@example.com',
+        item_data: { warranty: '1-year' },
+      });
+
+      const [url, opts] = fetchMock.mock.calls[0];
+      expect(url).toContain('/cart/add-item');
+      expect(JSON.parse(opts.body as string)).toEqual({
+        id: '306',
+        quantity: '1',
+        convert_to_sub: 'eefc3771-281d-41c7-8851-b9aa53d69233',
+        recipient_email: 'friend@example.com',
+        item_data: { warranty: '1-year' },
+      });
+    });
+  });
+
+  describe('changePlan()', () => {
+    it('switches the item through cart/update with the update-item-schema callback', async () => {
+      const fetchMock = mockFetch(200, { cart_key: 'ck_1', notices: { success: ['Subscription option changed.'] } });
+      globalThis.fetch = fetchMock;
+
+      const client = new CoCart('https://store.com');
+      const response = await client.cart().changePlan('abc123', '3f16d144-7f4c-4a5c-8c00-031f3df22da6');
+
+      const [url, opts] = fetchMock.mock.calls[0];
+      expect(url).toContain('/cart/update');
+      expect(opts.method).toBe('POST');
+      expect(JSON.parse(opts.body as string)).toEqual({
+        namespace: 'update-item-schema',
+        item_key: 'abc123',
+        convert_to_sub: '3f16d144-7f4c-4a5c-8c00-031f3df22da6',
+      });
+      expect(response.get('notices')).toEqual({ success: ['Subscription option changed.'] });
+    });
+
+    it("sends '0' to switch to one-time", async () => {
+      const fetchMock = mockFetch(200, { cart_key: 'ck_1' });
+      globalThis.fetch = fetchMock;
+
+      const client = new CoCart('https://store.com');
+      await client.cart().changePlan('abc123', '0');
+
+      const [, opts] = fetchMock.mock.calls[0];
+      expect(JSON.parse(opts.body as string).convert_to_sub).toBe('0');
+    });
+
+    it('rejects a missing item key without a request', async () => {
+      const fetchMock = mockFetch(200, {});
+      globalThis.fetch = fetchMock;
+
+      const client = new CoCart('https://store.com');
+      await expect(client.cart().changePlan('', '0')).rejects.toThrow('changePlan() requires an item key.');
+      expect(fetchMock).not.toHaveBeenCalled();
+    });
+  });
+
   describe('addItems()', () => {
     it('sends the grouped product id and a quantity map, in shorthand form', async () => {
       const fetchMock = mockFetch(200, { cart_key: 'ck_1' });
