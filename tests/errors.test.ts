@@ -43,6 +43,21 @@ describe('Error hierarchy', () => {
     });
   });
 
+  describe('CoCartError.getCart()', () => {
+    it('returns the cart sent with cocart_item_not_in_cart', () => {
+      const cart = { cart_key: 't_1', items: [{ item_key: 'abc' }], totals: { total: '3600' } };
+      const err = new CoCartError('Item specified does not exist in cart.', 404, 'cocart_item_not_in_cart', {
+        code: 'cocart_item_not_in_cart', data: { status: 404, cart },
+      });
+      expect(err.getCart()).toEqual(cart);
+    });
+
+    it('is null when the error has no cart', () => {
+      expect(new CoCartError('Nope', 404, 'cocart_coupon_not_exist', { data: { status: 404 } }).getCart()).toBeNull();
+      expect(new CoCartError('Nope').getCart()).toBeNull();
+    });
+  });
+
   describe('ValidationError', () => {
     it('extends CoCartError', () => {
       const err = new ValidationError('Invalid input', 400, 'invalid_param');

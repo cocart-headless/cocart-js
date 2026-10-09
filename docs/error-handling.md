@@ -308,6 +308,40 @@ See [Legacy Plugin Support](installation.md#legacy-plugin-support) for the full 
 
 CoCart Starter 5 refuses a cart key with no cart session on every cart route (`404 cocart_invalid_cart`), for example after the cart expired. The client then forgets the stored key and retries the request once as a new guest, so this error doesn't reach your code for a guest; a fresh cart key comes back as usual.
 
+### Item No Longer in the Cart
+
+Getting, updating or removing an item whose key isn't in the cart (for example, another tab already removed it) fails with `404 cocart_item_not_in_cart`. Since CoCart Starter 5 the error carries the cart as it is now, so you can show it without fetching the cart again.
+
+```ts
+try {
+  await client.cart().updateItem(itemKey, 2);
+} catch (e) {
+  if (e instanceof CoCartError && e.errorCode === 'cocart_item_not_in_cart') {
+    const cart = e.getCart(); // the current cart, or null with CoCart 4.x
+    if (cart) render(cart);
+  }
+}
+```
+
+### Quantity Reduced to the Maximum
+
+Adding more than the purchase limit or the stock allows isn't an error: CoCart adds the maximum and says so with a notice.
+
+```ts
+const response = await client.cart().addItem(123, 50);
+const notices = response.getNotices().notice ?? []; // ['The quantity of "Beanie" was reduced to 5, the most allowed in the cart.']
+```
+
+### Rate Limits
+
+With rate limiting on (CoCart Plus), every response carries `RateLimit-*` headers, readable cross-origin:
+
+```ts
+const { limit, remaining, reset, retryAfter } = response.getRateLimit();
+```
+
+Exceeding the limit returns 429 `rate_limit_exceeded`, which the client retries when `maxRetries` is set.
+
 ### Network / Timeout Errors
 
 A **timeout** occurs when the server takes too long to respond. The SDK cancels the request after the configured number of milliseconds (1000 milliseconds = 1 second). This prevents your app from hanging indefinitely if the server is down or overloaded.
