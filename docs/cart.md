@@ -249,13 +249,13 @@ const response = await client.cart().update({
 
 ### Get Totals
 
-> `getTotals(true)` doesn't just format the numbers from a regular cart fetch — it's a separate request to its own totals endpoint, with `html=true` added to it.
+> `getTotals()` is a separate request to its own totals endpoint, not part of a regular cart fetch. It returns the full breakdown WooCommerce calculates, including `cart_contents_total` and the taxes per tax rate (`shipping_taxes`, `cart_contents_taxes`, `fee_taxes`).
 
 ```ts
-// Raw values
+// Minor-unit strings, like the cart: { total: "125500", … }
 const response = await client.cart().getTotals();
 
-// Formatted with currency (HTML)
+// Formatted with the currency: { total: "$1,255.00", … }
 const response = await client.cart().getTotals(true);
 ```
 

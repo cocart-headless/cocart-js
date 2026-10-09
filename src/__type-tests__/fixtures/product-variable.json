@@ -1,0 +1,524 @@
+{
+  "id": 134,
+  "parent_id": 0,
+  "name": "Hoodie",
+  "type": "variable",
+  "slug": "hoodie",
+  "permalink": "http://localhost:3000/product/hoodie/",
+  "sku": "woo-hoodie",
+  "global_unique_id": "",
+  "description": "Pellentesque habitant morbi tristique senectus et netus et malesuada fames ac turpis egestas. Vestibulum tortor quam, feugiat vitae, ultricies eget, tempor sit amet, ante. Donec eu libero sit amet quam egestas semper. Aenean ultricies mi vitae est. Mauris placerat eleifend leo.",
+  "short_description": "This is a variable product.",
+  "dates": {
+    "created": "2026-07-23T18:53:24",
+    "created_gmt": "2026-07-23T18:53:24",
+    "modified": "2026-07-23T18:53:35",
+    "modified_gmt": "2026-07-23T18:53:35"
+  },
+  "featured": false,
+  "prices": {
+    "price": "4200",
+    "regular_price": "4500",
+    "sale_price": "",
+    "price_range": {
+      "from": "4200",
+      "to": "4500"
+    },
+    "on_sale": true,
+    "date_on_sale": {
+      "from": null,
+      "from_gmt": null,
+      "to": null,
+      "to_gmt": null
+    },
+    "currency": {
+      "currency_code": "USD",
+      "currency_symbol": "$",
+      "currency_symbol_pos": "currency_prefix",
+      "currency_minor_unit": 2,
+      "currency_decimal_separator": ".",
+      "currency_thousand_separator": ",",
+      "currency_prefix": "$",
+      "currency_suffix": ""
+    }
+  },
+  "hidden_conditions": {
+    "virtual": false,
+    "downloadable": false,
+    "manage_stock": false,
+    "sold_individually": false,
+    "reviews_allowed": true,
+    "shipping_required": true
+  },
+  "average_rating": "0",
+  "review_count": 0,
+  "rating_count": 0,
+  "rated_out_of": "",
+  "images": [
+    {
+      "id": 161,
+      "src": {
+        "thumbnail": "https://next-wp.instawp.xyz/wp-content/uploads/2026/07/hoodie-2-150x150.jpg",
+        "medium": "https://next-wp.instawp.xyz/wp-content/uploads/2026/07/hoodie-2-300x300.jpg",
+        "medium_large": "https://next-wp.instawp.xyz/wp-content/uploads/2026/07/hoodie-2-768x768.jpg",
+        "large": "https://next-wp.instawp.xyz/wp-content/uploads/2026/07/hoodie-2.jpg",
+        "1536x1536": "https://next-wp.instawp.xyz/wp-content/uploads/2026/07/hoodie-2.jpg",
+        "2048x2048": "https://next-wp.instawp.xyz/wp-content/uploads/2026/07/hoodie-2.jpg",
+        "woocommerce_thumbnail": "https://next-wp.instawp.xyz/wp-content/uploads/2026/07/hoodie-2-324x324.jpg",
+        "woocommerce_single": "https://next-wp.instawp.xyz/wp-content/uploads/2026/07/hoodie-2-416x416.jpg",
+        "woocommerce_gallery_thumbnail": "https://next-wp.instawp.xyz/wp-content/uploads/2026/07/hoodie-2-100x100.jpg",
+        "full": "https://next-wp.instawp.xyz/wp-content/uploads/2026/07/hoodie-2.jpg",
+        "custom": "https://next-wp.instawp.xyz/wp-content/uploads/2026/07/hoodie-2.jpg"
+      },
+      "name": "hoodie-2.jpg",
+      "alt": "",
+      "position": 0,
+      "featured": true
+    },
+    {
+      "id": 162,
+      "src": {
+        "thumbnail": "https://next-wp.instawp.xyz/wp-content/uploads/2026/07/hoodie-blue-1-150x150.jpg",
+        "medium": "https://next-wp.instawp.xyz/wp-content/uploads/2026/07/hoodie-blue-1-300x300.jpg",
+        "medium_large": "https://next-wp.instawp.xyz/wp-content/uploads/2026/07/hoodie-blue-1-768x768.jpg",
+        "large": "https://next-wp.instawp.xyz/wp-content/uploads/2026/07/hoodie-blue-1.jpg",
+        "1536x1536": "https://next-wp.instawp.xyz/wp-content/uploads/2026/07/hoodie-blue-1.jpg",
+        "2048x2048": "https://next-wp.instawp.xyz/wp-content/uploads/2026/07/hoodie-blue-1.jpg",
+        "woocommerce_thumbnail": "https://next-wp.instawp.xyz/wp-content/uploads/2026/07/hoodie-blue-1-324x324.jpg",
+        "woocommerce_single": "https://next-wp.instawp.xyz/wp-content/uploads/2026/07/hoodie-blue-1-416x416.jpg",
+        "woocommerce_gallery_thumbnail": "https://next-wp.instawp.xyz/wp-content/uploads/2026/07/hoodie-blue-1-100x100.jpg",
+        "full": "https://next-wp.instawp.xyz/wp-content/uploads/2026/07/hoodie-blue-1.jpg",
+        "custom": "https://next-wp.instawp.xyz/wp-content/uploads/2026/07/hoodie-blue-1.jpg"
+      },
+      "name": "hoodie-blue-1.jpg",
+      "alt": "",
+      "position": 1,
+      "featured": false
+    },
+    {
+      "id": 163,
+      "src": {
+        "thumbnail": "https://next-wp.instawp.xyz/wp-content/uploads/2026/07/hoodie-green-1-150x150.jpg",
+        "medium": "https://next-wp.instawp.xyz/wp-content/uploads/2026/07/hoodie-green-1-300x300.jpg",
+        "medium_large": "https://next-wp.instawp.xyz/wp-content/uploads/2026/07/hoodie-green-1-768x768.jpg",
+        "large": "https://next-wp.instawp.xyz/wp-content/uploads/2026/07/hoodie-green-1.jpg",
+        "1536x1536": "https://next-wp.instawp.xyz/wp-content/uploads/2026/07/hoodie-green-1.jpg",
+        "2048x2048": "https://next-wp.instawp.xyz/wp-content/uploads/2026/07/hoodie-green-1.jpg",
+        "woocommerce_thumbnail": "https://next-wp.instawp.xyz/wp-content/uploads/2026/07/hoodie-green-1-324x324.jpg",
+        "woocommerce_single": "https://next-wp.instawp.xyz/wp-content/uploads/2026/07/hoodie-green-1-416x416.jpg",
+        "woocommerce_gallery_thumbnail": "https://next-wp.instawp.xyz/wp-content/uploads/2026/07/hoodie-green-1-100x100.jpg",
+        "full": "https://next-wp.instawp.xyz/wp-content/uploads/2026/07/hoodie-green-1.jpg",
+        "custom": "https://next-wp.instawp.xyz/wp-content/uploads/2026/07/hoodie-green-1.jpg"
+      },
+      "name": "hoodie-green-1.jpg",
+      "alt": "",
+      "position": 2,
+      "featured": false
+    },
+    {
+      "id": 164,
+      "src": {
+        "thumbnail": "https://next-wp.instawp.xyz/wp-content/uploads/2026/07/hoodie-with-logo-2-150x150.jpg",
+        "medium": "https://next-wp.instawp.xyz/wp-content/uploads/2026/07/hoodie-with-logo-2-300x300.jpg",
+        "medium_large": "https://next-wp.instawp.xyz/wp-content/uploads/2026/07/hoodie-with-logo-2-768x768.jpg",
+        "large": "https://next-wp.instawp.xyz/wp-content/uploads/2026/07/hoodie-with-logo-2.jpg",
+        "1536x1536": "https://next-wp.instawp.xyz/wp-content/uploads/2026/07/hoodie-with-logo-2.jpg",
+        "2048x2048": "https://next-wp.instawp.xyz/wp-content/uploads/2026/07/hoodie-with-logo-2.jpg",
+        "woocommerce_thumbnail": "https://next-wp.instawp.xyz/wp-content/uploads/2026/07/hoodie-with-logo-2-324x324.jpg",
+        "woocommerce_single": "https://next-wp.instawp.xyz/wp-content/uploads/2026/07/hoodie-with-logo-2-416x416.jpg",
+        "woocommerce_gallery_thumbnail": "https://next-wp.instawp.xyz/wp-content/uploads/2026/07/hoodie-with-logo-2-100x100.jpg",
+        "full": "https://next-wp.instawp.xyz/wp-content/uploads/2026/07/hoodie-with-logo-2.jpg",
+        "custom": "https://next-wp.instawp.xyz/wp-content/uploads/2026/07/hoodie-with-logo-2.jpg"
+      },
+      "name": "hoodie-with-logo-2.jpg",
+      "alt": "",
+      "position": 3,
+      "featured": false
+    }
+  ],
+  "categories": [
+    {
+      "id": 30,
+      "name": "Hoodies",
+      "slug": "hoodies",
+      "rest_url": "https://next-wp.instawp.xyz/wp-json/cocart/v2/products/categories/30"
+    }
+  ],
+  "tags": [],
+  "brands": [],
+  "attributes": {
+    "attribute_pa_color": {
+      "id": 1,
+      "name": "Color",
+      "position": 0,
+      "is_attribute_visible": true,
+      "used_for_variation": true,
+      "options": {
+        "blue": "Blue",
+        "green": "Green",
+        "red": "Red"
+      }
+    },
+    "attribute_logo": {
+      "id": 0,
+      "name": "Logo",
+      "position": 1,
+      "is_attribute_visible": true,
+      "used_for_variation": true,
+      "options": {
+        "yes": "Yes",
+        "no": "No"
+      }
+    }
+  },
+  "default_attributes": {},
+  "variations": [
+    {
+      "id": 157,
+      "sku": "woo-hoodie-blue-logo",
+      "description": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vestibulum sagittis orci ac odio dictum tincidunt. Donec ut metus leo. Class aptent taciti sociosqu ad litora torquent per conubia nostra, per inceptos himenaeos. Sed luctus, dui eu sagittis sodales, nulla nibh sagittis augue, vel porttitor diam enim non metus. Vestibulum aliquam augue neque. Phasellus tincidunt odio eget ullamcorper efficitur. Cras placerat ut turpis pellentesque vulputate. Nam sed consequat tortor. Curabitur finibus sapien dolor. Ut eleifend tellus nec erat pulvinar dignissim. Nam non arcu purus. Vivamus et massa massa.",
+      "attributes": {
+        "attribute_pa_color": "blue",
+        "attribute_logo": "Yes"
+      },
+      "featured_image": {
+        "thumbnail": "https://next-wp.instawp.xyz/wp-content/uploads/2026/07/hoodie-with-logo-2-150x150.jpg",
+        "medium": "https://next-wp.instawp.xyz/wp-content/uploads/2026/07/hoodie-with-logo-2-300x300.jpg",
+        "medium_large": "https://next-wp.instawp.xyz/wp-content/uploads/2026/07/hoodie-with-logo-2-768x768.jpg",
+        "large": "https://next-wp.instawp.xyz/wp-content/uploads/2026/07/hoodie-with-logo-2.jpg",
+        "1536x1536": "https://next-wp.instawp.xyz/wp-content/uploads/2026/07/hoodie-with-logo-2.jpg",
+        "2048x2048": "https://next-wp.instawp.xyz/wp-content/uploads/2026/07/hoodie-with-logo-2.jpg",
+        "woocommerce_thumbnail": "https://next-wp.instawp.xyz/wp-content/uploads/2026/07/hoodie-with-logo-2-324x324.jpg",
+        "woocommerce_single": "https://next-wp.instawp.xyz/wp-content/uploads/2026/07/hoodie-with-logo-2-416x416.jpg",
+        "woocommerce_gallery_thumbnail": "https://next-wp.instawp.xyz/wp-content/uploads/2026/07/hoodie-with-logo-2-100x100.jpg",
+        "full": "https://next-wp.instawp.xyz/wp-content/uploads/2026/07/hoodie-with-logo-2.jpg",
+        "custom": "https://next-wp.instawp.xyz/wp-content/uploads/2026/07/hoodie-with-logo-2.jpg"
+      },
+      "prices": {
+        "price": "4500",
+        "regular_price": "4500",
+        "sale_price": "",
+        "on_sale": false,
+        "date_on_sale": {
+          "from": null,
+          "from_gmt": null,
+          "to": null,
+          "to_gmt": null
+        },
+        "currency": {
+          "currency_code": "USD",
+          "currency_symbol": "$",
+          "currency_symbol_pos": "currency_prefix",
+          "currency_minor_unit": 2,
+          "currency_decimal_separator": ".",
+          "currency_thousand_separator": ",",
+          "currency_prefix": "$",
+          "currency_suffix": ""
+        }
+      },
+      "stock": {
+        "is_in_stock": true,
+        "stock_quantity": null,
+        "stock_status": "instock",
+        "backorders": "no",
+        "backorders_allowed": false,
+        "backordered": false,
+        "low_stock_amount": ""
+      },
+      "add_to_cart": {
+        "is_purchasable": true,
+        "purchase_quantity": {
+          "minimum": 1,
+          "maximum": 9999,
+          "multiple_of": 1
+        },
+        "rest_url": "https://next-wp.instawp.xyz/wp-json/cocart/v2/cart/add-item?id=157&quantity=1&variation[attribute_pa_color]=blue&variation[attribute_logo]=Yes"
+      }
+    },
+    {
+      "id": 150,
+      "sku": "woo-hoodie-red",
+      "description": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vestibulum sagittis orci ac odio dictum tincidunt. Donec ut metus leo. Class aptent taciti sociosqu ad litora torquent per conubia nostra, per inceptos himenaeos. Sed luctus, dui eu sagittis sodales, nulla nibh sagittis augue, vel porttitor diam enim non metus. Vestibulum aliquam augue neque. Phasellus tincidunt odio eget ullamcorper efficitur. Cras placerat ut turpis pellentesque vulputate. Nam sed consequat tortor. Curabitur finibus sapien dolor. Ut eleifend tellus nec erat pulvinar dignissim. Nam non arcu purus. Vivamus et massa massa.",
+      "attributes": {
+        "attribute_pa_color": "red",
+        "attribute_logo": "No"
+      },
+      "featured_image": {
+        "thumbnail": "https://next-wp.instawp.xyz/wp-content/uploads/2026/07/hoodie-2-150x150.jpg",
+        "medium": "https://next-wp.instawp.xyz/wp-content/uploads/2026/07/hoodie-2-300x300.jpg",
+        "medium_large": "https://next-wp.instawp.xyz/wp-content/uploads/2026/07/hoodie-2-768x768.jpg",
+        "large": "https://next-wp.instawp.xyz/wp-content/uploads/2026/07/hoodie-2.jpg",
+        "1536x1536": "https://next-wp.instawp.xyz/wp-content/uploads/2026/07/hoodie-2.jpg",
+        "2048x2048": "https://next-wp.instawp.xyz/wp-content/uploads/2026/07/hoodie-2.jpg",
+        "woocommerce_thumbnail": "https://next-wp.instawp.xyz/wp-content/uploads/2026/07/hoodie-2-324x324.jpg",
+        "woocommerce_single": "https://next-wp.instawp.xyz/wp-content/uploads/2026/07/hoodie-2-416x416.jpg",
+        "woocommerce_gallery_thumbnail": "https://next-wp.instawp.xyz/wp-content/uploads/2026/07/hoodie-2-100x100.jpg",
+        "full": "https://next-wp.instawp.xyz/wp-content/uploads/2026/07/hoodie-2.jpg",
+        "custom": "https://next-wp.instawp.xyz/wp-content/uploads/2026/07/hoodie-2.jpg"
+      },
+      "prices": {
+        "price": "4200",
+        "regular_price": "4500",
+        "sale_price": "4200",
+        "on_sale": true,
+        "date_on_sale": {
+          "from": null,
+          "from_gmt": null,
+          "to": null,
+          "to_gmt": null
+        },
+        "currency": {
+          "currency_code": "USD",
+          "currency_symbol": "$",
+          "currency_symbol_pos": "currency_prefix",
+          "currency_minor_unit": 2,
+          "currency_decimal_separator": ".",
+          "currency_thousand_separator": ",",
+          "currency_prefix": "$",
+          "currency_suffix": ""
+        }
+      },
+      "stock": {
+        "is_in_stock": true,
+        "stock_quantity": null,
+        "stock_status": "instock",
+        "backorders": "no",
+        "backorders_allowed": false,
+        "backordered": false,
+        "low_stock_amount": ""
+      },
+      "add_to_cart": {
+        "is_purchasable": true,
+        "purchase_quantity": {
+          "minimum": 1,
+          "maximum": 9999,
+          "multiple_of": 1
+        },
+        "rest_url": "https://next-wp.instawp.xyz/wp-json/cocart/v2/cart/add-item?id=150&quantity=1&variation[attribute_pa_color]=red&variation[attribute_logo]=No"
+      }
+    },
+    {
+      "id": 151,
+      "sku": "woo-hoodie-green",
+      "description": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vestibulum sagittis orci ac odio dictum tincidunt. Donec ut metus leo. Class aptent taciti sociosqu ad litora torquent per conubia nostra, per inceptos himenaeos. Sed luctus, dui eu sagittis sodales, nulla nibh sagittis augue, vel porttitor diam enim non metus. Vestibulum aliquam augue neque. Phasellus tincidunt odio eget ullamcorper efficitur. Cras placerat ut turpis pellentesque vulputate. Nam sed consequat tortor. Curabitur finibus sapien dolor. Ut eleifend tellus nec erat pulvinar dignissim. Nam non arcu purus. Vivamus et massa massa.",
+      "attributes": {
+        "attribute_pa_color": "green",
+        "attribute_logo": "No"
+      },
+      "featured_image": {
+        "thumbnail": "https://next-wp.instawp.xyz/wp-content/uploads/2026/07/hoodie-green-1-150x150.jpg",
+        "medium": "https://next-wp.instawp.xyz/wp-content/uploads/2026/07/hoodie-green-1-300x300.jpg",
+        "medium_large": "https://next-wp.instawp.xyz/wp-content/uploads/2026/07/hoodie-green-1-768x768.jpg",
+        "large": "https://next-wp.instawp.xyz/wp-content/uploads/2026/07/hoodie-green-1.jpg",
+        "1536x1536": "https://next-wp.instawp.xyz/wp-content/uploads/2026/07/hoodie-green-1.jpg",
+        "2048x2048": "https://next-wp.instawp.xyz/wp-content/uploads/2026/07/hoodie-green-1.jpg",
+        "woocommerce_thumbnail": "https://next-wp.instawp.xyz/wp-content/uploads/2026/07/hoodie-green-1-324x324.jpg",
+        "woocommerce_single": "https://next-wp.instawp.xyz/wp-content/uploads/2026/07/hoodie-green-1-416x416.jpg",
+        "woocommerce_gallery_thumbnail": "https://next-wp.instawp.xyz/wp-content/uploads/2026/07/hoodie-green-1-100x100.jpg",
+        "full": "https://next-wp.instawp.xyz/wp-content/uploads/2026/07/hoodie-green-1.jpg",
+        "custom": "https://next-wp.instawp.xyz/wp-content/uploads/2026/07/hoodie-green-1.jpg"
+      },
+      "prices": {
+        "price": "4500",
+        "regular_price": "4500",
+        "sale_price": "",
+        "on_sale": false,
+        "date_on_sale": {
+          "from": null,
+          "from_gmt": null,
+          "to": null,
+          "to_gmt": null
+        },
+        "currency": {
+          "currency_code": "USD",
+          "currency_symbol": "$",
+          "currency_symbol_pos": "currency_prefix",
+          "currency_minor_unit": 2,
+          "currency_decimal_separator": ".",
+          "currency_thousand_separator": ",",
+          "currency_prefix": "$",
+          "currency_suffix": ""
+        }
+      },
+      "stock": {
+        "is_in_stock": true,
+        "stock_quantity": null,
+        "stock_status": "instock",
+        "backorders": "no",
+        "backorders_allowed": false,
+        "backordered": false,
+        "low_stock_amount": ""
+      },
+      "add_to_cart": {
+        "is_purchasable": true,
+        "purchase_quantity": {
+          "minimum": 1,
+          "maximum": 9999,
+          "multiple_of": 1
+        },
+        "rest_url": "https://next-wp.instawp.xyz/wp-json/cocart/v2/cart/add-item?id=151&quantity=1&variation[attribute_pa_color]=green&variation[attribute_logo]=No"
+      }
+    },
+    {
+      "id": 152,
+      "sku": "woo-hoodie-blue",
+      "description": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vestibulum sagittis orci ac odio dictum tincidunt. Donec ut metus leo. Class aptent taciti sociosqu ad litora torquent per conubia nostra, per inceptos himenaeos. Sed luctus, dui eu sagittis sodales, nulla nibh sagittis augue, vel porttitor diam enim non metus. Vestibulum aliquam augue neque. Phasellus tincidunt odio eget ullamcorper efficitur. Cras placerat ut turpis pellentesque vulputate. Nam sed consequat tortor. Curabitur finibus sapien dolor. Ut eleifend tellus nec erat pulvinar dignissim. Nam non arcu purus. Vivamus et massa massa.",
+      "attributes": {
+        "attribute_pa_color": "blue",
+        "attribute_logo": "No"
+      },
+      "featured_image": {
+        "thumbnail": "https://next-wp.instawp.xyz/wp-content/uploads/2026/07/hoodie-blue-1-150x150.jpg",
+        "medium": "https://next-wp.instawp.xyz/wp-content/uploads/2026/07/hoodie-blue-1-300x300.jpg",
+        "medium_large": "https://next-wp.instawp.xyz/wp-content/uploads/2026/07/hoodie-blue-1-768x768.jpg",
+        "large": "https://next-wp.instawp.xyz/wp-content/uploads/2026/07/hoodie-blue-1.jpg",
+        "1536x1536": "https://next-wp.instawp.xyz/wp-content/uploads/2026/07/hoodie-blue-1.jpg",
+        "2048x2048": "https://next-wp.instawp.xyz/wp-content/uploads/2026/07/hoodie-blue-1.jpg",
+        "woocommerce_thumbnail": "https://next-wp.instawp.xyz/wp-content/uploads/2026/07/hoodie-blue-1-324x324.jpg",
+        "woocommerce_single": "https://next-wp.instawp.xyz/wp-content/uploads/2026/07/hoodie-blue-1-416x416.jpg",
+        "woocommerce_gallery_thumbnail": "https://next-wp.instawp.xyz/wp-content/uploads/2026/07/hoodie-blue-1-100x100.jpg",
+        "full": "https://next-wp.instawp.xyz/wp-content/uploads/2026/07/hoodie-blue-1.jpg",
+        "custom": "https://next-wp.instawp.xyz/wp-content/uploads/2026/07/hoodie-blue-1.jpg"
+      },
+      "prices": {
+        "price": "4500",
+        "regular_price": "4500",
+        "sale_price": "",
+        "on_sale": false,
+        "date_on_sale": {
+          "from": null,
+          "from_gmt": null,
+          "to": null,
+          "to_gmt": null
+        },
+        "currency": {
+          "currency_code": "USD",
+          "currency_symbol": "$",
+          "currency_symbol_pos": "currency_prefix",
+          "currency_minor_unit": 2,
+          "currency_decimal_separator": ".",
+          "currency_thousand_separator": ",",
+          "currency_prefix": "$",
+          "currency_suffix": ""
+        }
+      },
+      "stock": {
+        "is_in_stock": true,
+        "stock_quantity": null,
+        "stock_status": "instock",
+        "backorders": "no",
+        "backorders_allowed": false,
+        "backordered": false,
+        "low_stock_amount": ""
+      },
+      "add_to_cart": {
+        "is_purchasable": true,
+        "purchase_quantity": {
+          "minimum": 1,
+          "maximum": 9999,
+          "multiple_of": 1
+        },
+        "rest_url": "https://next-wp.instawp.xyz/wp-json/cocart/v2/cart/add-item?id=152&quantity=1&variation[attribute_pa_color]=blue&variation[attribute_logo]=No"
+      }
+    }
+  ],
+  "grouped_products": [],
+  "stock": {
+    "is_in_stock": true,
+    "stock_quantity": null,
+    "stock_status": "instock",
+    "backorders": "no",
+    "backorders_allowed": false,
+    "backordered": false,
+    "low_stock_amount": ""
+  },
+  "weight": {
+    "value": "",
+    "unit": "kg"
+  },
+  "dimensions": {
+    "length": "",
+    "width": "",
+    "height": "",
+    "unit": "cm"
+  },
+  "reviews": [],
+  "related": [
+    {
+      "id": 142,
+      "name": "Hoodie with Zipper",
+      "permalink": "http://localhost:3000/product/hoodie-with-zipper/",
+      "price": "4500",
+      "add_to_cart": {
+        "text": "Add to cart",
+        "description": "Add to cart: &ldquo;Hoodie with Zipper&rdquo;",
+        "rest_url": "https://next-wp.instawp.xyz/wp-json/cocart/v2/cart/add-item?id=142&quantity=1"
+      },
+      "rest_url": "https://next-wp.instawp.xyz/wp-json/cocart/v2/products/142"
+    },
+    {
+      "id": 135,
+      "name": "Hoodie with Logo",
+      "permalink": "http://localhost:3000/product/hoodie-with-logo/",
+      "price": "4500",
+      "add_to_cart": {
+        "text": "Add to cart",
+        "description": "Add to cart: &ldquo;Hoodie with Logo&rdquo;",
+        "rest_url": "https://next-wp.instawp.xyz/wp-json/cocart/v2/cart/add-item?id=135&quantity=1"
+      },
+      "rest_url": "https://next-wp.instawp.xyz/wp-json/cocart/v2/products/135"
+    }
+  ],
+  "upsells": [],
+  "cross_sells": [],
+  "total_sales": 1,
+  "external_url": "",
+  "button_text": "",
+  "add_to_cart": {
+    "text": "Select options",
+    "description": "Select options for &ldquo;Hoodie&rdquo;",
+    "has_options": true,
+    "is_purchasable": true,
+    "purchase_quantity": {},
+    "rest_url": ""
+  },
+  "meta_data": [],
+  "extensions": {},
+  "_links": {
+    "self": [
+      {
+        "permalink": "http://localhost:3000/product/hoodie/",
+        "href": "https://next-wp.instawp.xyz/wp-json/cocart/v2/products/134",
+        "targetHints": {
+          "allow": [
+            "GET"
+          ]
+        }
+      }
+    ],
+    "collection": [
+      {
+        "permalink": "http://localhost:3000/shop/",
+        "href": "https://next-wp.instawp.xyz/wp-json/cocart/v2/products"
+      }
+    ],
+    "variations": [
+      {
+        "permalink": "http://localhost:3000/product/hoodie/?attribute_pa_color=blue&attribute_logo=Yes",
+        "href": "https://next-wp.instawp.xyz/wp-json/cocart/v2/products/134/variations/157"
+      },
+      {
+        "permalink": "http://localhost:3000/product/hoodie/?attribute_pa_color=red&attribute_logo=No",
+        "href": "https://next-wp.instawp.xyz/wp-json/cocart/v2/products/134/variations/150"
+      },
+      {
+        "permalink": "http://localhost:3000/product/hoodie/?attribute_pa_color=green&attribute_logo=No",
+        "href": "https://next-wp.instawp.xyz/wp-json/cocart/v2/products/134/variations/151"
+      },
+      {
+        "permalink": "http://localhost:3000/product/hoodie/?attribute_pa_color=blue&attribute_logo=No",
+        "href": "https://next-wp.instawp.xyz/wp-json/cocart/v2/products/134/variations/152"
+      }
+    ]
+  }
+}

@@ -1,0 +1,83 @@
+{
+  "1d7f7abc18fcb43975065399b0d1e48e": {
+    "item_key": "1d7f7abc18fcb43975065399b0d1e48e",
+    "id": 154,
+    "name": "Beanie with Logo",
+    "title": "Beanie with Logo",
+    "variation": {},
+    "price": "1800",
+    "regular_price": "2000",
+    "on_sale": true,
+    "quantity": {
+      "value": 1,
+      "minimum": 1,
+      "maximum": 9999,
+      "multiple_of": 1,
+      "editable": true
+    },
+    "totals": {
+      "subtotal": "1800",
+      "subtotal_tax": "180",
+      "total": "1620",
+      "tax": "162"
+    },
+    "slug": "beanie-with-logo",
+    "meta": {
+      "product_type": "simple",
+      "sku": "Woo-beanie-logo",
+      "dimensions": {
+        "length": "",
+        "width": "",
+        "height": "",
+        "unit": "cm"
+      },
+      "weight": "0.0"
+    },
+    "backorders": "",
+    "cart_item_data": {},
+    "featured_image": "https://next-wp.instawp.xyz/wp-content/uploads/2026/07/beanie-with-logo-1-324x324.jpg",
+    "extensions": {}
+  },
+  "3c19eb3ce80185a24b450aaef33afd91": {
+    "item_key": "3c19eb3ce80185a24b450aaef33afd91",
+    "id": 157,
+    "name": "Hoodie - Blue, Yes",
+    "title": "Hoodie",
+    "variation": {
+      "Logo": "Yes",
+      "Color": "Blue"
+    },
+    "price": "4500",
+    "regular_price": "",
+    "on_sale": false,
+    "quantity": {
+      "value": 1,
+      "minimum": 1,
+      "maximum": 9999,
+      "multiple_of": 1,
+      "editable": true
+    },
+    "totals": {
+      "subtotal": "4500",
+      "subtotal_tax": "450",
+      "total": "4050",
+      "tax": "405"
+    },
+    "slug": "hoodie",
+    "meta": {
+      "product_type": "variation",
+      "sku": "woo-hoodie-blue-logo",
+      "dimensions": {
+        "length": "",
+        "width": "",
+        "height": "",
+        "unit": "cm"
+      },
+      "weight": "0.0"
+    },
+    "backorders": "",
+    "cart_item_data": {},
+    "featured_image": "https://next-wp.instawp.xyz/wp-content/uploads/2026/07/hoodie-with-logo-2-324x324.jpg",
+    "extensions": {}
+  }
+}

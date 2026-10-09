@@ -108,6 +108,7 @@
     "build:checkout": "npm run build --workspace @cocartheadless/checkout",
     "build:all": "npm run build && npm run build:checkout",
     "dev": "tsup --watch",
+    "generate:types": "node scripts/generate-response-types.mjs",
     "typecheck": "tsc --noEmit",
     "typecheck:checkout": "npm run typecheck --workspace @cocartheadless/checkout",
     "typecheck:datafast": "npm run typecheck --workspace @cocartheadless/analytics-datafast",

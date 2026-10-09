@@ -1,0 +1,150 @@
+{
+  "id": 157,
+  "parent_id": 134,
+  "name": "Hoodie - Blue, Yes",
+  "slug": "hoodie-blue-yes",
+  "permalink": "http://localhost:3000/product/hoodie/?attribute_pa_color=blue&attribute_logo=Yes",
+  "sku": "woo-hoodie-blue-logo",
+  "global_unique_id": "",
+  "description": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vestibulum sagittis orci ac odio dictum tincidunt. Donec ut metus leo. Class aptent taciti sociosqu ad litora torquent per conubia nostra, per inceptos himenaeos. Sed luctus, dui eu sagittis sodales, nulla nibh sagittis augue, vel porttitor diam enim non metus. Vestibulum aliquam augue neque. Phasellus tincidunt odio eget ullamcorper efficitur. Cras placerat ut turpis pellentesque vulputate. Nam sed consequat tortor. Curabitur finibus sapien dolor. Ut eleifend tellus nec erat pulvinar dignissim. Nam non arcu purus. Vivamus et massa massa.",
+  "dates": {
+    "created": "2026-07-23T18:53:25",
+    "created_gmt": "2026-07-23T18:53:25",
+    "modified": "2026-07-23T18:53:35",
+    "modified_gmt": "2026-07-23T18:53:35"
+  },
+  "featured": false,
+  "prices": {
+    "price": "4500",
+    "regular_price": "4500",
+    "sale_price": "",
+    "price_range": {},
+    "on_sale": false,
+    "date_on_sale": {
+      "from": null,
+      "from_gmt": null,
+      "to": null,
+      "to_gmt": null
+    },
+    "currency": {
+      "currency_code": "USD",
+      "currency_symbol": "$",
+      "currency_symbol_pos": "currency_prefix",
+      "currency_minor_unit": 2,
+      "currency_decimal_separator": ".",
+      "currency_thousand_separator": ",",
+      "currency_prefix": "$",
+      "currency_suffix": ""
+    }
+  },
+  "hidden_conditions": {
+    "virtual": false,
+    "downloadable": false,
+    "manage_stock": false,
+    "sold_individually": false,
+    "shipping_required": true
+  },
+  "images": [
+    {
+      "id": 164,
+      "src": {
+        "thumbnail": "https://next-wp.instawp.xyz/wp-content/uploads/2026/07/hoodie-with-logo-2-150x150.jpg",
+        "medium": "https://next-wp.instawp.xyz/wp-content/uploads/2026/07/hoodie-with-logo-2-300x300.jpg",
+        "medium_large": "https://next-wp.instawp.xyz/wp-content/uploads/2026/07/hoodie-with-logo-2-768x768.jpg",
+        "large": "https://next-wp.instawp.xyz/wp-content/uploads/2026/07/hoodie-with-logo-2.jpg",
+        "1536x1536": "https://next-wp.instawp.xyz/wp-content/uploads/2026/07/hoodie-with-logo-2.jpg",
+        "2048x2048": "https://next-wp.instawp.xyz/wp-content/uploads/2026/07/hoodie-with-logo-2.jpg",
+        "woocommerce_thumbnail": "https://next-wp.instawp.xyz/wp-content/uploads/2026/07/hoodie-with-logo-2-324x324.jpg",
+        "woocommerce_single": "https://next-wp.instawp.xyz/wp-content/uploads/2026/07/hoodie-with-logo-2-416x416.jpg",
+        "woocommerce_gallery_thumbnail": "https://next-wp.instawp.xyz/wp-content/uploads/2026/07/hoodie-with-logo-2-100x100.jpg",
+        "full": "https://next-wp.instawp.xyz/wp-content/uploads/2026/07/hoodie-with-logo-2.jpg",
+        "custom": "https://next-wp.instawp.xyz/wp-content/uploads/2026/07/hoodie-with-logo-2.jpg"
+      },
+      "name": "hoodie-with-logo-2.jpg",
+      "alt": "",
+      "position": 0,
+      "featured": true
+    }
+  ],
+  "categories": [
+    {
+      "id": 15,
+      "name": "Uncategorized",
+      "slug": "uncategorized",
+      "rest_url": "https://next-wp.instawp.xyz/wp-json/cocart/v2/products/categories/15"
+    }
+  ],
+  "tags": [],
+  "brands": [],
+  "attributes": {
+    "attribute_pa_color": {
+      "id": 1,
+      "name": "Color",
+      "option": {
+        "blue": "Blue"
+      }
+    },
+    "attribute_logo": {
+      "id": 0,
+      "name": "Logo",
+      "option": {
+        "yes": "Yes"
+      }
+    }
+  },
+  "stock": {
+    "is_in_stock": true,
+    "stock_quantity": null,
+    "stock_status": "instock",
+    "backorders": "no",
+    "backorders_allowed": false,
+    "backordered": false,
+    "low_stock_amount": ""
+  },
+  "weight": {
+    "value": "",
+    "unit": "kg"
+  },
+  "dimensions": {
+    "length": "",
+    "width": "",
+    "height": "",
+    "unit": "cm"
+  },
+  "total_sales": "0",
+  "add_to_cart": {
+    "text": "Add to cart",
+    "description": "Add to cart: &ldquo;Hoodie - Blue, Yes&rdquo;",
+    "is_purchasable": true,
+    "purchase_quantity": {
+      "minimum": 1,
+      "maximum": 9999,
+      "multiple_of": 1
+    },
+    "rest_url": "https://next-wp.instawp.xyz/wp-json/cocart/v2/cart/add-item?id=157&quantity=1&variation[attribute_pa_color]=blue&variation[attribute_logo]=Yes"
+  },
+  "meta_data": [],
+  "_links": {
+    "self": [
+      {
+        "href": "https://next-wp.instawp.xyz/wp-json/cocart/v2/products/134/variations/157",
+        "targetHints": {
+          "allow": [
+            "GET"
+          ]
+        }
+      }
+    ],
+    "collection": [
+      {
+        "href": "https://next-wp.instawp.xyz/wp-json/cocart/v2/products/134/variations"
+      }
+    ],
+    "up": [
+      {
+        "permalink": "http://localhost:3000/product/hoodie/",
+        "href": "https://next-wp.instawp.xyz/wp-json/cocart/v2/products/134"
+      }
+    ]
+  }
+}

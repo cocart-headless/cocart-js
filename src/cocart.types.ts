@@ -1,4 +1,6 @@
 import type { StorageInterface } from './storage/storage.interface.js';
+import type { components } from './generated/cocart-starter-v2.js';
+import type { CartExtensions, CartItemExtensions, ProductExtensions } from './extensions.types.js';
 
 /**
  * Extension registry for module augmentation.
@@ -122,20 +124,29 @@ export interface AuthCredentials {
 
 // ---------------------------------------------------------------------------
 // Response types — typed shapes for API responses
+//
+// Derived from the CoCart Starter v2 OpenAPI spec (cocart-openapi), whose response schemas are
+// checked against live responses. Regenerate src/generated/cocart-starter-v2.ts with
+// `npm run generate:types` after the spec changes. Every field is present unless the request
+// narrows the response with `_fields` (see `Cart.getFiltered()`).
+//
+// CoCart quirks the types reflect:
+// - Empty maps (`notices`, `extensions`, `cart_item_data`, `price_range`, `purchase_quantity`, product
+//   `attributes`) arrive as `{}` since CoCart Starter 5. CoCart 4.x sent `[]`; the `Response` helpers accept both.
+// - Amounts are minor-unit strings (`"1800"`), or formatted (`"$18.00"`) when requested.
+// - Customer address fields are prefixed (`billing_first_name`, `shipping_city`).
 // ---------------------------------------------------------------------------
 
-/** Money value as returned by the API. */
-export interface CurrencyInfo {
-  currency_code: string;
-  currency_symbol: string;
-  currency_minor_unit: number;
-  currency_decimal_separator: string;
-  currency_thousand_separator: string;
-  currency_prefix: string;
-  currency_suffix: string;
-}
+/** All component schemas of the CoCart Starter v2 spec, for shapes without a named export below. */
+export type CoCartSchemas = components['schemas'];
 
-/** Cart item image. */
+/** Currency fields sent beside amounts (cart `currency`, product `prices.currency`). */
+export type CurrencyInfo = CoCartSchemas['Currency'];
+
+/**
+ * @deprecated Cart items carry `featured_image` as a URL string, not an image object; this
+ * shape was never returned. Use `CartItem['featured_image']`.
+ */
 export interface CartItemImage {
   id: number;
   src: string;
@@ -144,76 +155,40 @@ export interface CartItemImage {
   alt: string;
 }
 
-/** A single item in the cart. */
-export interface CartItem {
-  item_key: string;
-  id: number;
-  name: string;
-  title: string;
-  price: string;
-  quantity: { value: number; minimum: number; maximum: number; multiple_of: number; editable: boolean };
-  totals: { subtotal: string; subtotal_tax: string; total: string; tax: string };
-  slug: string;
-  meta: { product_type: string; sku: string; dimensions: Record<string, string>; weight: number };
-  backorders: string;
-  cart_item_data: Record<string, unknown>;
-  featured_image: string;
-  [key: string]: unknown;
-}
+/**
+ * `extensions` typed with the known extension data (see `extensions.types.ts`), and open to any other key.
+ */
+type WithExtensions<T, E> = Omit<T, 'extensions'> & { extensions: E & Record<string, unknown> };
 
-/** Cart totals. */
-export interface CartTotals {
-  subtotal: string;
-  subtotal_tax: string;
-  fee_total: string;
-  fee_tax: string;
-  discount_total: string;
-  discount_tax: string;
-  shipping_total: string;
-  shipping_tax: string;
-  total: string;
-  total_tax: string;
-  [key: string]: unknown;
-}
+/** A single item in the cart (`items[]` of `GET /cart`; `GET /cart/items` keys them by `item_key`). */
+export type CartItem = WithExtensions<CoCartSchemas['CartItem'], CartItemExtensions>;
 
-/** Customer address fields. */
-export interface CustomerAddress {
-  first_name: string;
-  last_name: string;
-  company: string;
-  address_1: string;
-  address_2: string;
-  city: string;
-  state: string;
-  postcode: string;
-  country: string;
-  phone?: string;
-  email?: string;
-  [key: string]: unknown;
-}
+/** Cart totals in minor-unit strings, as on `GET /cart`. */
+export type CartTotals = CoCartSchemas['CartTotals'];
+
+/** Cart totals as `GET /cart/totals` returns them: the full breakdown, in minor-unit strings. */
+export type CartTotalsBreakdown = CoCartSchemas['CartTotalsBreakdown'];
+
+/** The cart's billing address. Fields are prefixed: `billing_first_name`, `billing_email`, … */
+export type CartBillingAddress = CoCartSchemas['BillingAddress'];
+
+/** The cart's shipping address. Fields are prefixed: `shipping_first_name`, `shipping_city`, … */
+export type CartShippingAddress = CoCartSchemas['ShippingAddress'];
+
+/**
+ * @deprecated The cart's addresses use prefixed field names; use `CartBillingAddress` or
+ * `CartShippingAddress`. (`Cart.updateCustomer()` still takes unprefixed fields.)
+ */
+export type CustomerAddress = CartBillingAddress | CartShippingAddress;
 
 /** Customer details in the cart. */
-export interface CartCustomer {
-  billing_address: CustomerAddress;
-  shipping_address: CustomerAddress;
-  [key: string]: unknown;
-}
+export type CartCustomer = CoCartSchemas['Customer'];
 
-/** Applied coupon. */
-export interface CartCoupon {
-  coupon: string;
-  label: string;
-  saving: string;
-  saving_html: string;
-  [key: string]: unknown;
-}
+/** Applied coupon. `saving` is a negative minor-unit amount (`"-180"`). */
+export type CartCoupon = CoCartSchemas['AppliedCoupon'];
 
-/** Cart fee. */
-export interface CartFee {
-  name: string;
-  fee: string;
-  [key: string]: unknown;
-}
+/** Cart fee: its `name` and the `fee` amount. The cart keys fees by fee ID; `Response.getFees()` lists them. */
+export type CartFee = CoCartSchemas['CartFee'];
 
 /**
  * Cart tax line, normalized by `Response.getTaxes()`. One entry per tax
@@ -222,12 +197,7 @@ export interface CartFee {
  * `"total"` when it isn't. Empty when tax is disabled or prices already
  * include tax.
  */
-export interface CartTax {
-  key: string;
-  name: string;
-  price: string;
-  [key: string]: unknown;
-}
+export type CartTax = CoCartSchemas['CartTax'];
 
 /** A tax line's value as it appears under the legacy object-keyed shape (no `key`, since the object's own key serves as it). */
 export interface CartTaxLegacyEntry {
@@ -247,176 +217,62 @@ export type CartTaxesResponse =
   | CartTax[]
   | Record<string, CartTaxLegacyEntry>;
 
-/** Shipping rate. */
-export interface ShippingRate {
-  key: string;
-  method_id: string;
-  instance_id: number;
-  label: string;
-  cost: string;
-  tax: string;
-  meta_data: Record<string, unknown>;
-  [key: string]: unknown;
-}
+/** Shipping rate. `cost` is pre-formatted (`"$5.00"`); `taxes` is in minor units. */
+export type ShippingRate = CoCartSchemas['ShippingRate'];
 
-/** Shipping package. */
-export interface ShippingPackage {
-  package_name: string;
-  rates: Record<string, ShippingRate>;
-  chosen_method: string;
-  [key: string]: unknown;
-}
+/** Shipping package: its rates are keyed by rate ID (e.g. `flat_rate:1`). */
+export type ShippingPackage = CoCartSchemas['ShippingPackage'];
+
+/** The cart's `shipping` field: package count, whether shipping is calculated, and the packages keyed by package ID. */
+export type CartShipping = CoCartSchemas['Shipping'];
 
 /** Cross-sell product. */
-export interface CrossSellProduct {
-  id: number;
-  name: string;
-  slug: string;
-  price: string;
-  regular_price: string;
-  sale_price: string;
-  featured_image: string;
-  [key: string]: unknown;
-}
+export type CrossSellProduct = CoCartSchemas['CrossSellItem'];
 
-/** Full cart response shape. */
-export interface CartResponse {
-  cart_hash: string;
-  cart_key: string;
-  currency: CurrencyInfo;
-  customer: CartCustomer;
-  items: CartItem[];
-  item_count: number;
-  items_weight: number;
-  coupons: CartCoupon[];
-  needs_payment: boolean;
-  needs_shipping: boolean;
-  shipping: ShippingPackage[];
-  fees: CartFee[];
-  taxes: CartTaxesResponse;
-  totals: CartTotals;
-  removed_items: CartItem[];
-  cross_sells: CrossSellProduct[];
-  notices: unknown[];
-  [key: string]: unknown;
-}
+/** Full cart response shape (`GET /cart`, and the cart returned by cart actions). */
+export type CartResponse = Omit<WithExtensions<CoCartSchemas['CartV2'], CartExtensions>, 'items'> & { items: CartItem[] };
 
-/** Product image. */
-export interface ProductImage {
-  id: number;
-  src: string;
-  thumbnail: string;
-  name: string;
-  alt: string;
-  position: number;
-  [key: string]: unknown;
-}
+/** Product image. `src` maps image size names to URLs (`thumbnail`, `woocommerce_single`, `full`, …). */
+export type ProductImage = CoCartSchemas['ProductImage'];
 
-/** Product category reference. */
-export interface ProductCategory {
-  id: number;
-  name: string;
-  slug: string;
-  [key: string]: unknown;
-}
+/** A category as embedded in a product (`Product['categories']`). */
+export type ProductCategory = CoCartSchemas['ProductCategory'];
 
-/** Product tag reference. */
-export interface ProductTag {
-  id: number;
-  name: string;
-  slug: string;
-  [key: string]: unknown;
-}
+/** A category from `GET /products/categories[/{id}]`, with its description, count, parent and image. */
+export type ProductCategoryDetail = CoCartSchemas['ProductCategoryDetail'];
 
-/** Product attribute. */
-export interface ProductAttribute {
-  id: number;
-  name: string;
-  slug: string;
-  position: number;
-  visible: boolean;
-  variation: boolean;
-  options: string[];
-  [key: string]: unknown;
-}
+/** Product tag. */
+export type ProductTag = CoCartSchemas['ProductTag'];
 
-/** Product price range (for variable products). */
-export interface ProductPrices {
-  price: string;
-  regular_price: string;
-  sale_price: string;
-  price_range?: { from: string; to: string };
-  on_sale: boolean;
-  [key: string]: unknown;
-}
+/** A product attribute taxonomy (`GET /products/attributes`). For a product's own attributes see `ProductAttributeDetail`. */
+export type ProductAttribute = CoCartSchemas['ProductAttribute'];
+
+/** An attribute on a product (`Product['attributes']`, keyed by `attribute_<slug>`); `options` maps term slugs to labels. */
+export type ProductAttributeDetail = CoCartSchemas['ProductAttributeDetail'];
+
+/** Product prices. `price_range` is `{ from, to }` for variable and grouped products and `{}` otherwise. */
+export type ProductPrices = CoCartSchemas['Product']['prices'];
 
 /** Product stock status. */
 export type StockStatus = 'instock' | 'outofstock' | 'onbackorder';
 
 /** Single product response shape. */
-export interface Product {
-  id: number;
-  name: string;
-  slug: string;
-  permalink: string;
-  type: string;
-  description: string;
-  short_description: string;
-  sku: string;
-  prices: ProductPrices;
-  images: ProductImage[];
-  categories: ProductCategory[];
-  tags: ProductTag[];
-  attributes: ProductAttribute[];
-  stock: { stock_quantity: number | null; stock_status: StockStatus; [key: string]: unknown };
-  conditions: { is_purchasable: boolean; [key: string]: unknown };
-  featured: boolean;
-  average_rating: string;
-  review_count: number;
-  [key: string]: unknown;
-}
+export type Product = WithExtensions<CoCartSchemas['Product'], ProductExtensions>;
 
-/** Product variation response shape. */
-export interface ProductVariation {
-  id: number;
-  sku: string;
-  description: string;
-  prices: ProductPrices;
-  attributes: Record<string, string>;
-  stock: { stock_quantity: number | null; stock_status: StockStatus; [key: string]: unknown };
-  images: ProductImage[];
-  [key: string]: unknown;
-}
+/** A variation as embedded in its parent (`Product['variations'][number]`): attributes are `attribute_<slug>` → value. */
+export type ProductVariationSummary = CoCartSchemas['ProductVariationSummary'];
+
+/** A full variation (`GET /products/{id}/variations[/{variation_id}]`). */
+export type ProductVariation = CoCartSchemas['ProductVariation'];
 
 /** Product review. */
-export interface ProductReview {
-  id: number;
-  product_id: number;
-  reviewer: string;
-  reviewer_email: string;
-  review: string;
-  rating: number;
-  verified: boolean;
-  date_created: string;
-  [key: string]: unknown;
-}
+export type ProductReview = CoCartSchemas['ProductReview'];
 
-/** Store info response. */
-export interface StoreInfo {
-  store_name: string;
-  store_description: string;
-  store_url: string;
-  routes: Record<string, unknown>;
-  [key: string]: unknown;
-}
+/** Store info response (`GET /store`). */
+export type StoreInfo = CoCartSchemas['StoreInfo'];
 
-/** Session item in admin sessions list. */
-export interface SessionItem {
-  session_key: string;
-  session_value: Record<string, unknown>;
-  session_expiry: string;
-  [key: string]: unknown;
-}
+/** A cart session as listed by `GET /sessions` (admin). */
+export type SessionItem = CoCartSchemas['SessionSummary'];
 
 // ---------------------------------------------------------------------------
 // Parameter types — typed query parameters for API requests

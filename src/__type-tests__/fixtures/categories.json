@@ -1,0 +1,338 @@
+[
+  {
+    "id": 20,
+    "name": "Accessories",
+    "slug": "accessories",
+    "description": "",
+    "count": 8,
+    "menu_order": 0,
+    "parent_id": 17,
+    "display": "default",
+    "image": {},
+    "_links": {
+      "self": [
+        {
+          "permalink": "http://localhost:3000/product-category/clothing/accessories/",
+          "href": "https://next-wp.instawp.xyz/wp-json/cocart/v2/products/categories/20",
+          "targetHints": {
+            "allow": [
+              "GET"
+            ]
+          }
+        }
+      ],
+      "collection": [
+        {
+          "permalink": "http://localhost:3000/shop/",
+          "href": "https://next-wp.instawp.xyz/wp-json/cocart/v2/products/categories"
+        }
+      ],
+      "up": [
+        {
+          "permalink": "http://localhost:3000/product-category/clothing/",
+          "href": "https://next-wp.instawp.xyz/wp-json/cocart/v2/products/categories/17"
+        }
+      ]
+    }
+  },
+  {
+    "id": 17,
+    "name": "Clothing",
+    "slug": "clothing",
+    "description": "",
+    "count": 23,
+    "menu_order": 0,
+    "parent_id": 0,
+    "display": "default",
+    "image": {},
+    "_links": {
+      "self": [
+        {
+          "permalink": "http://localhost:3000/product-category/clothing/",
+          "href": "https://next-wp.instawp.xyz/wp-json/cocart/v2/products/categories/17",
+          "targetHints": {
+            "allow": [
+              "GET"
+            ]
+          }
+        }
+      ],
+      "collection": [
+        {
+          "permalink": "http://localhost:3000/shop/",
+          "href": "https://next-wp.instawp.xyz/wp-json/cocart/v2/products/categories"
+        }
+      ]
+    }
+  },
+  {
+    "id": 32,
+    "name": "Decor",
+    "slug": "decor",
+    "description": "",
+    "count": 1,
+    "menu_order": 0,
+    "parent_id": 0,
+    "display": "default",
+    "image": {},
+    "_links": {
+      "self": [
+        {
+          "permalink": "http://localhost:3000/product-category/decor/",
+          "href": "https://next-wp.instawp.xyz/wp-json/cocart/v2/products/categories/32",
+          "targetHints": {
+            "allow": [
+              "GET"
+            ]
+          }
+        }
+      ],
+      "collection": [
+        {
+          "permalink": "http://localhost:3000/shop/",
+          "href": "https://next-wp.instawp.xyz/wp-json/cocart/v2/products/categories"
+        }
+      ]
+    }
+  },
+  {
+    "id": 30,
+    "name": "Hoodies",
+    "slug": "hoodies",
+    "description": "",
+    "count": 3,
+    "menu_order": 0,
+    "parent_id": 17,
+    "display": "default",
+    "image": {},
+    "_links": {
+      "self": [
+        {
+          "permalink": "http://localhost:3000/product-category/clothing/hoodies/",
+          "href": "https://next-wp.instawp.xyz/wp-json/cocart/v2/products/categories/30",
+          "targetHints": {
+            "allow": [
+              "GET"
+            ]
+          }
+        }
+      ],
+      "collection": [
+        {
+          "permalink": "http://localhost:3000/shop/",
+          "href": "https://next-wp.instawp.xyz/wp-json/cocart/v2/products/categories"
+        }
+      ],
+      "up": [
+        {
+          "permalink": "http://localhost:3000/product-category/clothing/",
+          "href": "https://next-wp.instawp.xyz/wp-json/cocart/v2/products/categories/17"
+        }
+      ]
+    }
+  },
+  {
+    "id": 21,
+    "name": "Jackets",
+    "slug": "jackets",
+    "description": "",
+    "count": 1,
+    "menu_order": 0,
+    "parent_id": 17,
+    "display": "default",
+    "image": {},
+    "_links": {
+      "self": [
+        {
+          "permalink": "http://localhost:3000/product-category/clothing/jackets/",
+          "href": "https://next-wp.instawp.xyz/wp-json/cocart/v2/products/categories/21",
+          "targetHints": {
+            "allow": [
+              "GET"
+            ]
+          }
+        }
+      ],
+      "collection": [
+        {
+          "permalink": "http://localhost:3000/shop/",
+          "href": "https://next-wp.instawp.xyz/wp-json/cocart/v2/products/categories"
+        }
+      ],
+      "up": [
+        {
+          "permalink": "http://localhost:3000/product-category/clothing/",
+          "href": "https://next-wp.instawp.xyz/wp-json/cocart/v2/products/categories/17"
+        }
+      ]
+    }
+  },
+  {
+    "id": 31,
+    "name": "Music",
+    "slug": "music",
+    "description": "",
+    "count": 2,
+    "menu_order": 0,
+    "parent_id": 0,
+    "display": "default",
+    "image": {},
+    "_links": {
+      "self": [
+        {
+          "permalink": "http://localhost:3000/product-category/music/",
+          "href": "https://next-wp.instawp.xyz/wp-json/cocart/v2/products/categories/31",
+          "targetHints": {
+            "allow": [
+              "GET"
+            ]
+          }
+        }
+      ],
+      "collection": [
+        {
+          "permalink": "http://localhost:3000/shop/",
+          "href": "https://next-wp.instawp.xyz/wp-json/cocart/v2/products/categories"
+        }
+      ]
+    }
+  },
+  {
+    "id": 19,
+    "name": "Shirts",
+    "slug": "shirts",
+    "description": "",
+    "count": 4,
+    "menu_order": 0,
+    "parent_id": 17,
+    "display": "default",
+    "image": {},
+    "_links": {
+      "self": [
+        {
+          "permalink": "http://localhost:3000/product-category/clothing/shirts/",
+          "href": "https://next-wp.instawp.xyz/wp-json/cocart/v2/products/categories/19",
+          "targetHints": {
+            "allow": [
+              "GET"
+            ]
+          }
+        }
+      ],
+      "collection": [
+        {
+          "permalink": "http://localhost:3000/shop/",
+          "href": "https://next-wp.instawp.xyz/wp-json/cocart/v2/products/categories"
+        }
+      ],
+      "up": [
+        {
+          "permalink": "http://localhost:3000/product-category/clothing/",
+          "href": "https://next-wp.instawp.xyz/wp-json/cocart/v2/products/categories/17"
+        }
+      ]
+    }
+  },
+  {
+    "id": 18,
+    "name": "Sweater",
+    "slug": "sweater",
+    "description": "",
+    "count": 1,
+    "menu_order": 0,
+    "parent_id": 17,
+    "display": "default",
+    "image": {},
+    "_links": {
+      "self": [
+        {
+          "permalink": "http://localhost:3000/product-category/clothing/sweater/",
+          "href": "https://next-wp.instawp.xyz/wp-json/cocart/v2/products/categories/18",
+          "targetHints": {
+            "allow": [
+              "GET"
+            ]
+          }
+        }
+      ],
+      "collection": [
+        {
+          "permalink": "http://localhost:3000/shop/",
+          "href": "https://next-wp.instawp.xyz/wp-json/cocart/v2/products/categories"
+        }
+      ],
+      "up": [
+        {
+          "permalink": "http://localhost:3000/product-category/clothing/",
+          "href": "https://next-wp.instawp.xyz/wp-json/cocart/v2/products/categories/17"
+        }
+      ]
+    }
+  },
+  {
+    "id": 29,
+    "name": "Tshirts",
+    "slug": "tshirts",
+    "description": "",
+    "count": 5,
+    "menu_order": 0,
+    "parent_id": 17,
+    "display": "default",
+    "image": {},
+    "_links": {
+      "self": [
+        {
+          "permalink": "http://localhost:3000/product-category/clothing/tshirts/",
+          "href": "https://next-wp.instawp.xyz/wp-json/cocart/v2/products/categories/29",
+          "targetHints": {
+            "allow": [
+              "GET"
+            ]
+          }
+        }
+      ],
+      "collection": [
+        {
+          "permalink": "http://localhost:3000/shop/",
+          "href": "https://next-wp.instawp.xyz/wp-json/cocart/v2/products/categories"
+        }
+      ],
+      "up": [
+        {
+          "permalink": "http://localhost:3000/product-category/clothing/",
+          "href": "https://next-wp.instawp.xyz/wp-json/cocart/v2/products/categories/17"
+        }
+      ]
+    }
+  },
+  {
+    "id": 15,
+    "name": "Uncategorized",
+    "slug": "uncategorized",
+    "description": "",
+    "count": 0,
+    "menu_order": 0,
+    "parent_id": 0,
+    "display": "default",
+    "image": {},
+    "_links": {
+      "self": [
+        {
+          "permalink": "http://localhost:3000/product-category/uncategorized/",
+          "href": "https://next-wp.instawp.xyz/wp-json/cocart/v2/products/categories/15",
+          "targetHints": {
+            "allow": [
+              "GET"
+            ]
+          }
+        }
+      ],
+      "collection": [
+        {
+          "permalink": "http://localhost:3000/shop/",
+          "href": "https://next-wp.instawp.xyz/wp-json/cocart/v2/products/categories"
+        }
+      ]
+    }
+  }
+]

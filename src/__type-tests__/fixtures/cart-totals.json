@@ -1,0 +1,21 @@
+{
+  "subtotal": "6300",
+  "subtotal_tax": "630",
+  "shipping_total": "500",
+  "shipping_tax": "50",
+  "shipping_taxes": {
+    "4": "50"
+  },
+  "discount_total": "630",
+  "discount_tax": "63",
+  "cart_contents_total": "5670",
+  "cart_contents_tax": "567",
+  "cart_contents_taxes": {
+    "4": "567"
+  },
+  "fee_total": "0",
+  "fee_tax": "0",
+  "fee_taxes": {},
+  "total": "6787",
+  "total_tax": "617"
+}

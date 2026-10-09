@@ -1,0 +1,61 @@
+{
+  "versions": {
+    "core": "5.0.0-internal-test.08.10-2",
+    "plus": "2.0.0-internal-build.08.10-2"
+  },
+  "routes": {
+    "cart": "https://next-wp.instawp.xyz/wp-json/cocart/v2/cart",
+    "cart-add-fee": "https://next-wp.instawp.xyz/wp-json/cocart/v2/cart/add-fee",
+    "cart-add-item": "https://next-wp.instawp.xyz/wp-json/cocart/v2/cart/add-item",
+    "cart-add-items": "https://next-wp.instawp.xyz/wp-json/cocart/v2/cart/add-items",
+    "cart-apply-coupon": "https://next-wp.instawp.xyz/wp-json/cocart/v2/cart/apply-coupon",
+    "cart-calculate": "https://next-wp.instawp.xyz/wp-json/cocart/v2/cart/calculate",
+    "cart-clear": "https://next-wp.instawp.xyz/wp-json/cocart/v2/cart/clear",
+    "cart-coupons": "https://next-wp.instawp.xyz/wp-json/cocart/v2/cart/coupons",
+    "cart-coupons-by-code": "https://next-wp.instawp.xyz/wp-json/cocart/v2/cart/coupons/(?P<code>[\\w-]+)",
+    "cart-coupons-validate": "https://next-wp.instawp.xyz/wp-json/cocart/v2/cart/coupons/validate",
+    "cart-item": "https://next-wp.instawp.xyz/wp-json/cocart/v2/cart/item/{item_key}",
+    "cart-items": "https://next-wp.instawp.xyz/wp-json/cocart/v2/cart/items",
+    "cart-items-count": "https://next-wp.instawp.xyz/wp-json/cocart/v2/cart/items/count",
+    "cart-mini": "https://next-wp.instawp.xyz/wp-json/cocart/v2/cart/mini",
+    "cart-remove-fees": "https://next-wp.instawp.xyz/wp-json/cocart/v2/cart/remove-fees",
+    "cart-set-shipping-method": "https://next-wp.instawp.xyz/wp-json/cocart/v2/cart/set-shipping-method",
+    "cart-totals": "https://next-wp.instawp.xyz/wp-json/cocart/v2/cart/totals",
+    "cart-update": "https://next-wp.instawp.xyz/wp-json/cocart/v2/cart/update",
+    "login": "https://next-wp.instawp.xyz/wp-json/cocart/v2/login",
+    "logout": "https://next-wp.instawp.xyz/wp-json/cocart/v2/logout",
+    "products": "https://next-wp.instawp.xyz/wp-json/cocart/v2/products",
+    "product-shipping-rates": "https://next-wp.instawp.xyz/wp-json/cocart/v2/products/(?P<id>[\\w-]+)/shipping-rates",
+    "products-attributes": "https://next-wp.instawp.xyz/wp-json/cocart/v2/products/attributes",
+    "products-categories": "https://next-wp.instawp.xyz/wp-json/cocart/v2/products/categories",
+    "products-reviews": "https://next-wp.instawp.xyz/wp-json/cocart/v2/products/reviews",
+    "products-tags": "https://next-wp.instawp.xyz/wp-json/cocart/v2/products/tags",
+    "products-variations": "https://next-wp.instawp.xyz/wp-json/cocart/v2/products/{product_id}/variations",
+    "products-variation": "https://next-wp.instawp.xyz/wp-json/cocart/v2/products/{product_id}/variations/{variation_id}",
+    "register-customer": "https://next-wp.instawp.xyz/wp-json/cocart/v2/register",
+    "sessions": "https://next-wp.instawp.xyz/wp-json/cocart/v2/sessions",
+    "sessions-view-session": "https://next-wp.instawp.xyz/wp-json/cocart/v2/sessions/{session_id}",
+    "sessions-delete-session": "https://next-wp.instawp.xyz/wp-json/cocart/v2/sessions/{session_id}",
+    "sessions-view-items": "https://next-wp.instawp.xyz/wp-json/cocart/v2/sessions/{session_id}/items"
+  },
+  "title": "CoCart API Demo",
+  "description": "",
+  "home_url": "https://next-wp.instawp.xyz",
+  "language": "en-US",
+  "gmt_offset": "0",
+  "timezone_string": "+00:00",
+  "store_address": {
+    "address": "123 Main St",
+    "address_2": "",
+    "city": "Los Angeles",
+    "country": "US:CA",
+    "postcode": "90038"
+  },
+  "_links": {
+    "help": [
+      {
+        "href": "https://docs.cocartapi.com/"
+      }
+    ]
+  }
+}

@@ -43,6 +43,8 @@ export type {
   CartCoupon, CartFee, ShippingRate, ShippingPackage, CrossSellProduct, CartResponse,
   Product, ProductImage, ProductCategory, ProductTag, ProductAttribute, ProductPrices,
   ProductVariation, ProductReview, StockStatus, StoreInfo, SessionItem,
+  CoCartSchemas, CartTotalsBreakdown, CartBillingAddress, CartShippingAddress, CartShipping, CartTax,
+  ProductAttributeDetail, ProductVariationSummary, ProductCategoryDetail,
   // Parameter types
   PaginationParams, SortOrder, ProductOrderBy, ProductListParams, ProductParams, CartGetParams,
   // Event types
@@ -52,3 +54,14 @@ export type {
   AccountOrderDetail, AccountDownload, AccountUpdateInput, AccountChangePasswordInput, AccountOrdersParams,
   RegisterCustomerInput, RegisteredCustomer,
 } from './cocart.types.js';
+
+// Extension data (CoCart Plus integrations). The three location interfaces can be augmented.
+export type {
+  CartExtensions, CartItemExtensions, ProductExtensions, MinorUnitAmount,
+  SubscriptionData, SubscriptionSchemeOption, CartItemSubscriptionSchemeOption, RecurringTotal,
+  BookingCartItemData, BookingProductData, AccommodationBookingCartItemData, AccommodationBookingProductData,
+  ChildItemQuantity, CompositeCartItemComponent, CompositeCartItemData, CompositeProductData,
+  BundleCartItemData, BundleProductData, AddonCartItemField, AddonProductField,
+  DiscountData, DynamicPricingCartItemData, MsrpData, PointsProductData, PointsCartData,
+  QuantityRulesData, VendorData, ProductConditionData, WarrantyCartItemData, WarrantyProductData,
+} from './extensions.types.js';

@@ -1,0 +1,221 @@
+{
+  "id": 154,
+  "parent_id": 0,
+  "name": "Beanie with Logo",
+  "type": "simple",
+  "slug": "beanie-with-logo",
+  "permalink": "http://localhost:3000/product/beanie-with-logo/",
+  "sku": "Woo-beanie-logo",
+  "global_unique_id": "",
+  "description": "Pellentesque habitant morbi tristique senectus et netus et malesuada fames ac turpis egestas. Vestibulum tortor quam, feugiat vitae, ultricies eget, tempor sit amet, ante. Donec eu libero sit amet quam egestas semper. Aenean ultricies mi vitae est. Mauris placerat eleifend leo.",
+  "short_description": "This is a simple product.",
+  "dates": {
+    "created": "2026-07-23T18:53:25",
+    "created_gmt": "2026-07-23T18:53:25",
+    "modified": "2026-07-23T18:53:34",
+    "modified_gmt": "2026-07-23T18:53:34"
+  },
+  "featured": false,
+  "prices": {
+    "price": "1800",
+    "regular_price": "2000",
+    "sale_price": "1800",
+    "price_range": {},
+    "on_sale": true,
+    "date_on_sale": {
+      "from": null,
+      "from_gmt": null,
+      "to": null,
+      "to_gmt": null
+    },
+    "currency": {
+      "currency_code": "USD",
+      "currency_symbol": "$",
+      "currency_symbol_pos": "currency_prefix",
+      "currency_minor_unit": 2,
+      "currency_decimal_separator": ".",
+      "currency_thousand_separator": ",",
+      "currency_prefix": "$",
+      "currency_suffix": ""
+    }
+  },
+  "hidden_conditions": {
+    "virtual": false,
+    "downloadable": false,
+    "manage_stock": false,
+    "sold_individually": false,
+    "reviews_allowed": true,
+    "shipping_required": true
+  },
+  "average_rating": "0",
+  "review_count": 0,
+  "rating_count": 0,
+  "rated_out_of": "",
+  "images": [
+    {
+      "id": 177,
+      "src": {
+        "thumbnail": "https://next-wp.instawp.xyz/wp-content/uploads/2026/07/beanie-with-logo-1-150x150.jpg",
+        "medium": "https://next-wp.instawp.xyz/wp-content/uploads/2026/07/beanie-with-logo-1-300x300.jpg",
+        "medium_large": "https://next-wp.instawp.xyz/wp-content/uploads/2026/07/beanie-with-logo-1-768x768.jpg",
+        "large": "https://next-wp.instawp.xyz/wp-content/uploads/2026/07/beanie-with-logo-1.jpg",
+        "1536x1536": "https://next-wp.instawp.xyz/wp-content/uploads/2026/07/beanie-with-logo-1.jpg",
+        "2048x2048": "https://next-wp.instawp.xyz/wp-content/uploads/2026/07/beanie-with-logo-1.jpg",
+        "woocommerce_thumbnail": "https://next-wp.instawp.xyz/wp-content/uploads/2026/07/beanie-with-logo-1-324x324.jpg",
+        "woocommerce_single": "https://next-wp.instawp.xyz/wp-content/uploads/2026/07/beanie-with-logo-1-416x416.jpg",
+        "woocommerce_gallery_thumbnail": "https://next-wp.instawp.xyz/wp-content/uploads/2026/07/beanie-with-logo-1-100x100.jpg",
+        "full": "https://next-wp.instawp.xyz/wp-content/uploads/2026/07/beanie-with-logo-1.jpg",
+        "custom": "https://next-wp.instawp.xyz/wp-content/uploads/2026/07/beanie-with-logo-1.jpg"
+      },
+      "name": "beanie-with-logo-1.jpg",
+      "alt": "",
+      "position": 0,
+      "featured": true
+    }
+  ],
+  "categories": [
+    {
+      "id": 20,
+      "name": "Accessories",
+      "slug": "accessories",
+      "rest_url": "https://next-wp.instawp.xyz/wp-json/cocart/v2/products/categories/20"
+    }
+  ],
+  "tags": [],
+  "brands": [],
+  "attributes": {
+    "attribute_pa_color": {
+      "id": 1,
+      "name": "Color",
+      "position": 0,
+      "is_attribute_visible": true,
+      "used_for_variation": false,
+      "options": {
+        "red": "Red"
+      }
+    }
+  },
+  "default_attributes": {},
+  "variations": [],
+  "grouped_products": [],
+  "stock": {
+    "is_in_stock": true,
+    "stock_quantity": null,
+    "stock_status": "instock",
+    "backorders": "no",
+    "backorders_allowed": false,
+    "backordered": false,
+    "low_stock_amount": ""
+  },
+  "weight": {
+    "value": "",
+    "unit": "kg"
+  },
+  "dimensions": {
+    "length": "",
+    "width": "",
+    "height": "",
+    "unit": "cm"
+  },
+  "reviews": [],
+  "related": [
+    {
+      "id": 23,
+      "name": "Socks",
+      "permalink": "http://localhost:3000/product/socks/",
+      "price": "400",
+      "add_to_cart": {
+        "text": "Select options",
+        "description": "Select options for &ldquo;Socks&rdquo;",
+        "rest_url": ""
+      },
+      "rest_url": "https://next-wp.instawp.xyz/wp-json/cocart/v2/products/23"
+    },
+    {
+      "id": 25,
+      "name": "Shoes",
+      "permalink": "http://localhost:3000/product/shoes/",
+      "price": "1800",
+      "add_to_cart": {
+        "text": "Add to cart",
+        "description": "Add to cart: &ldquo;Shoes&rdquo;",
+        "rest_url": "https://next-wp.instawp.xyz/wp-json/cocart/v2/cart/add-item?id=25&quantity=1"
+      },
+      "rest_url": "https://next-wp.instawp.xyz/wp-json/cocart/v2/products/25"
+    },
+    {
+      "id": 138,
+      "name": "Belt",
+      "permalink": "http://localhost:3000/product/belt/",
+      "price": "5500",
+      "add_to_cart": {
+        "text": "Add to cart",
+        "description": "Add to cart: &ldquo;Belt&rdquo;",
+        "rest_url": "https://next-wp.instawp.xyz/wp-json/cocart/v2/cart/add-item?id=138&quantity=1"
+      },
+      "rest_url": "https://next-wp.instawp.xyz/wp-json/cocart/v2/products/138"
+    },
+    {
+      "id": 139,
+      "name": "Cap",
+      "permalink": "http://localhost:3000/product/cap/",
+      "price": "1600",
+      "add_to_cart": {
+        "text": "Add to cart",
+        "description": "Add to cart: &ldquo;Cap&rdquo;",
+        "rest_url": "https://next-wp.instawp.xyz/wp-json/cocart/v2/cart/add-item?id=139&quantity=1"
+      },
+      "rest_url": "https://next-wp.instawp.xyz/wp-json/cocart/v2/products/139"
+    },
+    {
+      "id": 137,
+      "name": "Beanie",
+      "permalink": "http://localhost:3000/product/beanie/",
+      "price": "1800",
+      "add_to_cart": {
+        "text": "Add to cart",
+        "description": "Add to cart: &ldquo;Beanie&rdquo;",
+        "rest_url": "https://next-wp.instawp.xyz/wp-json/cocart/v2/cart/add-item?id=137&quantity=1"
+      },
+      "rest_url": "https://next-wp.instawp.xyz/wp-json/cocart/v2/products/137"
+    }
+  ],
+  "upsells": [],
+  "cross_sells": [],
+  "total_sales": 25,
+  "external_url": "",
+  "button_text": "",
+  "add_to_cart": {
+    "text": "Add to cart",
+    "description": "Add to cart: &ldquo;Beanie with Logo&rdquo;",
+    "has_options": false,
+    "is_purchasable": true,
+    "purchase_quantity": {
+      "minimum": 1,
+      "maximum": 9999,
+      "multiple_of": 1
+    },
+    "rest_url": "https://next-wp.instawp.xyz/wp-json/cocart/v2/cart/add-item?id=154&quantity=1"
+  },
+  "meta_data": [],
+  "extensions": {},
+  "_links": {
+    "self": [
+      {
+        "permalink": "http://localhost:3000/product/beanie-with-logo/",
+        "href": "https://next-wp.instawp.xyz/wp-json/cocart/v2/products/154",
+        "targetHints": {
+          "allow": [
+            "GET"
+          ]
+        }
+      }
+    ],
+    "collection": [
+      {
+        "permalink": "http://localhost:3000/shop/",
+        "href": "https://next-wp.instawp.xyz/wp-json/cocart/v2/products"
+      }
+    ]
+  }
+}

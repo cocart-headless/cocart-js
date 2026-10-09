@@ -13,6 +13,12 @@ const response = await products.all();
 const response = await products.all({ per_page: '20', page: '1' });
 ```
 
+Product responses carry a lot for headless pages (related products, embedded variations with price and stock, upsells, cross-sells, stock, extension meta). For a listing that needs less, ask for just those fields; CoCart then skips building the rest:
+
+```ts
+const response = await products.all({ per_page: '20', _fields: 'id,name,slug,prices,images,add_to_cart' });
+```
+
 ## Parameters Reference
 
 **Query parameters** are options you send alongside a request to filter or control the results. They are appended to the URL as `?key=value` pairs. The SDK handles this for you — just pass an object with the parameters you want.

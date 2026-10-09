@@ -1,0 +1,204 @@
+{
+  "cart_hash": "5cf7e615d1c2d0639e991e166ead5816",
+  "cart_key": "t_00000000000000000000000000000000",
+  "currency": {
+    "currency_code": "USD",
+    "currency_symbol": "$",
+    "currency_symbol_pos": "currency_prefix",
+    "currency_minor_unit": 2,
+    "currency_decimal_separator": ".",
+    "currency_thousand_separator": ",",
+    "currency_prefix": "$",
+    "currency_suffix": ""
+  },
+  "customer": {
+    "billing_address": {
+      "billing_first_name": "",
+      "billing_last_name": "",
+      "billing_company": "",
+      "billing_country": "US",
+      "billing_address_1": "",
+      "billing_address_2": "",
+      "billing_city": "",
+      "billing_state": "CA",
+      "billing_postcode": "",
+      "billing_phone": "",
+      "billing_email": ""
+    },
+    "shipping_address": {
+      "shipping_first_name": "",
+      "shipping_last_name": "",
+      "shipping_company": "",
+      "shipping_country": "US",
+      "shipping_address_1": "",
+      "shipping_address_2": "",
+      "shipping_city": "",
+      "shipping_state": "CA",
+      "shipping_postcode": "",
+      "shipping_phone": ""
+    }
+  },
+  "items": [
+    {
+      "item_key": "1d7f7abc18fcb43975065399b0d1e48e",
+      "id": 154,
+      "name": "Beanie with Logo",
+      "title": "Beanie with Logo",
+      "variation": {},
+      "price": "1800",
+      "regular_price": "2000",
+      "on_sale": true,
+      "quantity": {
+        "value": 1,
+        "minimum": 1,
+        "maximum": 9999,
+        "multiple_of": 1,
+        "editable": true
+      },
+      "totals": {
+        "subtotal": "1800",
+        "subtotal_tax": "180",
+        "total": "1620",
+        "tax": "162"
+      },
+      "slug": "beanie-with-logo",
+      "meta": {
+        "product_type": "simple",
+        "sku": "Woo-beanie-logo",
+        "dimensions": {
+          "length": "",
+          "width": "",
+          "height": "",
+          "unit": "cm"
+        },
+        "weight": "0.0"
+      },
+      "backorders": "",
+      "cart_item_data": {},
+      "featured_image": "https://next-wp.instawp.xyz/wp-content/uploads/2026/07/beanie-with-logo-1-324x324.jpg",
+      "extensions": {}
+    },
+    {
+      "item_key": "3c19eb3ce80185a24b450aaef33afd91",
+      "id": 157,
+      "name": "Hoodie - Blue, Yes",
+      "title": "Hoodie",
+      "variation": {
+        "Logo": "Yes",
+        "Color": "Blue"
+      },
+      "price": "4500",
+      "regular_price": "",
+      "on_sale": false,
+      "quantity": {
+        "value": 1,
+        "minimum": 1,
+        "maximum": 9999,
+        "multiple_of": 1,
+        "editable": true
+      },
+      "totals": {
+        "subtotal": "4500",
+        "subtotal_tax": "450",
+        "total": "4050",
+        "tax": "405"
+      },
+      "slug": "hoodie",
+      "meta": {
+        "product_type": "variation",
+        "sku": "woo-hoodie-blue-logo",
+        "dimensions": {
+          "length": "",
+          "width": "",
+          "height": "",
+          "unit": "cm"
+        },
+        "weight": "0.0"
+      },
+      "backorders": "",
+      "cart_item_data": {},
+      "featured_image": "https://next-wp.instawp.xyz/wp-content/uploads/2026/07/hoodie-with-logo-2-324x324.jpg",
+      "extensions": {}
+    }
+  ],
+  "item_count": 2,
+  "items_weight": "0",
+  "coupons": [
+    {
+      "coupon": "sdk-research-10",
+      "label": "Coupon: sdk-research-10",
+      "discount_type": "percent",
+      "saving": "-630",
+      "saving_html": "$6.30"
+    }
+  ],
+  "needs_payment": true,
+  "needs_shipping": true,
+  "shipping": {
+    "total_packages": 2,
+    "show_package_details": true,
+    "has_calculated_shipping": true,
+    "packages": {
+      "default": {
+        "package_name": "Shipment",
+        "rates": {
+          "flat_rate:1": {
+            "key": "flat_rate:1",
+            "method_id": "flat_rate",
+            "instance_id": 1,
+            "label": "Flat rate",
+            "cost": "500",
+            "html": "Flat rate: $5.00",
+            "taxes": "50",
+            "chosen_method": true,
+            "meta_data": {
+              "items": "Beanie with Logo × 1, Hoodie - Blue, Yes × 1"
+            }
+          },
+          "free_shipping:2": {
+            "key": "free_shipping:2",
+            "method_id": "free_shipping",
+            "instance_id": 2,
+            "label": "Free shipping",
+            "cost": "0",
+            "html": "Free shipping",
+            "taxes": "0",
+            "chosen_method": false,
+            "meta_data": {
+              "items": "Beanie with Logo × 1, Hoodie - Blue, Yes × 1"
+            }
+          }
+        },
+        "package_details": "Beanie with Logo x1, Hoodie - Blue, Yes x1",
+        "index": 0,
+        "chosen_method": "flat_rate:1",
+        "formatted_destination": "CA"
+      }
+    }
+  },
+  "fees": {},
+  "taxes": [
+    {
+      "key": "US-US-1",
+      "name": "US",
+      "price": "617"
+    }
+  ],
+  "totals": {
+    "subtotal": "6300",
+    "subtotal_tax": "630",
+    "fee_total": "0",
+    "fee_tax": "0",
+    "discount_total": "630",
+    "discount_tax": "63",
+    "shipping_total": "500",
+    "shipping_tax": "50",
+    "total": "6787",
+    "total_tax": "617"
+  },
+  "removed_items": [],
+  "cross_sells": [],
+  "notices": {},
+  "extensions": {},
+  "meta": {}
+}

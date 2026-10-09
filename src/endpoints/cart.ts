@@ -259,7 +259,10 @@ export class Cart extends Endpoint {
     return this.post('calculate', params);
   }
 
-  /** Get cart totals. */
+  /**
+   * Get the full totals breakdown (`GET /cart/totals`), in minor-unit strings, or formatted
+   * (`"$18.00"`) when `html` is true.
+   */
   async getTotals(html: boolean = false): Promise<Response> {
     const params = html ? { html: 'true' } : undefined;
     return this.client.get('cart/totals', params);
