@@ -2,7 +2,7 @@ import { Endpoint } from './endpoint.js';
 import type { Response } from '../response.js';
 import { Paginator } from '../paginator.js';
 import type {
-  ProductListParams, ProductParams, SortOrder, StockStatus, ProductOrderBy,
+  ProductListParams, ProductParams, SortOrder, StockStatus, ProductOrderBy, ProductReviewInput, ProductShippingRatesParams,
 } from '../cocart.types.js';
 
 /**
@@ -227,6 +227,11 @@ export class Products extends Endpoint {
     return this.reviews({ ...params, product: String(productId) });
   }
 
+  /** Post a product review. */
+  async createReview(data: ProductReviewInput): Promise<Response> {
+    return this.post('reviews', data as unknown as Record<string, unknown>);
+  }
+
   /** Get the current authenticated user's product reviews. */
   async myReviews(params?: Record<string, string>): Promise<Response> {
     this.client.requiresBasic('products()->myReviews');
@@ -236,6 +241,23 @@ export class Products extends Endpoint {
   // --- SEO (requires CoCart SEO Pack plugin) ---
 
   /** Get SEO data for a product by ID. */
+  /**
+   * Shipping rates for a product before it's added to the cart (CoCart Plus). `productId` may be
+   * a variation ID or a SKU. Sent without the cart key: the route prices a simulated cart and
+   * refuses one (403). External and grouped products can't be priced (403).
+   */
+  async shippingRates(productId: number | string, params: ProductShippingRatesParams = {}): Promise<Response> {
+    const query: Record<string, string> = {};
+    if (params.quantity !== undefined) query['quantity'] = String(params.quantity);
+    for (const [k, v] of Object.entries(params.variation ?? {})) query[`variation[${k}]`] = v;
+    for (const [k, v] of Object.entries(params.item_data ?? {})) query[`item_data[${k}]`] = v;
+    try {
+      return await this.client.requestRaw('GET', `${this.client.getNamespace()}/v2/products/${encodeURIComponent(String(productId))}/shipping-rates`, query, null, { omitCartKey: true });
+    } catch (e) {
+      this.handleNoRoute(e);
+    }
+  }
+
   async seo(productId: number): Promise<Response> {
     return this.get(`${productId}/seo`);
   }

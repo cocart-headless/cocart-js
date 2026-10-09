@@ -296,14 +296,29 @@ export class Cart extends Endpoint {
 
   // --- Coupons (CoCart Plus) ---
 
-  /** Apply a coupon to the cart. */
-  async applyCoupon(couponCode: string): Promise<Response> {
-    return this.post('apply-coupon', { coupon: couponCode });
+  /**
+   * Apply a coupon to the cart. Pass the customer's `email` for coupons restricted to certain
+   * emails when the cart doesn't know it yet.
+   */
+  async applyCoupon(couponCode: string, email?: string): Promise<Response> {
+    // CoCart Plus's apply-coupon route takes `code` (`coupon` is rejected as a missing parameter).
+    return this.post('apply-coupon', email ? { code: couponCode, email } : { code: couponCode });
   }
 
-  /** Remove a coupon from the cart. */
+  /** Remove every coupon from the cart (CoCart Plus). */
+  async removeCoupons(): Promise<Response> {
+    return this.delete('coupons');
+  }
+
+  /**
+   * Remove a coupon from the cart.
+   *
+   * The code goes in the URL path, so it's encoded: codes can contain spaces, `%`, `#`, `?` and
+   * other characters. A code containing `/` can't be removed by code (CoCart Plus matches any
+   * path segment without `/`); `DELETE /cart/coupons` removes all of them instead.
+   */
   async removeCoupon(couponCode: string): Promise<Response> {
-    return this.delete(`coupons/${couponCode}`);
+    return this.delete(`coupons/${encodeURIComponent(couponCode)}`);
   }
 
   /** Get applied coupons (filtered from cart response). */
@@ -311,9 +326,22 @@ export class Cart extends Endpoint {
     return super.get('', { _fields: 'coupons' });
   }
 
-  /** Check if applied coupons are still valid. */
-  async checkCoupons(): Promise<Response> {
-    return super.get('coupons/validate');
+  /** Check if applied coupons are still valid. Pass `email` to check email restrictions. */
+  async checkCoupons(email?: string): Promise<Response> {
+    return super.get('coupons/validate', email ? { email } : undefined);
+  }
+
+  /** A lighter cart response for a mini cart (CoCart Plus). */
+  async getMini(params?: Record<string, string>): Promise<Response> {
+    return super.get('mini', params);
+  }
+
+  /**
+   * Remove every item but keep the cart's coupons, fees and customer details (CoCart Plus,
+   * `DELETE /cart/items`). `clear()` empties the whole cart.
+   */
+  async removeAllItems(): Promise<Response> {
+    return this.delete('items');
   }
 
   // --- Customer ---
@@ -410,9 +438,11 @@ export class Cart extends Endpoint {
     return super.get('', { _fields: 'fees' });
   }
 
-  /** Add a fee to the cart. */
-  async addFee(name: string, amount: number, taxable: boolean = false): Promise<Response> {
-    return this.post('add-fee', { name, amount, taxable });
+  /** Add a fee to the cart. `taxClass` picks the tax class when `taxable` is true. */
+  async addFee(name: string, amount: number, taxable: boolean = false, taxClass?: string): Promise<Response> {
+    // CoCart Plus takes the amount as a string (a number is rejected as rest_invalid_param).
+    const fee = { name, amount: String(amount), taxable };
+    return this.post('add-fee', taxClass ? { ...fee, tax_class: taxClass } : fee);
   }
 
   /** Remove all fees from the cart. */

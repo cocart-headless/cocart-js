@@ -231,6 +231,26 @@ const response = await client.cart().clear();
 const response = await client.cart().empty();
 ```
 
+### Remove All Items, Keep the Rest
+
+> Requires the CoCart Plus plugin.
+
+Removes every item but keeps the cart's coupons, fees and customer details (`DELETE /cart/items`):
+
+```ts
+const response = await client.cart().removeAllItems();
+```
+
+### Mini Cart
+
+> Requires the CoCart Plus plugin.
+
+A lighter cart response for a header or drawer:
+
+```ts
+const response = await client.cart().getMini();
+```
+
 ### Calculate Totals
 
 ```ts
@@ -291,12 +311,18 @@ const response = await client.cart().getItem('abc123def456...');
 
 ```ts
 const response = await client.cart().applyCoupon('SUMMER20');
+
+// A coupon restricted to certain emails, before the cart knows the customer's
+const response = await client.cart().applyCoupon('VIP10', 'jane@example.com');
 ```
 
 ### Remove a Coupon
 
 ```ts
 const response = await client.cart().removeCoupon('SUMMER20');
+
+// Remove every coupon
+const response = await client.cart().removeCoupons();
 ```
 
 ### Get Applied Coupons
@@ -311,6 +337,9 @@ const response = await client.cart().getCoupons();
 
 ```ts
 const response = await client.cart().checkCoupons();
+
+// Including email restrictions
+const response = await client.cart().checkCoupons('jane@example.com');
 ```
 
 ## Customer Details
@@ -410,7 +439,13 @@ const response = await client.batch([
 ]);
 ```
 
-The server returns one merged, up-to-date cart response (if all sub-requests succeed) along with notices for each operation, instead of one response per request.
+When every sub-request is a cart route, the server returns **one up-to-date cart** instead of one response per request: the cart from the last sub-request that succeeded, with every sub-request's notices merged. A sub-request that failed shows up as an `error` notice, so read the notices to see what didn't apply:
+
+```ts
+const failed = response.getNotices().error ?? []; // e.g. ['Coupon "SAVE1O" does not exist!']
+```
+
+If every sub-request fails, or the batch mixes in other routes, the response is WordPress's standard batch list (`responses`, one per sub-request, with its own `status`).
 
 > `addItems()` (see [Add Multiple Children of a Grouped Product](#add-multiple-children-of-a-grouped-product)) only handles adding children of one WooCommerce Grouped Product — it's not a general "add several unrelated products" call. For adding multiple unrelated products in a single request, use `client.batch()` with one `add-item` sub-request per product, as shown above.
 
@@ -450,6 +485,9 @@ const response = await client.cart().addFee('Rush Processing', 9.99);
 
 // Taxable fee
 const response = await client.cart().addFee('Gift Wrapping', 4.99, true);
+
+// Taxable, with a tax class
+const response = await client.cart().addFee('Gift Wrapping', 4.99, true, 'reduced-rate');
 ```
 
 ### Remove All Fees

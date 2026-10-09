@@ -53,6 +53,8 @@ export type {
   AccountAddress, AccountUser, AccountProfile, AccountOrderSummary, AccountOrdersResponse,
   AccountOrderDetail, AccountDownload, AccountUpdateInput, AccountChangePasswordInput, AccountOrdersParams,
   RegisterCustomerInput, RegisteredCustomer,
+  AccountAddressUpdateInput, AccountCancelOrderResult, AccountSubscriptionPaymentMethodInput, OrderWithdrawalInput,
+  ProductShippingRatesParams, ProductReviewInput, RateLimitInfo,
 } from './cocart.types.js';
 
 // Extension data (CoCart Plus integrations). The three location interfaces can be augmented.

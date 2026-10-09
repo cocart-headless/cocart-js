@@ -485,6 +485,69 @@ export interface AccountUpdateInput {
   account_email: string;
 }
 
+/** `POST /my-account/address` (CoCart Plus). Fields are unprefixed. */
+export interface AccountAddressUpdateInput {
+  billing_address?: AccountAddress;
+  shipping_address?: AccountAddress;
+}
+
+/** `POST /my-account/orders/{id}/cancel` (CoCart Plus). */
+export interface AccountCancelOrderResult {
+  success: boolean;
+  order_id: number;
+  order_status: string;
+}
+
+/** `POST /my-account/subscriptions/{id}/payment-method` (CoCart Plus). */
+export interface AccountSubscriptionPaymentMethodInput {
+  /** Gateway ID, e.g. `stripe`. */
+  payment_method: string;
+  /** A saved payment token's ID, when the gateway supports tokens. */
+  token_id?: number;
+}
+
+/** `POST /order-withdrawal` (CoCart Plus, WooCommerce's order withdrawal feature). */
+export interface OrderWithdrawalInput {
+  first_name: string;
+  last_name: string;
+  email: string;
+  email_confirmation: string;
+  order_number: string;
+  withdrawal_type?: 'full_order' | 'specific_items_only';
+  /** Required when `withdrawal_type` is `specific_items_only`. */
+  additional_details?: string;
+}
+
+/** `POST /products/reviews`. Guests give `reviewer` and `reviewer_email`; stores that only allow verified owners check the email against past orders. */
+export interface ProductReviewInput {
+  product_id: number;
+  review: string;
+  /** 1–5. */
+  rating?: number;
+  reviewer?: string;
+  reviewer_email?: string;
+}
+
+/** `GET /products/{id}/shipping-rates` (CoCart Plus). */
+export interface ProductShippingRatesParams {
+  /** Quantity to price shipping for. Default 1. */
+  quantity?: number;
+  /** Variation attributes, e.g. `{ attribute_pa_color: 'blue' }`. */
+  variation?: Record<string, string>;
+  /** Item data that makes the item unique. */
+  item_data?: Record<string, string>;
+}
+
+/** The `RateLimit-*` headers (CoCart Plus, when rate limiting is on). */
+export interface RateLimitInfo {
+  limit: number | null;
+  remaining: number | null;
+  /** Unix time the window resets. */
+  reset: number | null;
+  /** Seconds to wait, on a 429. */
+  retryAfter: number | null;
+}
+
 export interface AccountChangePasswordInput {
   current: string;
   password: string;

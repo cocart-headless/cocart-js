@@ -190,6 +190,28 @@ await client.account().changePassword({
 | `password` | Yes | New password |
 | `confirm` | Yes | New password confirmation — must match `password` |
 
+CoCart Plus takes the new password on `POST /my-account`, which also requires the account's names and email. `changePassword()` reads them from the profile first (one extra request); pass them as the second argument to skip that:
+
+```ts
+await client.account().changePassword(
+  { current: 'old-password', password: 'new-password', confirm: 'new-password' },
+  { account_first_name: 'Jane', account_last_name: 'Doe', account_display_name: 'Jane', account_email: 'jane@example.com' },
+);
+```
+
+---
+
+### Update Address
+
+Saves the customer's billing and/or shipping address. Fields are unprefixed:
+
+```ts
+await client.account().updateAddress({
+  billing_address: { first_name: 'Jane', address_1: '1 Main St', city: 'Paris', postcode: '75001', country: 'FR' },
+  shipping_address: { first_name: 'Jane', address_1: '1 Main St', city: 'Paris', postcode: '75001', country: 'FR' },
+});
+```
+
 ---
 
 ## Orders
@@ -310,7 +332,7 @@ for (const file of downloads) {
 
 ### Downloads for a Single Order
 
-Returns only the downloadable files attached to a specific order.
+Returns only the downloadable files attached to a specific order. They're read from the order's details (`downloads`), so this is the same request as `getOrder()`.
 
 ```ts
 const response = await client.account().getOrderDownloads(1042);
@@ -327,17 +349,75 @@ const response = await client.account().getGuestOrderDownloads(1042, 'jane@examp
 
 ---
 
+## Cancel an Order
+
+Cancels one of the customer's orders where WooCommerce allows it (for example a pending or failed order):
+
+```ts
+const { order_status } = (await client.account().cancelOrder(1042)).toObject(); // 'cancelled'
+```
+
+---
+
 ## Reviews
 
-Returns the reviews the customer has submitted.
+Returns the reviews the customer has submitted (`GET /products/reviews/mine`, the same as `products().myReviews()`):
 
 ```ts
 const response = await client.account().getReviews();
 const reviews = response.toObject();
 ```
 
-> [!NOTE]
-> The reviews endpoint is currently in development and the response shape is not yet finalized. The response is typed as `unknown` — cast to your own interface once the API stabilizes.
+---
+
+## Email Verification
+
+```ts
+// Confirm a pending email change, with the key and user ID from the emailed link.
+await client.account().verifyEmail(key, userId);
+
+// Prove ownership of the account email so WooCommerce links past guest orders to it (WooCommerce 11+).
+const { status } = (await client.account().sendOrderEmailVerification()).toObject(); // 'sent' or 'throttled' (once a minute)
+await client.account().verifyOrderEmail(key, userId);
+```
+
+---
+
+## Subscriptions
+
+Needs WooCommerce Subscriptions.
+
+```ts
+const list = await client.account().getSubscriptions({ page: 1, per_page: 10 });
+const one = await client.account().getSubscription(512);
+
+await client.account().suspendSubscription(512);
+await client.account().reactivateSubscription(512);
+await client.account().cancelSubscription(512);
+await client.account().setSubscriptionAutoRenew(512, false);
+await client.account().updateSubscriptionPaymentMethod(512, { payment_method: 'stripe', token_id: 7 });
+
+// Resubscribe puts the ended subscription's items in the cart; check out as usual, or undo it.
+await client.account().resubscribe(512);
+await client.account().cancelResubscribe(512);
+```
+
+---
+
+## Order Withdrawal
+
+Submits a right-of-withdrawal request (WooCommerce's order withdrawal feature). No login needed; the response is the same whether or not the order matched:
+
+```ts
+await client.account().requestOrderWithdrawal({
+  first_name: 'Jane',
+  last_name: 'Doe',
+  email: 'jane@example.com',
+  email_confirmation: 'jane@example.com',
+  order_number: '1042',
+  withdrawal_type: 'full_order', // or 'specific_items_only' with additional_details
+});
+```
 
 ---
 

@@ -240,6 +240,23 @@ for (const variation of response.toObject() as any[]) {
 const response = await products.variation(123, 456);
 ```
 
+## Shipping Rates for a Product
+
+> Requires the CoCart Plus plugin.
+
+Shipping rates for a product before it's added to the cart, priced for the store's (or the customer's) location. Pass a variation ID, or the parent with the variation's attributes:
+
+```ts
+const response = await products.shippingRates(154, { quantity: 2 });
+const response = await products.shippingRates(134, { variation: { attribute_pa_color: 'blue', attribute_logo: 'Yes' } });
+
+for (const pkg of Object.values(response.get('packages', {}))) {
+  for (const rate of Object.values(pkg.rates)) console.log(rate.label, rate.cost); // cost in minor units
+}
+```
+
+The request is sent without the cart key (the route prices a simulated cart and refuses one). External and grouped products can't be priced.
+
 ## Categories
 
 ### List All Categories
@@ -354,6 +371,18 @@ const response = await products.reviews();
 
 ```ts
 const response = await products.productReviews(123);
+```
+
+### Post a Review
+
+```ts
+const response = await products.createReview({
+  product_id: 123,
+  review: 'Warm and well made.',
+  rating: 5,
+  reviewer: 'Jane',            // guests
+  reviewer_email: 'jane@example.com',
+});
 ```
 
 ### My Reviews
