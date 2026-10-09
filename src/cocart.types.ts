@@ -290,7 +290,31 @@ export interface PaginationParams {
 export type SortOrder = 'asc' | 'desc';
 
 /** Valid product orderby fields. */
-export type ProductOrderBy = 'date' | 'id' | 'include' | 'title' | 'slug' | 'price' | 'popularity' | 'rating';
+/**
+ * Product sort orders accepted by CoCart. Price sorts by direction (`price_asc`, `price_desc`);
+ * `relevance` (with a search term) and `rand` need CoCart Starter.
+ */
+export type ProductOrderBy =
+  | 'date'
+  | 'id'
+  | 'menu_order'
+  | 'include'
+  | 'title'
+  | 'slug'
+  | 'name'
+  | 'alphabetical'
+  | 'reverse_alpha'
+  | 'popularity'
+  | 'sales'
+  | 'rating'
+  | 'review_count'
+  | 'by_stock'
+  | 'on_sale_first'
+  | 'featured_first'
+  | 'price_asc'
+  | 'price_desc'
+  | 'relevance'
+  | 'rand';
 
 /** Parameters for listing products. */
 export interface ProductListParams extends PaginationParams {

@@ -38,7 +38,7 @@ All list methods accept an optional `params` object with these query parameters:
 | `min_price` | string | Minimum price |
 | `max_price` | string | Maximum price |
 | `stock_status` | string | Stock status (`instock`, `outofstock`, `onbackorder`) |
-| `orderby` | string | Sort field (`date`, `id`, `title`, `slug`, `price`, `popularity`, `rating`) |
+| `orderby` | string | Sort order: `date`, `id`, `menu_order`, `include`, `title`, `slug`, `name`, `alphabetical`, `reverse_alpha`, `popularity`, `sales`, `rating`, `review_count`, `by_stock`, `on_sale_first`, `featured_first`, `price_asc`, `price_desc`; `relevance` and `rand` need CoCart Starter |
 | `order` | string | Sort direction (`asc`, `desc`) |
 
 ## Filtering
@@ -51,8 +51,7 @@ const response = await products.byCategory('electronics');
 // With additional params
 const response = await products.byCategory('electronics', {
   per_page: '20',
-  orderby: 'price',
-  order: 'asc',
+  orderby: 'price_asc',
 });
 ```
 
@@ -354,8 +353,7 @@ const response = await products.byBrand('nike');
 // With additional params
 const response = await products.byBrand('nike', {
   per_page: '20',
-  orderby: 'price',
-  order: 'asc',
+  orderby: 'price_asc',
 });
 ```
 
