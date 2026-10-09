@@ -185,6 +185,34 @@ export interface RedirectActionData {
 }
 
 /**
+ * CoCart's code for why a payment failed. Fraud-related declines are reported as `card_declined`,
+ * and `payment_failed` means the reason isn't known.
+ */
+export type PaymentErrorCode =
+  | 'card_declined'
+  | 'insufficient_funds'
+  | 'expired_card'
+  | 'incorrect_cvc'
+  | 'incorrect_number'
+  | 'incorrect_postcode'
+  | 'authentication_failed'
+  | 'processing_error'
+  | 'payment_method_not_supported'
+  | 'amount_not_supported'
+  | 'payment_failed'
+  | (string & {});
+
+/** Why a payment failed: `payment_result.error` when `payment_status` is `failed` (CoCart Plus 2.0). */
+export interface PaymentError {
+  /** Stable code to branch on. Stripe and WooPayments report their reasons; other gateways give `payment_failed`. */
+  code: PaymentErrorCode;
+  /** The gateway's own error or decline code, lowercased (e.g. Stripe's `generic_decline`), or `''`. */
+  gateway_code?: string;
+  /** The gateway's own message, for logging. Show `payment_result.message` to the customer. */
+  gateway_message?: string;
+}
+
+/**
  * The outcome of payment processing on `POST /checkout` (and `POST /order-received/{id}/pay`).
  * Which fields are present depends on `payment_status`:
  * - `success` / `no_payment_required` → `redirect_url`
@@ -210,6 +238,8 @@ export interface PaymentResult {
   redirect_url?: string;
   /** Present when `payment_status` is `failed`. */
   message?: string;
+  /** Present when `payment_status` is `failed` (CoCart Plus 2.0): why, in a form to branch on. */
+  error?: PaymentError;
   /** Present when `payment_status` is `requires_action`, and occasionally `on_hold`. See `CheckoutActionType`. */
   action_type?: CheckoutActionType;
   /** Present alongside `action_type`. Shape depends on `action_type` — see `ConfirmPaymentActionData`/`MultibancoVoucherActionData`/`RedirectActionData`. */

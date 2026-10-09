@@ -70,6 +70,8 @@ export type {
   RedirectActionData,
   PaymentDataItem,
   PaymentResult,
+  PaymentError,
+  PaymentErrorCode,
   PaymentToken,
   ShippingMethodOption,
   PayPalGatewayOptions,

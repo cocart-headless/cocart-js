@@ -88,7 +88,16 @@ await client.checkout.processCheckout({
 | `no_payment_required` | Order total is `0` — no gateway was called. | `redirect_url` |
 | `on_hold` | Payment was authorized/captured but needs manual or fraud/risk review — not an error, and not something the *customer* needs to act on. | `redirect_url` (same as `success`); occasionally also `action_type`/`action_data` with extra info to show the customer (e.g. a Multibanco voucher), even though nothing needs to be retried. |
 | `requires_action` | The gateway needs the customer to do something else before the payment can complete (3D Secure/SCA, an off-site approval redirect). The order is left `pending`; the draft order/cart session are **not** cleared. | `action_type`, `action_data` instead of `redirect_url`/`message`. |
-| `failed` | Payment was declined, errored, or had nothing a client could act on. | `message` |
+| `failed` | Payment was declined, errored, or had nothing a client could act on. | `message`, and `error` with a stable `code` (CoCart Plus 2.0) |
+
+A failed payment's `error.code` says why, so the storefront can react without parsing the message: `card_declined`, `insufficient_funds`, `expired_card`, `incorrect_cvc`, `incorrect_number`, `incorrect_postcode`, `authentication_failed`, `processing_error`, `payment_method_not_supported`, `amount_not_supported`, or `payment_failed` when the gateway didn't say (types: `PaymentError`, `PaymentErrorCode`). Stripe and WooPayments report their reasons. Show `message` to the customer; the cart and the draft order are kept, so they can fix the details and pay again.
+
+```ts
+const { payment_result } = (await client.checkout.processCheckout(data)).toObject();
+if (payment_result?.payment_status === 'failed' && payment_result.error?.code === 'incorrect_cvc') {
+  focusCvcField();
+}
+```
 
 ### Resolving requires_action
 
