@@ -603,6 +603,20 @@ export class CoCart {
     try {
       return await this.executeRequest(method, endpoint, params, data);
     } catch (e) {
+      // The stored guest cart no longer exists (e.g. it expired).
+      // CoCart refuses the request before running it, so forget the key and
+      // retry once as a new guest.
+      if (
+        e instanceof CoCartError &&
+        e.errorCode === 'cocart_invalid_cart' &&
+        this.cartKey !== null &&
+        !this.isAuthenticated()
+      ) {
+        this.cartKey = null;
+        await this.storage.delete(this.storageKey);
+        return await this.executeRequest(method, endpoint, params, data);
+      }
+
       if (
         e instanceof AuthenticationError &&
         this.jwtManagerInstance?.isAutoRefreshEnabled() &&
@@ -630,6 +644,7 @@ export class CoCart {
     route: string,
     params?: Record<string, string>,
     data?: Record<string, unknown> | null,
+    options: { omitCartKey?: boolean } = {},
   ): Promise<Response> {
     let url = `${this.storeUrl}/${this.restPrefix}/${route.replace(/^\/+/, '')}`;
 
@@ -637,7 +652,7 @@ export class CoCart {
       url += '?' + new URLSearchParams(params).toString();
     }
 
-    const headers = this.buildHeaders();
+    const headers = this.buildHeaders(!options.omitCartKey);
     const body = data ? JSON.stringify(data) : undefined;
 
     const fetchResponse = await this.fetchWithTimeout(method, url, headers, body);
@@ -848,7 +863,7 @@ export class CoCart {
     return url;
   }
 
-  private buildHeaders(): Record<string, string> {
+  private buildHeaders(includeCartKey = true): Record<string, string> {
     const headers: Record<string, string> = {
       'Accept': 'application/json',
       'Content-Type': 'application/json',
@@ -865,7 +880,7 @@ export class CoCart {
     }
 
     // Send only the cart-key header name the configured plugin actually allows.
-    if (this.cartKey && !this.isAuthenticated()) {
+    if (includeCartKey && this.cartKey && !this.isAuthenticated()) {
       const cartKeyHeader = this.mainPlugin === 'legacy' ? 'CoCart-API-Cart-Key' : 'Cart-Key';
       headers[cartKeyHeader] = this.cartKey;
     }

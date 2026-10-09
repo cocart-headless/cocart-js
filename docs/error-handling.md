@@ -304,6 +304,10 @@ try {
 
 See [Legacy Plugin Support](installation.md#legacy-plugin-support) for the full list of Basic-only methods.
 
+### Expired Cart Key
+
+CoCart Starter 5 refuses a cart key with no cart session on every cart route (`404 cocart_invalid_cart`), for example after the cart expired. The client then forgets the stored key and retries the request once as a new guest, so this error doesn't reach your code for a guest; a fresh cart key comes back as usual.
+
 ### Network / Timeout Errors
 
 A **timeout** occurs when the server takes too long to respond. The SDK cancels the request after the configured number of milliseconds (1000 milliseconds = 1 second). This prevents your app from hanging indefinitely if the server is down or overloaded.
