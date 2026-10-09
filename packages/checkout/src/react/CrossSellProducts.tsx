@@ -12,7 +12,7 @@ export interface CrossSellProductsProps {
   onAdd: (product: CrossSellProduct) => void;
 }
 
-export function CrossSellProducts({ theme, products, onAdd }: CrossSellProductsProps) {
+export function CrossSellProducts({ products, onAdd }: CrossSellProductsProps) {
   if (!products.length) return null;
 
   const btnClass = 'shrink-0 rounded-(--cocart-border-radius) bg-(--cocart-color-button) px-3 py-1.5 text-sm font-semibold text-(--cocart-color-button-text) transition hover:opacity-90 focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:ring-(--cocart-color-primary)';
