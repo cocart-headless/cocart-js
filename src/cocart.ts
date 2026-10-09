@@ -902,8 +902,10 @@ export class CoCart {
     const apiMessage = (data['message'] as string) ?? t('request.unknownError', undefined, this.locale);
     const httpCode = response.statusCode;
 
-    // Build a contextual message: "POST /cart/add-item: Product not found [cocart_product_not_found]"
-    const context = method && url ? `${method} ${url}: ` : '';
+    // Build a contextual message: "POST /cocart/v2/cart/add-item: Product not found [cocart_product_not_found]".
+    // Path only: the full URL's query string can carry the cart key and consumer
+    // key/secret, which must never end up in a message an app logs or displays.
+    const context = method && url ? `${method} ${routePath(url)}: ` : '';
     const codeLabel = code !== 'unknown_error' ? ` [${code}]` : '';
     const message = `${context}${apiMessage}${codeLabel}`;
 
@@ -959,5 +961,20 @@ export class CoCart {
 
   private sleep(ms: number): Promise<void> {
     return new Promise(resolve => setTimeout(resolve, ms));
+  }
+}
+
+/**
+ * The REST route of a request URL for error messages: the path from `/wp-json`
+ * on, with no host and no query string (which can hold the cart key or API
+ * credentials). Falls back to the URL minus its query string.
+ */
+function routePath(url: string): string {
+  try {
+    const { pathname } = new URL(url);
+    const i = pathname.indexOf('/wp-json/');
+    return i >= 0 ? pathname.slice(i + '/wp-json'.length) : pathname;
+  } catch {
+    return url.split('?')[0] ?? url;
   }
 }
