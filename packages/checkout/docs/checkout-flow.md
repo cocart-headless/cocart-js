@@ -105,7 +105,7 @@ if (payment_result?.payment_status === 'requires_action') {
 }
 ```
 
-The order and cart session are deliberately left intact when `requires_action` comes back — there is no separate "confirm" endpoint, just calling `processCheckout()` again once the action is resolved. Known `action_type` values (not exhaustive — see `CheckoutActionType`):
+The order and cart session are deliberately left intact when `requires_action` comes back. An action resolved in the page (`stripe_confirm_payment`/`wcpay_confirm_payment`) is followed by calling `processCheckout()` again; an off-site step (`action_data.redirect`, e.g. a Stripe-hosted 3D Secure page) is finished by the gateway when the customer returns — see [Returning from an off-site payment step](#returning-from-an-off-site-payment-step). Known `action_type` values (not exhaustive — see `CheckoutActionType`):
 
 | `action_type` | Gateway | `action_data` | What to do |
 |---|---|---|---|
@@ -113,11 +113,36 @@ The order and cart session are deliberately left intact when `requires_action` c
 | `wcpay_confirm_payment` | WooPayments | `client_secret`, `intent_type` | Same as above — WooPayments is Stripe-based too. Handled automatically by `createWooPaymentsGateway`'s `confirmAction`. |
 | `paypal_approve` | PayPal Payments (`ppcp-gateway`) | `redirect` — a URL | Open the PayPal-hosted approval URL. Completion is async (webhook-driven) — retry once the order is actually paid, not immediately after the redirect returns. No pre-wired factory; see [Gateways → PayPal Payments](gateways.md#paypal-payments). |
 | `paypal_confirm_3ds` | PayPal Payments (`ppcp-credit-card-gateway`) | `redirect` — a URL | Open PayPal's 3D Secure step-up URL. The return URL must carry the same `ppcp_resume_nonce` PayPal generated — send it back in `payment_data` on retry. |
-| `gateway_redirect_required` | Any gateway without a dedicated compat integration | `redirect` — a URL | Generic fallback: a gateway reported success while the order still needed payment and gave a real redirect. Open it; completion may be async. |
+| `gateway_redirect_required` | Any gateway without a dedicated compat integration, and Stripe when it sends the customer to a Stripe-hosted 3D Secure page | `redirect` — a URL | Send the customer to `redirect`. When they come back, call `confirmReturn()` (see below). `submit()` returns this URL as `redirectUrl` instead of retrying. |
 
 If a gateway reports success with genuinely nothing to act on, the API reports a plain `failed` instead of an unresolvable `requires_action` — you'll never be stuck polling for an action that isn't coming.
 
 If you're using a pre-wired gateway from `gateways.ts` (Stripe, WooPayments, Stripe Express) with `submit()`, the `stripe_confirm_payment`/`wcpay_confirm_payment` retry loop is handled for you automatically via the gateway adapter's `confirmAction` — see [Gateways → Confirming requires_action](gateways.md#confirming-requires_action). PayPal Payments' redirect-based actions (`paypal_approve`/`paypal_confirm_3ds`) have no pre-wired factory — see [Gateways → PayPal Payments](gateways.md#paypal-payments) for the pattern.
+
+### Returning from an off-site payment step
+
+Gateways build their return URL from the store's order-received URL, which CoCart Plus rewrites to your **Front-end site URL** (and **Order Received Path**, e.g. `/order/{order_id}`) — so after a Stripe-hosted 3D Secure page the customer lands on your frontend, with the gateway's and Stripe's parameters on the query string. Nothing on WordPress sees that return, so the frontend tells CoCart:
+
+```ts
+// On the frontend's order-received page (e.g. /order/[id]):
+const confirmed = await client.checkout.confirmReturn(window.location.href);
+const { status, payment_result } = confirmed.toObject();
+
+switch (payment_result.payment_status) {
+  case 'success':
+  case 'on_hold':
+    // Paid. Show the thank-you page — getOrderReceived(order_id, order_key).
+    break;
+  case 'failed':
+    // Declined or cancelled at the provider: show payment_result.message, offer payForOrder().
+    break;
+  case 'pending':
+    // Not confirmed yet (e.g. the webhook is still settling it): poll getOrderReceived().
+    break;
+}
+```
+
+`confirmReturn()` reads `order_id` and `key` from the URL and forwards every query parameter to `POST /order-received/{id}/confirm`, which runs the gateway's own completion logic (CoCart Plus 2.0.0-beta.19+). Pass `{ orderId, orderKey }` if your route carries them elsewhere, or call `confirmOrderPayment(orderId, orderKey, returnParams)` directly. It's safe to call more than once. Keep the gateway's webhooks enabled as a safety net for customers who close the tab before the page loads.
 
 ## One-call orchestration
 

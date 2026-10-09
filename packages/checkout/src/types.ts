@@ -173,7 +173,13 @@ export interface MultibancoVoucherActionData {
   expires_at: string;
 }
 
-/** `action_data` for `paypal_approve`, `paypal_confirm_3ds`, and the generic `gateway_redirect_required` fallback — open `redirect` in the browser. Completion may be asynchronous (webhook-driven); don't assume the payment is done as soon as the redirect returns. */
+/**
+ * `action_data` for `paypal_approve`, `paypal_confirm_3ds`, and the generic `gateway_redirect_required`
+ * fallback — open `redirect` in the browser. Stripe uses `gateway_redirect_required` when it sends the
+ * customer to a Stripe-hosted 3D Secure page. When the customer comes back (to the store's
+ * order-received URL, which CoCart rewrites to the Front-end site URL), call `confirmReturn()` so the
+ * gateway can finish the order — don't assume the payment is done as soon as the redirect returns.
+ */
 export interface RedirectActionData {
   redirect: string;
 }
@@ -198,7 +204,8 @@ export interface RedirectActionData {
  *   `requires_action`.
  */
 export interface PaymentResult {
-  payment_status?: 'success' | 'no_payment_required' | 'failed' | 'requires_action' | 'on_hold' | (string & {});
+  /** `pending` only comes from `POST /order-received/{id}/confirm`: the payment isn't confirmed yet (see `ConfirmOrderPaymentResponse`). */
+  payment_status?: 'success' | 'no_payment_required' | 'failed' | 'requires_action' | 'on_hold' | 'pending' | (string & {});
   /** Present when `payment_status` is `success`, `no_payment_required`, or `on_hold`. */
   redirect_url?: string;
   /** Present when `payment_status` is `failed`. */
@@ -470,6 +477,32 @@ export interface PayForOrderResponse {
   redirect_url?: string;
 }
 
+/**
+ * Response of `POST /order-received/{order_id}/confirm` — sent after the customer returns from an
+ * off-site payment step (e.g. a Stripe-hosted 3D Secure page). `payment_result.payment_status` is:
+ * - `success` / `on_hold` → paid (or held for review). The cart session that placed the order is cleared.
+ * - `failed` → declined or cancelled at the provider; `message` says why. Retry with `payForOrder()`.
+ * - `pending` → not confirmed yet (the gateway's webhook may still be settling it, or the gateway has
+ *   no confirm integration). Poll `getOrderReceived()` until `status` changes.
+ *
+ * Safe to call more than once: an already-paid order is reported as `success`.
+ */
+export interface ConfirmOrderPaymentResponse {
+  order_id: number;
+  status: string;
+  order_key: string;
+  order_number: string;
+  payment_result: PaymentResult;
+}
+
+/** Options for `confirmReturn()`, overriding what it reads from the return URL. */
+export interface ConfirmReturnOptions {
+  /** Defaults to the `order_id` query parameter the payment gateway adds to the return URL. */
+  orderId?: number;
+  /** Defaults to the `key` query parameter (the order key) on the return URL. */
+  orderKey?: string;
+}
+
 export interface CheckoutSummaryItem {
   key: string;
   name: string;
@@ -723,6 +756,13 @@ export interface CheckoutSubmitResult {
    */
   processResponse: Response<CheckoutProcessResponse>;
   paymentData?: Record<string, unknown>;
+  /**
+   * Set when the payment needs an off-site step — a `requires_action` result whose `action_data`
+   * carries a `redirect` URL rather than something to confirm in-page (e.g. `gateway_redirect_required`
+   * for a Stripe-hosted 3D Secure page). Send the customer here; `submit()` doesn't retry in this case.
+   * When they return, call `confirmReturn()` on the page they land on.
+   */
+  redirectUrl?: string;
 }
 
 export interface CheckoutSDK {
@@ -748,6 +788,8 @@ export interface CheckoutSDK {
   getAddressDetails(params: AddressDetailsParams): Promise<Response<AddressDetails>>;
   getOrderReceived(orderId: number, orderKey: string): Promise<Response<OrderReceived>>;
   payForOrder(orderId: number, orderKey: string, data: PayForOrderInput): Promise<Response<PayForOrderResponse>>;
+  confirmOrderPayment(orderId: number, orderKey: string, returnParams?: Record<string, string>): Promise<Response<ConfirmOrderPaymentResponse>>;
+  confirmReturn(url: string | URL, options?: ConfirmReturnOptions): Promise<Response<ConfirmOrderPaymentResponse>>;
 }
 
 export interface CheckoutOptions extends CheckoutSDKOptions {

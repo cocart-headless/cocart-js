@@ -26,6 +26,8 @@ import type {
   CheckoutSubmitResult,
   CheckoutTheme,
   CheckoutUpdateInput,
+  ConfirmOrderPaymentResponse,
+  ConfirmReturnOptions,
   OrderReceived,
   PayForOrderInput,
   PayForOrderResponse,
@@ -255,6 +257,47 @@ export class CheckoutClient implements CheckoutSDK {
     } catch (err) {
       throw wrapError(err, 'Failed to pay for order.', 'checkout_pay_for_order_failed');
     }
+  }
+
+  /**
+   * Finishes a payment after the customer returns from an off-site step (e.g. a Stripe-hosted
+   * 3D Secure page). Pass every query parameter the return URL carried, unchanged — the gateway
+   * integration server-side uses them to confirm the payment with the provider. Safe to call more
+   * than once. See `confirmReturn()` to do this straight from the return URL.
+   */
+  async confirmOrderPayment(orderId: number, orderKey: string, returnParams: Record<string, string> = {}): Promise<Response<ConfirmOrderPaymentResponse>> {
+    try {
+      return await (this.client.requestRaw(
+        'POST',
+        `${this.apiBase}/order-received/${orderId}/confirm`,
+        this.withPreviewAuth({ order_key: orderKey }),
+        { order_key: orderKey, return_params: returnParams },
+      ) as Promise<Response<ConfirmOrderPaymentResponse>>);
+    } catch (err) {
+      throw wrapError(err, 'Failed to confirm the order payment.', 'checkout_confirm_order_failed');
+    }
+  }
+
+  /**
+   * `confirmOrderPayment()` straight from the URL the customer returned to, e.g. on the frontend's
+   * order-received page: `await checkout.confirmReturn(window.location.href)`. Reads the order ID
+   * (`order_id`) and order key (`key`) the gateway put on the URL, and forwards every query
+   * parameter as the return parameters.
+   */
+  async confirmReturn(url: string | URL, options: ConfirmReturnOptions = {}): Promise<Response<ConfirmOrderPaymentResponse>> {
+    const params = Object.fromEntries(new URL(String(url), 'http://localhost').searchParams);
+    const orderId = options.orderId ?? Number(params.order_id);
+    const orderKey = options.orderKey ?? params.key;
+
+    if (!Number.isInteger(orderId) || orderId <= 0 || !orderKey) {
+      throw new CoCartError(
+        'The return URL has no order ID or order key. Pass them in the options if your route carries them elsewhere.',
+        0,
+        'checkout_return_missing_order',
+      );
+    }
+
+    return this.confirmOrderPayment(orderId, orderKey, params);
   }
 
   async applyCoupon(code: string): Promise<Response> {
@@ -517,6 +560,20 @@ export class CheckoutClient implements CheckoutSDK {
     // (e.g. Stripe 3D Secure/SCA). The order and cart session are left intact server-side —
     // resolve the action, then POST /checkout again to land on the same order.
     const paymentResult = processResponse.toObject().payment_result;
+
+    // An off-site step (e.g. a Stripe-hosted 3D Secure page): nothing to confirm in-page and
+    // nothing to retry — the customer has to go there. The gateway finishes the order once they
+    // come back (see confirmReturn()).
+    const redirectUrl = paymentResult?.payment_status === 'requires_action' ? offSiteRedirect(paymentResult.action_data) : undefined;
+    if (redirectUrl) {
+      return {
+        updateResponse,
+        processResponse,
+        paymentData,
+        redirectUrl,
+      };
+    }
+
     if (paymentResult?.payment_status === 'requires_action' && gateway.confirmAction) {
       let confirmData: Record<string, unknown> | void;
       try {
@@ -567,6 +624,15 @@ export class CheckoutClient implements CheckoutSDK {
       consumer_secret: consumerSecret,
     };
   }
+}
+
+/**
+ * The URL of an off-site payment step from `requires_action` `action_data`: a `redirect` with no
+ * `client_secret` (an in-page confirmation, handled by the gateway's `confirmAction`, has one).
+ */
+function offSiteRedirect(actionData: Record<string, unknown> | undefined): string | undefined {
+  const redirect = actionData?.redirect;
+  return typeof redirect === 'string' && redirect !== '' && !actionData?.client_secret ? redirect : undefined;
 }
 
 /** Gateway adapters return `payment_data` as a plain object; the API expects an array of `{key, value}` pairs. */

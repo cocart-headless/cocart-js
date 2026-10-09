@@ -100,6 +100,8 @@ export type {
   OrderReceived,
   PayForOrderInput,
   PayForOrderResponse,
+  ConfirmOrderPaymentResponse,
+  ConfirmReturnOptions,
 } from './types.js';
 
 declare module '@cocartheadless/sdk' {

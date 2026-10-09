@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { CoCart, CoCartError } from '@cocartheadless/sdk';
+import { CoCart, CoCartError, Response } from '@cocartheadless/sdk';
 import {
   createAuthorizeNetGateway,
   createBankTransferGateway,
@@ -755,6 +755,139 @@ describe('@cocartheadless/checkout', () => {
         payment_data: [{ key: 'paymentMethodID', value: 'pm_1H8x2y2eZvKYlo2C' }],
       },
     );
+  });
+
+  it('confirmOrderPayment calls POST cocart/v2/order-received/{id}/confirm with the return params', async () => {
+    const client = new CoCart('https://store.com').use(createCheckout());
+    const requestRaw = vi.spyOn(client, 'requestRaw').mockResolvedValueOnce({
+      toObject: () => ({ order_id: 1234, status: 'processing', payment_result: { payment_status: 'success' } }),
+    } as never);
+
+    await client.checkout.confirmOrderPayment(1234, 'wc_order_abc123', { payment_intent: 'pi_123', redirect_status: 'succeeded' });
+
+    expect(requestRaw).toHaveBeenCalledWith(
+      'POST',
+      'cocart/v2/order-received/1234/confirm',
+      { order_key: 'wc_order_abc123' },
+      { order_key: 'wc_order_abc123', return_params: { payment_intent: 'pi_123', redirect_status: 'succeeded' } },
+    );
+  });
+
+  it('confirmReturn reads the order ID and key from the return URL and forwards every query parameter', async () => {
+    const client = new CoCart('https://store.com').use(createCheckout());
+    const requestRaw = vi.spyOn(client, 'requestRaw').mockResolvedValueOnce({ toObject: () => ({}) } as never);
+
+    await client.checkout.confirmReturn(
+      'https://shop.example.com/order/217?key=wc_order_abc&order_id=217&wc_payment_method=stripe&_wpnonce=n0nce&payment_intent=pi_123&payment_intent_client_secret=pi_123_secret_x&redirect_status=succeeded',
+    );
+
+    expect(requestRaw).toHaveBeenCalledWith(
+      'POST',
+      'cocart/v2/order-received/217/confirm',
+      { order_key: 'wc_order_abc' },
+      {
+        order_key: 'wc_order_abc',
+        return_params: {
+          key: 'wc_order_abc',
+          order_id: '217',
+          wc_payment_method: 'stripe',
+          _wpnonce: 'n0nce',
+          payment_intent: 'pi_123',
+          payment_intent_client_secret: 'pi_123_secret_x',
+          redirect_status: 'succeeded',
+        },
+      },
+    );
+  });
+
+  it('confirmReturn takes the order ID and key from options when the URL carries them elsewhere', async () => {
+    const client = new CoCart('https://store.com').use(createCheckout());
+    const requestRaw = vi.spyOn(client, 'requestRaw').mockResolvedValueOnce({ toObject: () => ({}) } as never);
+
+    await client.checkout.confirmReturn('/thank-you?payment_intent=pi_123', { orderId: 55, orderKey: 'wc_order_k' });
+
+    expect(requestRaw).toHaveBeenCalledWith(
+      'POST',
+      'cocart/v2/order-received/55/confirm',
+      { order_key: 'wc_order_k' },
+      { order_key: 'wc_order_k', return_params: { payment_intent: 'pi_123' } },
+    );
+  });
+
+  it('confirmReturn rejects a URL with no order ID or key, without calling the API', async () => {
+    const client = new CoCart('https://store.com').use(createCheckout());
+    const requestRaw = vi.spyOn(client, 'requestRaw');
+
+    await expect(client.checkout.confirmReturn('https://shop.example.com/order?payment_intent=pi_123')).rejects.toMatchObject({
+      errorCode: 'checkout_return_missing_order',
+    });
+    expect(requestRaw).not.toHaveBeenCalled();
+  });
+
+  it('submit returns redirectUrl for an off-site step (Stripe-hosted 3D Secure) without confirming or retrying', async () => {
+    const createPaymentMethod = vi.fn().mockResolvedValue({ paymentMethod: { id: 'pm_123' } });
+    const confirmCardPayment = vi.fn();
+    const mockStripe = { createPaymentMethod, confirmCardPayment, confirmCardSetup: vi.fn(), confirmPayment: vi.fn() };
+
+    const client = new CoCart('https://store.com').use(createCheckout({
+      consumerKey: 'ck_test',
+      consumerSecret: 'cs_test',
+      gatewayAdapters: [createStripeGateway({ stripe: mockStripe, elements: {} })],
+    }));
+
+    const requestRaw = vi.spyOn(client, 'requestRaw')
+      .mockResolvedValueOnce({ toObject: () => ({}) } as never)
+      .mockResolvedValueOnce({
+        toObject: () => ({
+          order_id: 217,
+          order_key: 'wc_order_abc',
+          payment_result: {
+            payment_status: 'requires_action',
+            action_type: 'gateway_redirect_required',
+            action_data: { redirect: 'https://hooks.stripe.com/3d_secure_2/hosted?payment_intent=pi_123' },
+          },
+        }),
+      } as never);
+
+    const result = await client.checkout.submit({ gatewayId: 'stripe' });
+
+    expect(result.redirectUrl).toBe('https://hooks.stripe.com/3d_secure_2/hosted?payment_intent=pi_123');
+    expect(confirmCardPayment).not.toHaveBeenCalled();
+    expect(requestRaw).toHaveBeenCalledTimes(2);
+  });
+
+  it('submit still confirms in-page (no redirectUrl) when action_data carries a client_secret', async () => {
+    const confirmCardPayment = vi.fn().mockResolvedValue({ paymentIntent: { id: 'pi_1' } });
+    const mockStripe = {
+      createPaymentMethod: vi.fn().mockResolvedValue({ paymentMethod: { id: 'pm_123' } }),
+      confirmCardPayment,
+      confirmCardSetup: vi.fn(),
+      confirmPayment: vi.fn(),
+    };
+
+    const client = new CoCart('https://store.com').use(createCheckout({
+      consumerKey: 'ck_test',
+      consumerSecret: 'cs_test',
+      gatewayAdapters: [createStripeGateway({ stripe: mockStripe, elements: {} })],
+    }));
+
+    vi.spyOn(client, 'requestRaw')
+      .mockResolvedValueOnce({ toObject: () => ({}) } as never)
+      .mockResolvedValueOnce({
+        toObject: () => ({
+          payment_result: {
+            payment_status: 'requires_action',
+            action_type: 'stripe_confirm_payment',
+            action_data: { client_secret: 'pi_1_secret', intent_type: 'payment_intent', redirect: 'https://example.com/ignored' },
+          },
+        }),
+      } as never)
+      .mockResolvedValueOnce({ toObject: () => ({ payment_result: { payment_status: 'success' } }) } as never);
+
+    const result = await client.checkout.submit({ gatewayId: 'stripe' });
+
+    expect(result.redirectUrl).toBeUndefined();
+    expect(confirmCardPayment).toHaveBeenCalledWith('pi_1_secret');
   });
 
   it('address/order-received routes use a custom apiBase derived from a custom routeBase', async () => {
