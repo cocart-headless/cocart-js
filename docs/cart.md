@@ -475,6 +475,9 @@ const response = await client.cart().batchRemoveItems([
 
 ```ts
 const response = await client.cart().getFees();
+
+// The cart keys fees by fee ID; getFees() lists them: [{ name: "Gift wrap", fee: "500" }]
+const fees = response.getFees();
 ```
 
 ### Add a Fee

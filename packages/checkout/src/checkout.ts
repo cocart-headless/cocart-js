@@ -336,9 +336,8 @@ export class CheckoutClient implements CheckoutSDK {
       throw new CoCartError('Cart endpoint is not available on the CoCart client.', 0, 'checkout_cart_unavailable');
     }
     try {
-      const response = (await this.client.cart().getShippingMethods()).toObject() as Record<string, unknown>;
-      const shipping = response['shipping'] ?? response;
-      return Array.isArray(shipping) ? (shipping as CheckoutShippingPackage[]) : [];
+      // `shipping.packages` is keyed by package ID; Response.getShippingMethods() lists the packages.
+      return (await this.client.cart().getShippingMethods()).getShippingMethods() as unknown as CheckoutShippingPackage[];
     } catch (err) {
       throw wrapError(err, 'Failed to retrieve shipping methods.', 'checkout_shipping_methods_failed');
     }

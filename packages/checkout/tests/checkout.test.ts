@@ -473,7 +473,8 @@ describe('@cocartheadless/checkout', () => {
     ];
 
     vi.spyOn(client, 'cart').mockReturnValue({
-      getShippingMethods: vi.fn().mockResolvedValue({ toObject: () => ({ shipping: mockPackages }) }),
+      // The live shape: `shipping.packages` keyed by package ID.
+      getShippingMethods: vi.fn().mockResolvedValue(new Response(200, new Headers(), JSON.stringify({ shipping: { total_packages: 1, packages: { default: mockPackages[0] } } }))),
     } as never);
 
     const packages = await client.checkout.getShippingMethods();

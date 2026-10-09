@@ -1,7 +1,8 @@
 import type {
   CartItem, CartTotals, CartCustomer, CartCoupon, CartFee, CartTax, CartTaxesResponse,
-  ShippingPackage, CrossSellProduct, CurrencyInfo,
+  ShippingPackage, CartShipping, CrossSellProduct, CurrencyInfo, RateLimitInfo,
 } from './cocart.types.js';
+import type { CartExtensions } from './extensions.types.js';
 
 /**
  * Response wrapper for CoCart API responses.
@@ -153,9 +154,13 @@ export class Response<T = unknown> {
     return this.getItemCount() === 0;
   }
 
-  /** Get notices from response data. */
-  getNotices(): unknown[] {
-    return this.get<unknown[]>('notices', []);
+  /**
+   * Get notices from response data, keyed by type (`success`, `error`, `info`). With none, CoCart
+   * Starter 5 sends `{}` and CoCart 4.x sends `[]`, which this normalizes to `{}`.
+   */
+  getNotices(): Record<string, string[]> {
+    const notices = this.get<unknown>('notices', {});
+    return notices && typeof notices === 'object' && !Array.isArray(notices) ? (notices as Record<string, string[]>) : {};
   }
 
   /** Get applied coupons from response data. */
@@ -178,14 +183,38 @@ export class Response<T = unknown> {
     return this.get<CurrencyInfo>('currency', {} as CurrencyInfo);
   }
 
-  /** Get shipping methods from response data. */
+  /**
+   * Get the cart's shipping packages, each with its rates. CoCart sends them keyed by package ID
+   * under `shipping.packages`; an array (older or filtered responses) is returned as is.
+   */
   getShippingMethods(): ShippingPackage[] {
-    return this.get<ShippingPackage[]>('shipping', []);
+    const shipping = this.get<unknown>('shipping', null);
+    if (Array.isArray(shipping)) return shipping as ShippingPackage[];
+    const packages = (shipping as Partial<CartShipping> | null)?.packages;
+    return packages && typeof packages === 'object' && !Array.isArray(packages) ? Object.values(packages) : [];
   }
 
-  /** Get cart fees from response data. */
+  /** Get the cart's `shipping` field: package count, whether shipping is calculated, and the packages keyed by package ID. */
+  getShipping(): CartShipping | null {
+    const shipping = this.get<unknown>('shipping', null);
+    return shipping && typeof shipping === 'object' && !Array.isArray(shipping) ? (shipping as CartShipping) : null;
+  }
+
+  /**
+   * Get the cart's `extensions`: data plugins add to the cart, such as subscription `recurring_totals`
+   * (typed for the CoCart Plus integrations; see `docs/extension-data.md`). `{}` when there is none.
+   */
+  getExtensions(): CartExtensions & Record<string, unknown> {
+    const extensions = this.get<unknown>('extensions', {});
+    return extensions && typeof extensions === 'object' && !Array.isArray(extensions)
+      ? (extensions as CartExtensions & Record<string, unknown>)
+      : {};
+  }
+
+  /** Get cart fees from response data, as a list. The cart keys them by fee ID (`{}` when there are none; `[]` from CoCart 4.x). */
   getFees(): CartFee[] {
-    return this.get<CartFee[]>('fees', []);
+    const fees = this.get<Record<string, CartFee> | CartFee[]>('fees', []);
+    return Array.isArray(fees) ? fees : Object.values(fees ?? {});
   }
 
   /**
@@ -243,6 +272,23 @@ export class Response<T = unknown> {
   /** Check if the response is a 304 Not Modified. */
   isNotModified(): boolean {
     return this.statusCode === 304;
+  }
+
+  /**
+   * The `RateLimit-*` headers (CoCart Plus, when rate limiting is on). Readable cross-origin
+   * since CoCart Plus 2.0. Values are `null` when the header wasn't sent.
+   */
+  getRateLimit(): RateLimitInfo {
+    const num = (name: string): number | null => {
+      const v = this.getHeader(name);
+      return v === null || v === '' || Number.isNaN(Number(v)) ? null : Number(v);
+    };
+    return {
+      limit: num('RateLimit-Limit'),
+      remaining: num('RateLimit-Remaining'),
+      reset: num('RateLimit-Reset'),
+      retryAfter: num('RateLimit-Retry-After'),
+    };
   }
 
   /** Get the CoCart-Cache header value (HIT, MISS, or SKIP). */

@@ -138,11 +138,12 @@ describe('Response', () => {
       coupons: [{ coupon: 'SAVE10' }],
       customer: { billing_address: { city: 'NYC' } },
       currency: { currency_code: 'USD' },
-      shipping: [{ package_name: 'Flat rate' }],
+      // Live shapes (CoCart Starter 5): packages keyed by package ID, notices keyed by type.
+      shipping: { total_packages: 1, has_calculated_shipping: true, packages: { default: { package_name: 'Shipment', rates: {}, chosen_method: 'flat_rate:1' } } },
       fees: [{ name: 'Service fee' }],
       taxes: [{ key: 'US-US-1', name: 'US', price: '120' }],
       cross_sells: [{ id: 5, name: 'Related' }],
-      notices: ['Item added'],
+      notices: { success: ['Item added'] },
     });
 
     it('getCartKey() reads Cart-Key header', () => {
@@ -195,14 +196,38 @@ describe('Response', () => {
       expect(r.getCurrency().currency_code).toBe('USD');
     });
 
-    it('getShippingMethods()', () => {
+    it('getShippingMethods() lists the packages from shipping.packages', () => {
       const r = makeResponse(200, cartBody);
       expect(r.getShippingMethods()).toHaveLength(1);
+      expect(r.getShippingMethods()[0].package_name).toBe('Shipment');
+      expect(r.getShipping()?.total_packages).toBe(1);
+    });
+
+    it('getShippingMethods() accepts a plain array and is empty without shipping', () => {
+      expect(makeResponse(200, JSON.stringify({ shipping: [{ package_name: 'A' }] })).getShippingMethods()).toHaveLength(1);
+      expect(makeResponse(200, JSON.stringify({ items: [] })).getShippingMethods()).toEqual([]);
+      expect(makeResponse(200, JSON.stringify({ items: [] })).getShipping()).toBeNull();
     });
 
     it('getFees()', () => {
       const r = makeResponse(200, cartBody);
       expect(r.getFees()).toHaveLength(1);
+    });
+
+    it('getExtensions() returns the cart extensions, {} for [] or none', () => {
+      const recurring = { abc: { totals: { period: '/ month', subtotal: '1000', total: '1000', first_renewal: { date: '', formatted_date: '', labelled: '' } } } };
+      expect(makeResponse(200, JSON.stringify({ extensions: { recurring_totals: recurring } })).getExtensions().recurring_totals).toEqual(recurring);
+      expect(makeResponse(200, JSON.stringify({ extensions: [] })).getExtensions()).toEqual({});
+      expect(makeResponse(200, JSON.stringify({ items: [] })).getExtensions()).toEqual({});
+    });
+
+    it('getFees() lists fees keyed by fee ID, and is empty for []', () => {
+      const keyed = { fees: { 'gift-wrap': { name: 'Gift wrap', fee: '500' }, handling: { name: 'Handling', fee: '150' } } };
+      expect(makeResponse(200, JSON.stringify(keyed)).getFees()).toEqual([
+        { name: 'Gift wrap', fee: '500' },
+        { name: 'Handling', fee: '150' },
+      ]);
+      expect(makeResponse(200, JSON.stringify({ fees: [] })).getFees()).toEqual([]);
     });
 
     it('getTaxes() / hasTaxes() — array shape (CoCart Starter 5.0+)', () => {
@@ -231,9 +256,13 @@ describe('Response', () => {
       expect(r.getCrossSells()).toHaveLength(1);
     });
 
-    it('getNotices()', () => {
+    it('getNotices() returns notices keyed by type', () => {
       const r = makeResponse(200, cartBody);
-      expect(r.getNotices()).toHaveLength(1);
+      expect(r.getNotices()).toEqual({ success: ['Item added'] });
+    });
+
+    it('getNotices() normalizes the empty PHP array ([]) to {}', () => {
+      expect(makeResponse(200, JSON.stringify({ notices: [] })).getNotices()).toEqual({});
     });
   });
 
