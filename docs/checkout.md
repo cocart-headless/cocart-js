@@ -8,7 +8,10 @@ It plugs into `@cocartheadless/sdk` through the extension system and is designed
 - `GET /wp-json/cocart/v2/checkout/config` — form fields, locale, country, and store settings
 - `GET /wp-json/cocart/v2/checkout/payment-methods`
 - `GET /wp-json/cocart/v2/address/search` and `GET /wp-json/cocart/v2/address/details` — address autocomplete
-- `GET /wp-json/cocart/v2/order-received/{order_id}` and `POST /wp-json/cocart/v2/order-received/{order_id}/pay` — order confirmation and payment retry
+- `GET /wp-json/cocart/v2/checkout/status` — how a checkout ended, when its response was lost
+- `GET /wp-json/cocart/v2/order-received/{order_id}`, `POST /wp-json/cocart/v2/order-received/{order_id}/pay` and `POST /wp-json/cocart/v2/order-received/{order_id}/confirm` — the order for the thank-you page, paying for an unpaid order, and finishing a payment after an off-site step
+
+Every call that takes payment returns the order with what the payment did in `result`, read with `CheckoutResult`: `isComplete`, `isAwaitingPayment`, `needsConfirmation`, `needsRedirect`, `isPending` or `isFailed`. A declined card is a result, not an error. See [Checkout Flow](../packages/checkout/docs/checkout-flow.md).
 
 The package focuses on:
 
@@ -51,7 +54,7 @@ const client = new CoCart('https://your-store.com').use(createCheckout({
   defaultTheme: shadcnCheckoutTheme,
   gatewayAdapters: [
     // Pass `stripe`/`elements` for the pre-wired path — no tokenize needed; if the
-    // gateway later returns requires_action (3D Secure/SCA), the adapter's built-in
+    // gateway later returns action_required (3D Secure/SCA), the adapter's built-in
     // confirmAction handles it and submit() retries automatically.
     createStripeGateway({ stripe, elements }),
   ],

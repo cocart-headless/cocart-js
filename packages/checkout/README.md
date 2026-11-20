@@ -94,14 +94,26 @@ const client = new CoCart('https://your-store.com').use(createCheckout({
   defaultTheme: theme,
   gatewayAdapters: [
     // Pass stripe/elements for the pre-wired path — 3D Secure/SCA is handled
-    // automatically via confirmAction if the gateway ever returns requires_action.
+    // automatically via confirmAction if the gateway ever returns action_required.
     createStripeGateway({ stripe, elements }),
   ],
 }));
 
+// The review page: CoCart Plus records the total the customer sees here.
 const checkout = await client.checkout.getCheckout();
 const paymentMethods = await client.checkout.getPaymentMethods();
+
+// Place the order. A declined card is a result, not an exception.
+const { result } = await client.checkout.submit({ gatewayId: 'stripe' });
+
+if (result.isFailed) {
+  showError(result.message);
+} else if (result.redirectUrl) {
+  window.location.href = result.redirectUrl; // an off-site step, or the order-received page
+}
 ```
+
+Every call that takes payment (`placeOrder()`, `submit()`, `payForOrder()`, `confirmReturn()`) returns the order with what the payment did, read with `CheckoutResult`: `isComplete`, `isAwaitingPayment`, `needsConfirmation`, `needsRedirect`, `isPending` or `isFailed`. See [Checkout Flow → Reading the result](docs/checkout-flow.md#reading-the-result).
 
 ### React components
 
@@ -129,12 +141,12 @@ export function CheckoutPage() {
 | Guide | Description |
 |-------|-------------|
 | [Installation](docs/installation.md) | Package install, requirements, setup, and API coverage |
-| [Checkout Flow](docs/checkout-flow.md) | `getCheckout()`, `updateCheckout()`, `processCheckout()`, `submit()`, and the `requires_action` (3D Secure/SCA) retry flow |
+| [Checkout Flow](docs/checkout-flow.md) | `getCheckout()`, `updateCheckout()`, `placeOrder()`, `submit()`, reading the `CheckoutResult`, the `action_required` (3D Secure/SCA) retry, off-site returns, recovering a lost answer with `getCheckoutStatus()`, and a changed total |
 | [Gateways](docs/gateways.md) | Stripe, WooPayments, PayPal, PayPal Payments, Authorize.Net, offline gateways, and multi-gateway setup |
-| [Gateway Compatibility](../../docs/checkout-gateway-compatibility.md) | Which installed WooCommerce gateways are covered by `payment_result`, and which SDK helper (if any) to use |
+| [Gateway Compatibility](../../docs/checkout-gateway-compatibility.md) | Which installed WooCommerce gateways report an honest `result`, and which SDK helper (if any) to use |
 | [Express Checkout](docs/express-checkout.md) | Apple Pay, Google Pay, priority bar, `createExpressCheckoutBar()`, and `createStripeExpressGateway()` |
 | [Zero-Total Checkout](docs/zero-total.md) | Free orders, coupon-discounted totals, and skipping tokenization |
-| [Coupons](docs/coupons.md) | Applying coupons, removing coupons, order summary, and re-checking `needs_payment` |
+| [Coupons](docs/coupons.md) | Applying coupons, removing coupons, order summary, and re-checking `payment.needs_payment` |
 | [Shipping Methods](docs/shipping.md) | Fetching rates, rendering a selector, multi-package support |
 | [Frameworks](docs/frameworks.md) | Next.js, Astro, and framework integration patterns |
 | [Next.js Integration](docs/integration-nextjs.md) | Complete App Router example with live API data, currency-aware mapping, and submit flow |

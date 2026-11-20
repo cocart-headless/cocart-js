@@ -1,0 +1,81 @@
+{
+  "name": "Reads the order ID and key from the return URL, forwards every query parameter, and returns a complete result",
+  "source": "CoCart Plus 2.0 checkout spec",
+  "call": {
+    "target": "checkout",
+    "method": "confirmReturn",
+    "args": [
+      "https://shop.example.com/order/217?key=wc_order_abc&order_id=217&wc_payment_method=stripe&_wpnonce=n0nce&payment_intent=pi_123&payment_intent_client_secret=pi_123_secret_x&redirect_status=succeeded"
+    ]
+  },
+  "exchanges": [
+    {
+      "request": {
+        "method": "POST",
+        "path": "cocart/v2/order-received/217/confirm",
+        "query": {},
+        "body": {
+          "order_key": "wc_order_abc",
+          "return_params": {
+            "key": "wc_order_abc",
+            "order_id": "217",
+            "wc_payment_method": "stripe",
+            "_wpnonce": "n0nce",
+            "payment_intent": "pi_123",
+            "payment_intent_client_secret": "pi_123_secret_x",
+            "redirect_status": "succeeded"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "object": "order",
+          "result": {
+            "code": "order_placed",
+            "message": "Thank you. Your order has been received.",
+            "action": null,
+            "redirect_url": "https://shop.example.com/checkout/order-received/217/?key=wc_order_abc",
+            "error": null
+          },
+          "id": 217,
+          "number": "217",
+          "key": "wc_order_abc",
+          "status": {
+            "code": "processing",
+            "label": "Processing"
+          },
+          "currency": {
+            "currency_code": "USD",
+            "currency_symbol": "$",
+            "currency_minor_unit": 2
+          },
+          "item_count": 1,
+          "totals": {
+            "subtotal": "1800",
+            "total_tax": "0",
+            "shipping_total": "500",
+            "total": "2300"
+          },
+          "payment": {
+            "method": "stripe",
+            "title": "Credit card",
+            "needs_payment": false,
+            "date_paid": null
+          },
+          "actions": {}
+        }
+      }
+    }
+  ],
+  "expect": {
+    "result": {
+      "code": "order_placed",
+      "isComplete": true,
+      "orderId": 217,
+      "orderKey": "wc_order_abc",
+      "orderStatus": "processing",
+      "redirectUrl": "https://shop.example.com/checkout/order-received/217/?key=wc_order_abc"
+    }
+  }
+}

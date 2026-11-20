@@ -1,0 +1,76 @@
+{
+  "name": "getCheckoutConfig calls GET cocart/v2/checkout/config",
+  "source": "CoCart Plus 2.0 checkout spec",
+  "call": {
+    "target": "checkout",
+    "method": "getCheckoutConfig",
+    "args": []
+  },
+  "exchanges": [
+    {
+      "request": {
+        "method": "GET",
+        "path": "cocart/v2/checkout/config",
+        "query": {},
+        "body": null
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "object": "checkout_config",
+          "order_received_url": "https://shop.example.com/order-received/{order_id}?key={order_key}",
+          "address_autocomplete": {
+            "enabled": true,
+            "providers": [
+              {
+                "id": "google_places",
+                "name": "Google Places"
+              }
+            ]
+          },
+          "store": {
+            "currency": "USD",
+            "coupons_enabled": true,
+            "terms_url": "https://shop.example.com/terms/",
+            "privacy_url": null,
+            "terms_text": "I have read and agree to the website terms and conditions",
+            "terms_links": [
+              {
+                "text": "terms and conditions",
+                "url": "https://shop.example.com/terms/"
+              }
+            ]
+          }
+        }
+      }
+    }
+  ],
+  "expect": {
+    "responseBody": {
+      "object": "checkout_config",
+      "order_received_url": "https://shop.example.com/order-received/{order_id}?key={order_key}",
+      "address_autocomplete": {
+        "enabled": true,
+        "providers": [
+          {
+            "id": "google_places",
+            "name": "Google Places"
+          }
+        ]
+      },
+      "store": {
+        "currency": "USD",
+        "coupons_enabled": true,
+        "terms_url": "https://shop.example.com/terms/",
+        "privacy_url": null,
+        "terms_text": "I have read and agree to the website terms and conditions",
+        "terms_links": [
+          {
+            "text": "terms and conditions",
+            "url": "https://shop.example.com/terms/"
+          }
+        ]
+      }
+    }
+  }
+}

@@ -1,0 +1,100 @@
+{
+  "name": "getCheckout calls GET cocart/v2/checkout",
+  "source": "CoCart Plus 2.0 checkout spec",
+  "call": {
+    "target": "checkout",
+    "method": "getCheckout",
+    "args": []
+  },
+  "exchanges": [
+    {
+      "request": {
+        "method": "GET",
+        "path": "cocart/v2/checkout",
+        "query": {},
+        "body": null
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "object": "checkout",
+          "cart_key": "t_abc",
+          "item_count": 1,
+          "totals": {
+            "subtotal": "1800",
+            "discount_total": "0",
+            "shipping_total": "500",
+            "fee_total": "0",
+            "total_tax": "0",
+            "total": "2300"
+          },
+          "payment": {
+            "needs_payment": true,
+            "method": "stripe"
+          },
+          "delivery": {
+            "needs_shipping": true,
+            "packages": [
+              {
+                "id": "0",
+                "name": "Shipping",
+                "chosen_rate": "flat_rate:1",
+                "rates": [
+                  {
+                    "id": "flat_rate:1",
+                    "method_id": "flat_rate",
+                    "instance_id": 1,
+                    "label": "Flat rate",
+                    "cost": "500",
+                    "tax": "0"
+                  }
+                ]
+              }
+            ]
+          },
+          "actions": {}
+        }
+      }
+    }
+  ],
+  "expect": {
+    "responseBody": {
+      "object": "checkout",
+      "cart_key": "t_abc",
+      "item_count": 1,
+      "totals": {
+        "subtotal": "1800",
+        "discount_total": "0",
+        "shipping_total": "500",
+        "fee_total": "0",
+        "total_tax": "0",
+        "total": "2300"
+      },
+      "payment": {
+        "needs_payment": true,
+        "method": "stripe"
+      },
+      "delivery": {
+        "needs_shipping": true,
+        "packages": [
+          {
+            "id": "0",
+            "name": "Shipping",
+            "chosen_rate": "flat_rate:1",
+            "rates": [
+              {
+                "id": "flat_rate:1",
+                "method_id": "flat_rate",
+                "instance_id": 1,
+                "label": "Flat rate",
+                "cost": "500",
+                "tax": "0"
+              }
+            ]
+          }
+        ]
+      },
+      "actions": {}
+    }
+  }
+}

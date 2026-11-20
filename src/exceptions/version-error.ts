@@ -8,7 +8,7 @@ import { t } from '../i18n/i18n.js';
 export class VersionError extends CoCartError {
   constructor(method: string, locale?: string) {
     super(
-      t('version.requiresBasic', { method }, locale),
+      t('version.requiresStarter', { method }, locale),
       0,
       'cocart_version_required',
     );

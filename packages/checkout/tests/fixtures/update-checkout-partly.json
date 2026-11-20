@@ -1,0 +1,136 @@
+{
+  "name": "What an update couldn't apply is in result.not_applied (checkout_partly_updated); the rest was applied",
+  "source": "CoCart Plus 2.0 checkout spec",
+  "call": {
+    "target": "checkout",
+    "method": "updateCheckout",
+    "args": [
+      {
+        "billing_address": {
+          "country": "FR",
+          "postcode": "75001"
+        },
+        "shipping_method": "local_pickup:999"
+      }
+    ]
+  },
+  "exchanges": [
+    {
+      "request": {
+        "method": "PUT",
+        "path": "cocart/v2/checkout",
+        "query": {},
+        "body": {
+          "billing_address": {
+            "country": "FR",
+            "postcode": "75001"
+          },
+          "shipping_method": "local_pickup:999"
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "object": "checkout",
+          "result": {
+            "code": "checkout_partly_updated",
+            "message": "The checkout was updated, but not all of it could be.",
+            "not_applied": [
+              {
+                "field": "shipping_method",
+                "code": "cocart_invalid_shipping_method",
+                "message": "The shipping method \"local_pickup:999\" is not available."
+              }
+            ]
+          },
+          "cart_key": "t_abc",
+          "item_count": 1,
+          "totals": {
+            "subtotal": "1800",
+            "discount_total": "0",
+            "shipping_total": "500",
+            "fee_total": "0",
+            "total_tax": "0",
+            "total": "2300"
+          },
+          "payment": {
+            "needs_payment": true,
+            "method": "stripe"
+          },
+          "delivery": {
+            "needs_shipping": true,
+            "packages": [
+              {
+                "id": "0",
+                "name": "Shipping",
+                "chosen_rate": "flat_rate:1",
+                "rates": [
+                  {
+                    "id": "flat_rate:1",
+                    "method_id": "flat_rate",
+                    "instance_id": 1,
+                    "label": "Flat rate",
+                    "cost": "500",
+                    "tax": "0"
+                  }
+                ]
+              }
+            ]
+          },
+          "actions": {}
+        }
+      }
+    }
+  ],
+  "expect": {
+    "responseBody": {
+      "object": "checkout",
+      "result": {
+        "code": "checkout_partly_updated",
+        "message": "The checkout was updated, but not all of it could be.",
+        "not_applied": [
+          {
+            "field": "shipping_method",
+            "code": "cocart_invalid_shipping_method",
+            "message": "The shipping method \"local_pickup:999\" is not available."
+          }
+        ]
+      },
+      "cart_key": "t_abc",
+      "item_count": 1,
+      "totals": {
+        "subtotal": "1800",
+        "discount_total": "0",
+        "shipping_total": "500",
+        "fee_total": "0",
+        "total_tax": "0",
+        "total": "2300"
+      },
+      "payment": {
+        "needs_payment": true,
+        "method": "stripe"
+      },
+      "delivery": {
+        "needs_shipping": true,
+        "packages": [
+          {
+            "id": "0",
+            "name": "Shipping",
+            "chosen_rate": "flat_rate:1",
+            "rates": [
+              {
+                "id": "flat_rate:1",
+                "method_id": "flat_rate",
+                "instance_id": 1,
+                "label": "Flat rate",
+                "cost": "500",
+                "tax": "0"
+              }
+            ]
+          }
+        ]
+      },
+      "actions": {}
+    }
+  }
+}

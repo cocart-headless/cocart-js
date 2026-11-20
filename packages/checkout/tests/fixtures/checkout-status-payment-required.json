@@ -1,0 +1,59 @@
+{
+  "name": "A lost checkout placed the order but didn't take payment: payment_required, pay it with payForOrder",
+  "source": "CoCart Plus 2.0 checkout spec: GET /checkout/status",
+  "call": {
+    "target": "checkout",
+    "method": "getCheckoutStatus",
+    "args": [
+      "chk_fixture_0000000001"
+    ]
+  },
+  "exchanges": [
+    {
+      "request": {
+        "method": "GET",
+        "path": "cocart/v2/checkout/status",
+        "query": {
+          "checkout_id": "chk_fixture_0000000001"
+        },
+        "body": null
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "object": "checkout_status",
+          "checkout_id": "chk_fixture_0000000001",
+          "result": {
+            "code": "payment_required",
+            "message": "Your order was placed but hasn't been paid."
+          },
+          "order": {
+            "object": "order",
+            "id": 217,
+            "number": "217",
+            "key": "wc_order_abc",
+            "status": {
+              "code": "pending",
+              "label": "Pending payment"
+            },
+            "totals": {
+              "total": "2300"
+            },
+            "actions": {}
+          }
+        }
+      }
+    }
+  ],
+  "expect": {
+    "value": {
+      "checkoutId": "chk_fixture_0000000001",
+      "code": "payment_required",
+      "message": "Your order was placed but hasn't been paid.",
+      "orderId": 217,
+      "orderKey": "wc_order_abc",
+      "orderNumber": "217",
+      "orderStatus": "pending"
+    }
+  }
+}

@@ -59,6 +59,32 @@ All errors provide these properties:
 | `httpCode` | `number` | HTTP status code (400, 401, 403, 500, etc.) |
 | `responseData` | `Record<string, unknown>` | Full API response body for debugging |
 
+And these methods:
+
+| Method | Returns | Description |
+|--------|---------|-------------|
+| `getFields()` | `Record<string, string>` | Every field at fault, by path (`billing.postcode`), with its message. `{}` when the error isn't about fields |
+| `getField()` | `string \| null` | The first field at fault |
+| `getReason()` | `string \| null` | The underlying plugin's own reason, when there is one |
+| `getCart()` | `CartResponse \| null` | The cart sent with the error (`cocart_item_not_in_cart`) |
+
+## Every Field at Fault
+
+CoCart Plus checks a whole form at once (checkout addresses, account details, registration) and reports every field at fault in one error, so a form can show them all:
+
+```ts
+try {
+  await client.checkout.updateCheckout({ billing_address: { postcode: 'nope', phone: '' } });
+} catch (e) {
+  if (e instanceof CoCartError) {
+    for (const [field, message] of Object.entries(e.getFields())) {
+      showFieldError(field, message); // 'billing.postcode' → 'Please enter a valid postcode.'
+    }
+    focusField(e.getField()); // the first one
+  }
+}
+```
+
 ## Inspecting the Full API Response
 
 Every error carries the full API response data for debugging:
@@ -119,8 +145,10 @@ Every HTTP response includes a **status code** — a number that tells you wheth
 | 400 | `ValidationError` | Invalid product ID, out of stock, invalid quantity, missing required fields |
 | 401 | `AuthenticationError` | Missing or invalid credentials |
 | 401 | `TwoFactorAuthRequiredError` | Login succeeded but a 2FA code is required to complete authentication |
-| 403 | `AuthenticationError` | Expired JWT token, insufficient permissions |
-| 404 | `CoCartError` | Endpoint not found, item key not found |
+| 403 | `AuthenticationError` | Expired JWT token, signed in but not allowed |
+| 404 | `CoCartError` | Endpoint not found, item key not found, not the customer's order |
+| 409 | `CoCartError` | A state that refuses the action: `cocart_payment_in_progress`, `cocart_checkout_total_mismatch`, an order that can't be paid or cancelled. Never a `ValidationError`, even when the code contains `invalid` |
+| 429 | `CoCartError` | Rate limited. With `maxRetries`, the SDK waits as long as `RateLimit-Retry-After` says and tries again |
 | 500 | `CoCartError` | Server error |
 
 ## Response Error Helpers

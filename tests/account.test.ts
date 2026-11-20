@@ -8,7 +8,7 @@ describe('Account endpoint', () => {
 
     await client.account().getProfile();
 
-    expect(requestRaw).toHaveBeenCalledWith('GET', 'cocart/v2/my-account');
+    expect(requestRaw).toHaveBeenCalledWith('GET', 'cocart/v2/my-account', undefined);
   });
 
   it('updateProfile calls POST with the correct body', async () => {
@@ -33,7 +33,7 @@ describe('Account endpoint', () => {
 
     await client.account().getOrders();
 
-    expect(requestRaw).toHaveBeenCalledWith('GET', 'cocart/v2/my-account/orders', {});
+    expect(requestRaw).toHaveBeenCalledWith('GET', 'cocart/v2/my-account/orders', undefined);
   });
 
   it('getOrders passes page, per_page, and order as query params', async () => {
@@ -49,13 +49,36 @@ describe('Account endpoint', () => {
     });
   });
 
+  it('getOrders sends the filters, joining a list of statuses and meta keys with commas', async () => {
+    const client = new CoCart('https://store.com', { username: 'user', password: 'pass' });
+    const requestRaw = vi.spyOn(client, 'requestRaw').mockResolvedValueOnce({ toObject: () => ({}) } as never);
+
+    await client.account().getOrders({
+      status: ['processing', 'on-hold'],
+      after: '2026-01-01T00:00:00',
+      before: '2026-12-31T23:59:59',
+      subscription_order_type: 'renewal',
+      formatted: true,
+      meta_keys: ['gift_message', '_configuration'],
+    });
+
+    expect(requestRaw).toHaveBeenCalledWith('GET', 'cocart/v2/my-account/orders', {
+      status: 'processing,on-hold',
+      after: '2026-01-01T00:00:00',
+      before: '2026-12-31T23:59:59',
+      subscription_order_type: 'renewal',
+      formatted: 'true',
+      meta_keys: 'gift_message,_configuration',
+    });
+  });
+
   it('getOrder calls GET cocart/v2/my-account/orders/{id}', async () => {
     const client = new CoCart('https://store.com', { username: 'user', password: 'pass' });
     const requestRaw = vi.spyOn(client, 'requestRaw').mockResolvedValueOnce({ toObject: () => ({}) } as never);
 
     await client.account().getOrder(123);
 
-    expect(requestRaw).toHaveBeenCalledWith('GET', 'cocart/v2/my-account/orders/123');
+    expect(requestRaw).toHaveBeenCalledWith('GET', 'cocart/v2/my-account/orders/123', undefined);
   });
 
   it('getGuestOrder passes email as query param', async () => {
@@ -69,25 +92,22 @@ describe('Account endpoint', () => {
     });
   });
 
-  it('getOrderDownloads reads the downloads from the order (there is no per-order downloads route)', async () => {
+  it('getOrderDownloads calls GET my-account/orders/{id}/downloads', async () => {
     const client = new CoCart('https://store.com', { username: 'user', password: 'pass' });
-    const download = { product_name: 'Album', download_name: 'MP3', file: 'https://store.com/f', downloads_remaining: '3', download_expires: '' };
-    const requestRaw = vi.spyOn(client, 'requestRaw').mockResolvedValueOnce({ statusCode: 200, headers: new Headers(), toObject: () => ({ order_id: 123, downloads: [download] }) } as never);
+    const requestRaw = vi.spyOn(client, 'requestRaw').mockResolvedValueOnce({ toObject: () => ({ downloads: [] }) } as never);
 
-    const res = await client.account().getOrderDownloads(123);
+    await client.account().getOrderDownloads(123);
 
-    expect(requestRaw).toHaveBeenCalledWith('GET', 'cocart/v2/my-account/orders/123');
-    expect(res.toObject()).toEqual([download]);
+    expect(requestRaw).toHaveBeenCalledWith('GET', 'cocart/v2/my-account/orders/123/downloads');
   });
 
-  it('getGuestOrderDownloads reads them from the guest order (email as query param)', async () => {
+  it('getGuestOrderDownloads sends the billing email to the same route', async () => {
     const client = new CoCart('https://store.com');
-    const requestRaw = vi.spyOn(client, 'requestRaw').mockResolvedValueOnce({ statusCode: 200, headers: new Headers(), toObject: () => ({ order_id: 123, downloads: [] }) } as never);
+    const requestRaw = vi.spyOn(client, 'requestRaw').mockResolvedValueOnce({ toObject: () => ({ downloads: [] }) } as never);
 
-    const res = await client.account().getGuestOrderDownloads(123, 'jane@example.com');
+    await client.account().getGuestOrderDownloads(123, 'jane@example.com');
 
-    expect(requestRaw).toHaveBeenCalledWith('GET', 'cocart/v2/my-account/orders/123', { email: 'jane@example.com' });
-    expect(res.toObject()).toEqual([]);
+    expect(requestRaw).toHaveBeenCalledWith('GET', 'cocart/v2/my-account/orders/123/downloads', { email: 'jane@example.com' });
   });
 
   it('getDownloads calls GET cocart/v2/my-account/downloads', async () => {
@@ -108,35 +128,18 @@ describe('Account endpoint', () => {
     expect(myReviews).toHaveBeenCalled();
   });
 
-  it('changePassword posts the new password with the account details to POST my-account', async () => {
+  it('changePassword posts only the password fields to POST my-account, in one request', async () => {
     const client = new CoCart('https://store.com', { username: 'user', password: 'pass' });
-    const requestRaw = vi.spyOn(client, 'requestRaw')
-      .mockResolvedValueOnce({ toObject: () => ({ user: { first_name: 'Jane', last_name: 'Doe', display_name: 'Jane D', email: 'jane@example.com' } }) } as never)
-      .mockResolvedValueOnce({ toObject: () => ({ success: true, message: 'Account details changed successfully.' }) } as never);
+    const requestRaw = vi.spyOn(client, 'requestRaw').mockResolvedValueOnce({ toObject: () => ({ object: 'customer' }) } as never);
 
     await client.account().changePassword({ current: 'old-password', password: 'new-password', confirm: 'new-password' });
 
-    expect(requestRaw).toHaveBeenNthCalledWith(1, 'GET', 'cocart/v2/my-account');
-    expect(requestRaw).toHaveBeenNthCalledWith(2, 'POST', 'cocart/v2/my-account', undefined, {
-      account_first_name: 'Jane',
-      account_last_name: 'Doe',
-      account_display_name: 'Jane D',
-      account_email: 'jane@example.com',
+    expect(requestRaw).toHaveBeenCalledTimes(1);
+    expect(requestRaw).toHaveBeenCalledWith('POST', 'cocart/v2/my-account', undefined, {
       password_current: 'old-password',
       password_1: 'new-password',
       password_2: 'new-password',
     });
-  });
-
-  it('changePassword skips the profile read when the account details are given', async () => {
-    const client = new CoCart('https://store.com', { username: 'user', password: 'pass' });
-    const requestRaw = vi.spyOn(client, 'requestRaw').mockResolvedValueOnce({ toObject: () => ({ success: true }) } as never);
-    const details = { account_first_name: 'Jane', account_last_name: 'Doe', account_display_name: 'Jane', account_email: 'jane@example.com' };
-
-    await client.account().changePassword({ current: 'a', password: 'b', confirm: 'b' }, details);
-
-    expect(requestRaw).toHaveBeenCalledTimes(1);
-    expect(requestRaw).toHaveBeenCalledWith('POST', 'cocart/v2/my-account', undefined, { ...details, password_current: 'a', password_1: 'b', password_2: 'b' });
   });
 
   it('updateAddress posts to my-account/address', async () => {
@@ -176,7 +179,7 @@ describe('Account endpoint', () => {
     const requestRaw = vi.spyOn(client, 'requestRaw').mockResolvedValue({ toObject: () => ({}) } as never);
     const a = client.account();
 
-    await a.getSubscriptions({ page: 2 });
+    await a.getSubscriptions({ page: 2, status: ['active', 'on-hold'] });
     await a.getSubscription(9);
     await a.suspendSubscription(9);
     await a.cancelSubscription(9);
@@ -188,7 +191,7 @@ describe('Account endpoint', () => {
 
     const base = 'cocart/v2/my-account/subscriptions';
     expect(requestRaw.mock.calls).toEqual([
-      ['GET', base, { page: '2' }],
+      ['GET', base, { page: '2', status: 'active,on-hold' }],
       ['GET', `${base}/9`, undefined],
       ['POST', `${base}/9/suspend`, undefined, null],
       ['POST', `${base}/9/cancel`, undefined, null],

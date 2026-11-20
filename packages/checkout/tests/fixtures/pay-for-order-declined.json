@@ -1,0 +1,91 @@
+{
+  "name": "A declined card on pay-for-order is a failed result (a 200) with CoCart's reason, not an exception",
+  "source": "CoCart Plus 2.0 checkout spec",
+  "call": {
+    "target": "checkout",
+    "method": "payForOrder",
+    "args": [
+      1234,
+      "wc_order_abc123",
+      {
+        "payment_method": "stripe",
+        "payment_data": {
+          "wc-stripe-payment-method": "pm_card_chargeDeclined"
+        }
+      }
+    ]
+  },
+  "exchanges": [
+    {
+      "request": {
+        "method": "POST",
+        "path": "cocart/v2/order-received/1234/pay",
+        "query": {},
+        "body": {
+          "payment_method": "stripe",
+          "payment_data": [
+            {
+              "key": "wc-stripe-payment-method",
+              "value": "pm_card_chargeDeclined"
+            }
+          ],
+          "order_key": "wc_order_abc123"
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "object": "order",
+          "result": {
+            "code": "payment_failed",
+            "message": "Your card was declined. Please try a different card.",
+            "action": null,
+            "redirect_url": null,
+            "error": {
+              "code": "card_declined",
+              "gateway_code": "generic_decline",
+              "gateway_message": "Your card was declined."
+            }
+          },
+          "id": 1234,
+          "number": "1234",
+          "key": "wc_order_abc123",
+          "status": {
+            "code": "failed",
+            "label": "Failed"
+          },
+          "currency": {
+            "currency_code": "USD",
+            "currency_symbol": "$",
+            "currency_minor_unit": 2
+          },
+          "item_count": 1,
+          "totals": {
+            "subtotal": "1800",
+            "total_tax": "0",
+            "shipping_total": "500",
+            "total": "2300"
+          },
+          "payment": {
+            "method": "stripe",
+            "title": "Credit card",
+            "needs_payment": true,
+            "date_paid": null
+          },
+          "actions": {}
+        }
+      }
+    }
+  ],
+  "expect": {
+    "result": {
+      "code": "payment_failed",
+      "isFailed": true,
+      "isComplete": false,
+      "message": "Your card was declined. Please try a different card.",
+      "errorCode": "card_declined",
+      "gatewayErrorCode": "generic_decline",
+      "gatewayMessage": "Your card was declined."
+    }
+  }
+}

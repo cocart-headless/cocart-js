@@ -1,0 +1,118 @@
+{
+  "name": "A Cash App Pay order placed on hold, still to pay in the page: order_placed with an action",
+  "source": "CoCart Plus 2.0 checkout spec",
+  "call": {
+    "target": "checkout",
+    "method": "placeOrder",
+    "args": [
+      {
+        "billing_address": {
+          "first_name": "Jane",
+          "last_name": "Doe",
+          "address_1": "1 Main Street",
+          "city": "Los Angeles",
+          "state": "CA",
+          "postcode": "90038",
+          "country": "US",
+          "email": "jane@example.com"
+        },
+        "shipping_method": "flat_rate:1",
+        "payment_method": "stripe",
+        "payment_data": {
+          "wc-stripe-payment-method": "pm_cashapp"
+        },
+        "checkout_id": "chk_fixture_0000000001"
+      }
+    ]
+  },
+  "exchanges": [
+    {
+      "request": {
+        "method": "POST",
+        "path": "cocart/v2/checkout",
+        "query": {},
+        "body": {
+          "billing_address": {
+            "first_name": "Jane",
+            "last_name": "Doe",
+            "address_1": "1 Main Street",
+            "city": "Los Angeles",
+            "state": "CA",
+            "postcode": "90038",
+            "country": "US",
+            "email": "jane@example.com"
+          },
+          "shipping_method": "flat_rate:1",
+          "payment_method": "stripe",
+          "payment_data": [
+            {
+              "key": "wc-stripe-payment-method",
+              "value": "pm_cashapp"
+            }
+          ],
+          "checkout_id": "chk_fixture_0000000001"
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "object": "order",
+          "result": {
+            "code": "order_placed",
+            "message": "Thank you. Your order has been received.",
+            "action": {
+              "type": "stripe_wallet_payment",
+              "data": {
+                "payment_method_type": "cashapp",
+                "client_secret": "pi_fixture_secret_cashapp"
+              }
+            },
+            "redirect_url": "https://shop.example.com/order/335?key=wc_order_abc&order_id=335",
+            "error": null
+          },
+          "id": 335,
+          "number": "335",
+          "key": "wc_order_abc",
+          "status": {
+            "code": "on-hold",
+            "label": "On hold"
+          },
+          "currency": {
+            "currency_code": "USD",
+            "currency_symbol": "$",
+            "currency_minor_unit": 2
+          },
+          "item_count": 1,
+          "totals": {
+            "subtotal": "1800",
+            "total_tax": "0",
+            "shipping_total": "500",
+            "total": "2300"
+          },
+          "payment": {
+            "method": "stripe",
+            "title": "Credit card",
+            "needs_payment": true,
+            "date_paid": null
+          },
+          "actions": {}
+        }
+      }
+    }
+  ],
+  "expect": {
+    "result": {
+      "code": "order_placed",
+      "isComplete": false,
+      "isAwaitingPayment": true,
+      "needsConfirmation": false,
+      "needsRedirect": false,
+      "orderId": 335,
+      "orderKey": "wc_order_abc",
+      "clientSecret": "pi_fixture_secret_cashapp",
+      "paymentMethodType": "cashapp",
+      "redirectUrl": "https://shop.example.com/order/335?key=wc_order_abc&order_id=335",
+      "actionType": "stripe_wallet_payment"
+    }
+  }
+}

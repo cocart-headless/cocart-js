@@ -1,4 +1,5 @@
 export { CheckoutClient } from './checkout.js';
+export { CheckoutOutcomeUnknownError } from './errors.js';
 export { createCheckout, createGatewayAdapter } from './extension.js';
 export {
   createAuthorizeNetGateway,
@@ -37,6 +38,7 @@ export type {
   OfflineGatewayOptions,
   StripeExpressGatewayOptions,
   StripeInstance,
+  StripeAsyncPaymentResult,
   StripeBillingDetails,
   StripeElementsInstance,
   CheckoutAddressInput,
@@ -67,6 +69,7 @@ export type {
   CheckoutUpdateInput,
   CheckoutActionType,
   ConfirmPaymentActionData,
+  StripeAsyncPaymentActionData,
   MultibancoVoucherActionData,
   RedirectActionData,
   PaymentDataItem,
@@ -105,7 +108,15 @@ export type {
   PayForOrderResponse,
   ConfirmOrderPaymentResponse,
   ConfirmReturnOptions,
+  PlaceOrderInput,
+  CheckoutStatus,
+  CheckoutParams,
+  SavedPaymentMethod,
 } from './types.js';
+
+// The result of a call that can take payment, from the core SDK.
+export { CheckoutResult, toPaymentDataPairs } from '@cocartheadless/sdk';
+export type { PaymentResultCode, PaymentDataInput, PaymentDataPair } from '@cocartheadless/sdk';
 
 declare module '@cocartheadless/sdk' {
   interface CoCartExtensionRegistry {

@@ -1,0 +1,46 @@
+{
+  "name": "A lost checkout still running: in_progress, ask again",
+  "source": "CoCart Plus 2.0 checkout spec: GET /checkout/status",
+  "call": {
+    "target": "checkout",
+    "method": "getCheckoutStatus",
+    "args": [
+      "chk_fixture_0000000001"
+    ]
+  },
+  "exchanges": [
+    {
+      "request": {
+        "method": "GET",
+        "path": "cocart/v2/checkout/status",
+        "query": {
+          "checkout_id": "chk_fixture_0000000001"
+        },
+        "body": null
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "object": "checkout_status",
+          "checkout_id": "chk_fixture_0000000001",
+          "result": {
+            "code": "in_progress",
+            "message": "Your order is still being placed. Check again shortly."
+          },
+          "order": null
+        }
+      }
+    }
+  ],
+  "expect": {
+    "value": {
+      "checkoutId": "chk_fixture_0000000001",
+      "code": "in_progress",
+      "message": "Your order is still being placed. Check again shortly.",
+      "orderId": null,
+      "orderKey": null,
+      "orderNumber": null,
+      "orderStatus": null
+    }
+  }
+}

@@ -268,12 +268,13 @@ const expressElement = elements.create('expressCheckout');
 expressElement.mount('#stripe-express-checkout-element');
 
 expressElement.on('confirm', async () => {
-  const { processResponse } = await client.checkout.submit({
+  const { result } = await client.checkout.submit({
     gatewayId: 'stripe-express',
   });
-  const result = processResponse.toObject();
-  if (result.payment_result?.redirect_url) {
-    window.location.href = result.payment_result.redirect_url;
+  if (result.isFailed) {
+    showError(result.message);
+  } else if (result.redirectUrl) {
+    window.location.href = result.redirectUrl;
   }
 });
 ```
@@ -348,15 +349,16 @@ expressElement.on('confirm', async () => {
       quantity: quantity, // selected quantity
     });
 
-    // 2. Submit checkout — SDK fetches checkout state, creates payment context,
-    //    calls stripe.confirmPayment() internally, then processes the order.
-    const { processResponse } = await client.checkout.submit({
+    // 2. Submit checkout — SDK fetches checkout state, calls stripe.confirmPayment()
+    //    internally, then places the order. A declined payment is result.isFailed.
+    const { result } = await client.checkout.submit({
       gatewayId: 'stripe-express',
     });
 
-    const result = processResponse.toObject();
-    if (result.payment_result?.redirect_url) {
-      window.location.href = result.payment_result.redirect_url;
+    if (result.isFailed) {
+      showError(result.message);
+    } else if (result.redirectUrl) {
+      window.location.href = result.redirectUrl;
     }
   } catch (error) {
     // The wallet sheet is still open — report the error back to Stripe
@@ -378,13 +380,14 @@ expressElement.on('confirm', async () => {
 
   await client.cart().addItem({ id: productId, quantity: 1 });
 
-  const { processResponse } = await client.checkout.submit({
+  const { result } = await client.checkout.submit({
     gatewayId: 'stripe-express',
   });
 
-  const result = processResponse.toObject();
-  if (result.payment_result?.redirect_url) {
-    window.location.href = result.payment_result.redirect_url;
+  if (result.isFailed) {
+    showError(result.message);
+  } else if (result.redirectUrl) {
+    window.location.href = result.redirectUrl;
   }
 });
 ```
@@ -400,7 +403,7 @@ When the customer approves via Apple Pay or Google Pay, their wallet returns a s
 expressElement.on('confirm', async (event) => {
   await client.cart().addItem({ id: productId, quantity: 1 });
 
-  const { processResponse } = await client.checkout.submit({
+  const { result } = await client.checkout.submit({
     gatewayId: 'stripe-express',
     update: {
       // event.shippingAddress is provided by the Stripe ExpressCheckoutElement
@@ -417,12 +420,16 @@ expressElement.on('confirm', async (event) => {
     },
   });
 
-  const result = processResponse.toObject();
-  if (result.payment_result?.redirect_url) {
-    window.location.href = result.payment_result.redirect_url;
+  if (result.isFailed) {
+    showError(result.message);
+  } else if (result.redirectUrl) {
+    window.location.href = result.redirectUrl;
   }
 });
 ```
+
+> [!NOTE]
+> `submit()` refuses to take payment when the checkout's total differs from the one the app last got from `getCheckout()` or `updateCheckout()`: it throws `409 cocart_checkout_total_mismatch` with the new checkout in `error.responseData.data.checkout`. A wallet's address can change the shipping cost, and a buy-now item changes the cart, so the amount the wallet showed may no longer be the total: treat this error like any other failure, and show the new total. See [Checkout Flow → When the total changed](checkout-flow.md#when-the-total-changed).
 
 > [!NOTE]
 > The exact shape of `event.shippingAddress` depends on the Stripe.js version and the wallet used. Check the [Stripe ExpressCheckoutElement docs](https://stripe.com/docs/elements/express-checkout-element) for the current event payload shape.

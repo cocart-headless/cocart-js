@@ -1,5 +1,7 @@
 import type { StorageInterface } from './storage/storage.interface.js';
 import type { components } from './generated/cocart-starter-v2.js';
+import type { components as plusComponents } from './generated/cocart-plus-v2.js';
+import type { components as plusCheckoutComponents } from './generated/cocart-plus-checkout-v2.js';
 import type { CartExtensions, CartItemExtensions, ProductExtensions } from './extensions.types.js';
 
 /**
@@ -19,6 +21,9 @@ export interface CoCartExtension<Name extends string = string, Instance = unknow
   /** Install the extension and return the public instance to expose. */
   install: (client: import('./cocart.js').CoCart) => Instance;
 }
+
+/** The CoCart plugin the store runs: 'starter' (CoCart Starter) or 'legacy' (the CoCart Community plugin, 4.x). */
+export type MainPlugin = 'starter' | 'legacy';
 
 /**
  * Configuration options for the CoCart client.
@@ -54,7 +59,10 @@ export interface CoCartOptions {
   storage?: StorageInterface;
   /** Storage key name for the cart key (default: 'cocart_cart_key') */
   storageKey?: string;
-  /** Maximum number of retries for transient failures (default: 0) */
+  /**
+   * Maximum number of retries for transient failures (default: 0): a 429 for any request, a 503,
+   * timeout or dropped connection for a GET only, so an order is never placed twice.
+   */
   maxRetries?: number;
   /** Encryption key — when provided (and no explicit `storage` is set), automatically uses EncryptedStorage in the browser */
   encryptionKey?: string;
@@ -66,8 +74,8 @@ export interface CoCartOptions {
   responseTransformer?: (response: import('./response.js').Response) => import('./response.js').Response;
   /** Enable ETag conditional requests for reduced bandwidth (default: true) */
   etag?: boolean;
-  /** CoCart main plugin: 'basic' (default) or 'legacy' for CoCart Community plugin */
-  mainPlugin?: 'basic' | 'legacy';
+  /** CoCart main plugin: 'starter' (default) for CoCart Starter, or 'legacy' for the CoCart Community plugin */
+  mainPlugin?: MainPlugin;
   /**
    * Locale for SDK-internal messages (validation errors, JWT errors, debug logs, etc.).
    * Defaults to 'en-us'. Additional locales must be registered first via a side-effect import:
@@ -405,9 +413,12 @@ export interface RequestEvent {
 /** Payload for the 'response' event. */
 export interface ResponseEvent {
   method: string;
+  /** The full request URL. Its query can hold the cart key, an order key or an email: don't send it anywhere. */
   url: string;
   status: number;
   duration: number;
+  /** The response, e.g. to read what a checkout did (`result.code`). */
+  response?: import('./response.js').Response;
 }
 
 /** Payload for the 'error' event. */
@@ -455,87 +466,100 @@ export interface AccountAddress {
   email?: string;
 }
 
-export interface AccountUser {
-  id: number;
-  date_registered: string;
-  email: string;
-  first_name: string;
-  last_name: string;
-  display_name: string;
-  addresses: {
-    billing: AccountAddress;
-    shipping: AccountAddress;
-  };
-  orders_count: number;
-  total_spent: string;
-  is_paying_customer: boolean;
-  avatar_url: string;
+// The CoCart Plus 2.0 documents, derived from the CoCart Plus v2 OpenAPI specs. Regenerate
+// src/generated/cocart-plus-v2.ts and cocart-plus-checkout-v2.ts with `npm run generate:types`.
+//
+// Every document has `object` (what it is: `order`, `subscription`, `customer`…), and a response
+// to a request that changes something has `result` first: `{ code, message }`, the code to branch
+// on. `actions` lists what can be done next, keyed by action, each `{ label, method, href }`.
+// Amounts are minor-unit strings, or formatted for display with `formatted: true`.
+
+/** All component schemas of the CoCart Plus v2 spec (cart, products, my account, others). */
+export type CoCartPlusSchemas = plusComponents['schemas'];
+
+/** All component schemas of the CoCart Plus v2 checkout spec. */
+export type CoCartPlusCheckoutSchemas = plusCheckoutComponents['schemas'];
+
+/** What a request that changes something did: `result` on a document. */
+export interface DocumentResult {
+  /** Code to branch on, not translated, e.g. `account_updated` or `order_cancelled`. */
+  code: string;
+  /** Message for the customer. */
+  message: string;
 }
 
-export interface AccountProfile {
-  user: AccountUser;
-  recent_order: {
-    order_id: number | null;
-    order_date: string | null;
-    order_data: string | null;
-  };
-  meta: {
-    is_customer_outside_base: boolean;
-    is_vat_exempt: boolean;
-  };
-  extensions?: Record<string, unknown>;
-}
+/** An order, as every order route returns it (my account, order received, checkout). */
+export type Order = CoCartPlusSchemas['Order'];
 
-export interface AccountOrderSummary {
-  order_id: number;
-  order_status: string;
-  order_date: string;
-  item_count: number;
-  order_total: string;
-  order_actions: Record<string, { url: string; name: string }>;
-}
+/** A page of orders (`GET /my-account/orders`), with `pagination`. */
+export type OrderList = CoCartPlusSchemas['OrderList'];
 
-export interface AccountOrdersResponse {
-  orders: AccountOrderSummary[];
-  pagination: {
-    previous: string | null;
-    next: string | null;
-  };
-}
+/** An order after a change, with `result` (`POST /my-account/orders/{id}/cancel`). */
+export type OrderUpdate = CoCartPlusSchemas['OrderUpdate'];
 
-export interface AccountOrderDetail {
-  order_id: number;
-  order_number: string;
-  order_parent: number;
-  order_date: string;
-  order_status: string;
-  order_currency: string;
-  billing_address: string;
-  shipping_address: string;
-  phone: string;
-  email: string;
-  ship_to_billing: boolean;
-  items: Record<string, unknown>[];
-  totals: Record<string, unknown>;
-  order_note: string;
-  order_notes: Record<string, unknown>[];
-  downloads: AccountDownload[];
-  order_actions: Record<string, { url: string; name: string }>;
-}
+/** An order after a payment attempt, with what the payment did in `result` (checkout, pay, confirm). */
+export type OrderPayment = CoCartPlusCheckoutSchemas['OrderPayment'];
 
-export interface AccountDownload {
-  product_name: string;
-  download_name: string;
-  file: string;
-  downloads_remaining: string;
-  download_expires: string;
-}
+/** A subscription (WooCommerce Subscriptions). */
+export type Subscription = CoCartPlusSchemas['Subscription'];
 
+/** A page of subscriptions (`GET /my-account/subscriptions`), with `pagination`. */
+export type SubscriptionList = CoCartPlusSchemas['SubscriptionList'];
+
+/** A subscription after a change, with `result` (suspend, cancel, reactivate, auto-renew). */
+export type SubscriptionUpdate = CoCartPlusSchemas['SubscriptionUpdate'];
+
+/** A subscription after its payment method changed, with what the change did in `result`. */
+export type SubscriptionPaymentMethodChange = CoCartPlusSchemas['SubscriptionPaymentMethodChange'];
+
+/** `GET /my-account/downloads` and `GET /my-account/orders/{id}/downloads`: `{ downloads: [...] }`. */
+export type Downloads = CoCartPlusSchemas['Downloads'];
+
+/** `GET /cart/mini`: a part of the cart for a mini cart. */
+export type MiniCart = CoCartPlusSchemas['MiniCart'];
+
+/** `GET /cart/coupons`: `{ coupons: [...] }`. */
+export type CartCoupons = CoCartPlusSchemas['CartCoupons'];
+
+/** `GET /products/{id}/shipping-rates`. */
+export type ProductShippingRates = CoCartPlusSchemas['ProductShippingRates'];
+
+/** `GET /my-account/verify-email`: the email the account now has, with `result`. */
+export type EmailChange = CoCartPlusSchemas['EmailChange'];
+
+/** `POST /my-account/verify-order-email`: where the link went, with `result` and `retry_after`. */
+export type EmailVerification = CoCartPlusSchemas['EmailVerification'];
+
+/** `POST /order-withdrawal`, with `result` (`withdrawal_requested`). */
+export type OrderWithdrawal = CoCartPlusSchemas['OrderWithdrawal'];
+
+/** The signed-in customer (`GET /my-account`): name, email, addresses, stats, `actions`. */
+export type AccountProfile = CoCartPlusSchemas['Customer'];
+
+/** @deprecated The customer's details are at the top of `AccountProfile` now, not under `user`. */
+export type AccountUser = AccountProfile;
+
+/** One order in `AccountOrdersResponse.orders`. */
+export type AccountOrderSummary = OrderList['orders'][number];
+
+/** `GET /my-account/orders`. */
+export type AccountOrdersResponse = OrderList;
+
+/** `GET /my-account/orders/{id}`. */
+export type AccountOrderDetail = Order;
+
+/** One file in `Downloads.downloads`. */
+export type AccountDownload = Downloads['downloads'][number];
+
+/**
+ * `POST /my-account`. Send only what changes. A new email is confirmed by email first when the
+ * store asks for it.
+ */
 export interface AccountUpdateInput {
-  account_first_name: string;
-  account_last_name: string;
-  account_display_name: string;
-  account_email: string;
+  account_first_name?: string;
+  account_last_name?: string;
+  account_display_name?: string;
+  account_email?: string;
 }
 
 /** `POST /my-account/address` (CoCart Plus). Fields are unprefixed. */
@@ -544,20 +568,24 @@ export interface AccountAddressUpdateInput {
   shipping_address?: AccountAddress;
 }
 
-/** `POST /my-account/orders/{id}/cancel` (CoCart Plus). */
-export interface AccountCancelOrderResult {
-  success: boolean;
-  order_id: number;
-  order_status: string;
-}
+/** `POST /my-account/orders/{id}/cancel` (CoCart Plus): the order, with `result`. */
+export type AccountCancelOrderResult = OrderUpdate;
 
-/** `POST /my-account/subscriptions/{id}/payment-method` (CoCart Plus). */
+/**
+ * `POST /my-account/subscriptions/{id}/payment-method` (CoCart Plus). Pass a saved card's `token_id`,
+ * or a new card in `payment_data`.
+ */
 export interface AccountSubscriptionPaymentMethodInput {
   /** Gateway ID, e.g. `stripe`. */
   payment_method: string;
-  /** A saved payment token's ID, when the gateway supports tokens. */
+  /** A saved card's ID (see the checkout package's `getSavedPaymentMethods()`). */
   token_id?: number;
+  /** A new card, as the keys the gateway reads, e.g. `{ 'wc-stripe-payment-method': 'pm_…' }`. Sent as `{key, value}` pairs. */
+  payment_data?: import('./checkout-result.js').PaymentDataInput;
 }
+
+/** `result.response` after a subscription's payment method changed (CoCart Plus): the subscription, with `result`. */
+export type AccountSubscriptionPaymentMethodResult = SubscriptionPaymentMethodChange;
 
 /** `POST /order-withdrawal` (CoCart Plus, WooCommerce's order withdrawal feature). */
 export interface OrderWithdrawalInput {
@@ -569,6 +597,14 @@ export interface OrderWithdrawalInput {
   withdrawal_type?: 'full_order' | 'specific_items_only';
   /** Required when `withdrawal_type` is `specific_items_only`. */
   additional_details?: string;
+}
+
+/** Optional on the routes that return a document: amounts formatted, and which `meta` keys. */
+export interface DocumentParams {
+  /** Amounts formatted for display (`"$18.00"`) instead of minor units (`"1800"`). */
+  formatted?: boolean;
+  /** Only these keys in each `meta`. Narrows the keys the store allows; it can never add one. */
+  meta_keys?: string[];
 }
 
 /** `POST /products/reviews`. Guests give `reviewer` and `reviewer_email`; stores that only allow verified owners check the email against past orders. */
@@ -607,10 +643,28 @@ export interface AccountChangePasswordInput {
   confirm: string;
 }
 
-export interface AccountOrdersParams {
+/** `GET /my-account/orders`. */
+export interface AccountOrdersParams extends DocumentParams {
   page?: number;
   per_page?: number;
   order?: 'ASC' | 'DESC';
+  /** Only orders with these statuses, e.g. `processing` or `['on-hold', 'completed']`. Default every status. */
+  status?: string | string[];
+  /** Only orders placed after this date (ISO 8601; without an offset it's UTC). */
+  after?: string;
+  /** Only orders placed before this date (ISO 8601; without an offset it's UTC). */
+  before?: string;
+  /** Only orders with this relationship to a subscription. */
+  subscription_order_type?: 'parent' | 'renewal' | 'switch' | 'resubscribe';
+}
+
+/** `GET /my-account/subscriptions`. */
+export interface AccountSubscriptionsParams extends DocumentParams {
+  page?: number;
+  per_page?: number;
+  order?: 'ASC' | 'DESC';
+  /** Only subscriptions with these statuses, e.g. `active` or `['on-hold', 'pending-cancel']`. */
+  status?: string | string[];
 }
 
 /**
@@ -625,8 +679,5 @@ export interface RegisterCustomerInput {
   requestedPassword?: string;
 }
 
-export interface RegisteredCustomer {
-  user_id: number;
-  username: string;
-  message: string;
-}
+/** `POST /register`: the new customer, as `GET /my-account` gives it, with `result` (`account_created`). Log in next. */
+export type RegisteredCustomer = AccountProfile;

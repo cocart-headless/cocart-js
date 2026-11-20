@@ -27,9 +27,9 @@ describe('Legacy Plugin Support', () => {
   // --- Default main plugin ---
 
   describe('mainPlugin configuration', () => {
-    it('defaults to basic', () => {
+    it('defaults to starter', () => {
       const client = new CoCart('https://store.com');
-      expect(client.getMainPlugin()).toBe('basic');
+      expect(client.getMainPlugin()).toBe('starter');
     });
 
     it('accepts mainPlugin option in constructor', () => {
@@ -67,7 +67,7 @@ describe('Legacy Plugin Support', () => {
 
   // --- Basic-only guards throw on legacy ---
 
-  describe('basic-only methods throw on legacy', () => {
+  describe('Starter-only methods throw on legacy', () => {
     function createLegacyClient() {
       return new CoCart('https://store.com', { mainPlugin: 'legacy' });
     }
@@ -172,17 +172,17 @@ describe('Legacy Plugin Support', () => {
     });
   });
 
-  // --- Basic-only methods work on basic ---
+  // --- Starter-only methods work on starter ---
 
-  describe('basic-only methods work on basic', () => {
-    it('cart().create() works on basic', async () => {
+  describe('Starter-only methods work on starter', () => {
+    it('cart().create() works on starter', async () => {
       globalThis.fetch = mockFetch(200, { cart_key: 'abc' });
       const client = new CoCart('https://store.com');
       const response = await client.cart().create();
       expect(response.statusCode).toBe(200);
     });
 
-    it('products().findBySlug() works on basic', async () => {
+    it('products().findBySlug() works on starter', async () => {
       globalThis.fetch = mockFetch(200, { slug: 'test' });
       const client = new CoCart('https://store.com');
       const response = await client.products().findBySlug('test');
@@ -205,7 +205,7 @@ describe('Legacy Plugin Support', () => {
       expect(url).not.toContain('_fields=');
     });
 
-    it('basic converts fields to _fields', async () => {
+    it('starter converts fields to _fields', async () => {
       const fetchMock = mockFetch(200, { items: [] });
       globalThis.fetch = fetchMock;
 

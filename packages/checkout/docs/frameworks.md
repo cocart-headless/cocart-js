@@ -23,7 +23,7 @@ import {
 export const cocart = new CoCart(process.env.NEXT_PUBLIC_STORE_URL!).use(createCheckout({
   defaultTheme: shadcnCheckoutTheme,
   gatewayAdapters: [
-    // Pre-wired: no tokenize needed. 3D Secure/SCA (requires_action) is handled
+    // Pre-wired: no tokenize needed. 3D Secure/SCA (action_required) is handled
     // automatically via confirmAction — see docs/gateways.md.
     createStripeGateway({ stripe, elements }),
   ],
@@ -48,6 +48,9 @@ export default async function CheckoutPage() {
   );
 }
 ```
+
+> [!NOTE]
+> A checkout client belongs to one customer: it carries their cart session, and remembers the total they were last shown (`submit()` checks it before taking payment). On the server, make a client per request for the customer's cart (their `Cart-Key` or their login) rather than sharing one between customers.
 
 ## Astro
 
@@ -96,3 +99,4 @@ No matter which framework you use, the intended pattern is:
 4. Generate a form definition with `createForm()`
 5. Render sections and fields using your own components
 6. Mount Stripe, PayPal, or Authorize.Net SDK UI for the chosen gateway
+7. Place the order with `submit()` or `placeOrder()`, and act on the `CheckoutResult` — see [Checkout Flow → Reading the result](checkout-flow.md#reading-the-result)

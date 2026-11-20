@@ -283,7 +283,7 @@ export class Cart extends Endpoint {
 
   /** Create a new guest cart session without adding items. */
   async create(): Promise<Response> {
-    this.client.requiresBasic('cart()->create');
+    this.client.requiresStarter('cart()->create');
     return this.post('');
   }
 

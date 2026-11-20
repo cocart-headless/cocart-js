@@ -1,0 +1,17 @@
+{
+  "name": "Rejects a URL with no order ID or key, without calling the API",
+  "source": "checkout.test.ts:875",
+  "call": {
+    "target": "checkout",
+    "method": "confirmReturn",
+    "args": [
+      "https://shop.example.com/order?payment_intent=pi_123"
+    ]
+  },
+  "exchanges": [],
+  "expect": {
+    "error": {
+      "code": "checkout_return_missing_order"
+    }
+  }
+}

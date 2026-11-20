@@ -1,0 +1,62 @@
+{
+  "name": "getAddressDetails calls GET cocart/v2/address/details",
+  "source": "CoCart Plus 2.0 checkout spec",
+  "call": {
+    "target": "checkout",
+    "method": "getAddressDetails",
+    "args": [
+      {
+        "address_id": "addr_12345",
+        "provider": "google_places"
+      }
+    ]
+  },
+  "exchanges": [
+    {
+      "request": {
+        "method": "GET",
+        "path": "cocart/v2/address/details",
+        "query": {
+          "address_id": "addr_12345",
+          "provider": "google_places"
+        },
+        "body": null
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "address": {
+            "address_1": "10 Downing Street",
+            "address_2": "",
+            "city": "London",
+            "state": "",
+            "postcode": "SW1A 2AA",
+            "country": "GB",
+            "formatted": "10 Downing Street, London, SW1A 2AA, United Kingdom (UK)"
+          },
+          "provider": {
+            "id": "google_places",
+            "name": "Google Places"
+          }
+        }
+      }
+    }
+  ],
+  "expect": {
+    "responseBody": {
+      "address": {
+        "address_1": "10 Downing Street",
+        "address_2": "",
+        "city": "London",
+        "state": "",
+        "postcode": "SW1A 2AA",
+        "country": "GB",
+        "formatted": "10 Downing Street, London, SW1A 2AA, United Kingdom (UK)"
+      },
+      "provider": {
+        "id": "google_places",
+        "name": "Google Places"
+      }
+    }
+  }
+}

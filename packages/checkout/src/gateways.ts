@@ -9,6 +9,7 @@ import type {
   StripeBillingDetails,
   StripeElementsInstance,
   StripeExpressGatewayOptions,
+  StripeAsyncPaymentResult,
   StripeGatewayOptions,
   StripeInstance,
   WooPaymentsGatewayOptions,
@@ -75,7 +76,7 @@ function toStripeBillingDetails(address: CheckoutAddressInput | undefined): Stri
 }
 
 /**
- * Shared by createStripeGateway/createWooPaymentsGateway — both surface a `requires_action`
+ * Shared by createStripeGateway/createWooPaymentsGateway — both surface an `action_required`
  * PaymentIntent/SetupIntent confirmation (`client_secret`/`intent_type`) through the same
  * Stripe.js API, just from two different WooCommerce gateway plugins with their own redirect
  * conventions server-side (decoded into the same envelope shape by their respective compat
@@ -90,7 +91,12 @@ function createStripeStyleConfirmAction(
   failureMessage: string,
 ): CheckoutGatewayAdapter['confirmAction'] {
   if (!stripe) return undefined;
-  return async ({ actionData }) => {
+  return async ({ actionType, actionData, successUrl, redirectUrl, returnUrl }) => {
+    if (actionType === 'stripe_wallet_payment' || actionType === 'stripe_voucher_payment') {
+      await payPlacedStripeOrder(stripe, actionData, successUrl ?? redirectUrl ?? returnUrl);
+      return;
+    }
+
     const clientSecret = String(actionData.client_secret ?? '');
     const { error } =
       actionData.intent_type === 'setup_intent'
@@ -98,6 +104,51 @@ function createStripeStyleConfirmAction(
         : await stripe.confirmCardPayment(clientSecret);
     if (error) throw new Error(error.message ?? failureMessage);
   };
+}
+
+/**
+ * Pays an order Stripe placed on hold (Cash App Pay, WeChat Pay, a Boleto/OXXO/Multibanco
+ * voucher) with the same Stripe.js calls the Stripe gateway's own checkout makes: Stripe shows the
+ * QR code, sends the customer to Cash App, or shows the voucher. Stripe's webhook then marks the
+ * order paid. Cash App Pay comes back to `returnUrl` on a phone. The client secret tells a
+ * SetupIntent (`seti_…`, a free trial) from a PaymentIntent.
+ */
+async function payPlacedStripeOrder(
+  stripe: StripeInstance,
+  actionData: Record<string, unknown>,
+  returnUrl: string | undefined,
+): Promise<void> {
+  const clientSecret = String(actionData.client_secret ?? '');
+  const type = String(actionData.payment_method_type ?? '');
+  const isSetup = clientSecret.startsWith('seti_');
+
+  let confirm: ((secret: string, data?: Record<string, unknown>) => Promise<StripeAsyncPaymentResult>) | undefined;
+  let data: Record<string, unknown> = {};
+  switch (type) {
+    case 'cashapp':
+      confirm = isSetup ? stripe.confirmCashappSetup : stripe.confirmCashappPayment;
+      if (returnUrl) data = { return_url: returnUrl };
+      break;
+    case 'wechat_pay':
+      confirm = stripe.confirmWechatPayPayment;
+      data = { payment_method_options: { wechat_pay: { client: 'web' } } };
+      break;
+    case 'boleto':
+      confirm = stripe.confirmBoletoPayment;
+      break;
+    case 'oxxo':
+      confirm = stripe.confirmOxxoPayment;
+      break;
+    case 'multibanco':
+      confirm = stripe.confirmMultibancoPayment;
+      break;
+  }
+  if (!confirm) throw new Error(`Stripe.js can't take a "${type}" payment here.`);
+
+  const { error, paymentIntent, setupIntent } = await confirm.call(stripe, clientSecret, data);
+  if (error) throw new Error(error.message ?? 'Stripe payment failed');
+  const lastError = paymentIntent?.last_payment_error ?? setupIntent?.last_setup_error;
+  if (lastError) throw new Error(lastError.message ?? 'Stripe payment failed');
 }
 
 export function createStripeGateway(options: StripeGatewayOptions): CheckoutGatewayAdapter {

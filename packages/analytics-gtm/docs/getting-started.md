@@ -73,16 +73,30 @@ Auto-tracking is now active. Every cart and checkout event is pushed to `window.
 
 ## Auto-tracked events
 
-The extension listens to CoCart API responses and pushes GA4 ecommerce events to `window.dataLayer`. Each ecommerce event clears the previous `ecommerce` object first — this is required by GA4 to prevent data from previous events bleeding into subsequent ones.
+The extension listens to CoCart API responses and pushes GA4 ecommerce events to `window.dataLayer`. Each ecommerce event clears the previous `ecommerce` object first — this is required by GA4 to prevent data from previous events bleeding into subsequent ones. Nothing is pushed for a response with a status of 400 or more, apart from `api_error`.
 
 | GA4 event | Triggered when | Type |
 |---|---|---|
 | `add_to_cart` | Item added to cart | GA4 standard |
 | `remove_from_cart` | Item removed from cart | GA4 standard |
 | `cart_cleared` | Cart cleared | Custom |
-| `begin_checkout` | Checkout details updated | GA4 standard |
-| `purchase` | Order placed successfully | GA4 standard |
-| `api_error` | Any API request fails | Custom |
+| `begin_checkout` | Checkout details updated (`PUT /checkout`: addresses, shipping, payment method, or a coupon applied or removed at checkout) | GA4 standard |
+| `purchase` | An order was placed: placing the order, paying for an order, or confirming a payment returned the order with `result.code` `order_placed` | GA4 standard |
+| `api_error` | Any API request fails. Carries `method`, `url` (the REST route only, e.g. `/cocart/v2/checkout`: no host and no query string, which can hold the cart key, an order key or an email address) and `error_message` | Custom |
+
+`purchase` fires only for an order that went through. A declined card (`payment_failed`), a 3D Secure step or an off-site redirect (`action_required`), and a payment not confirmed yet (`payment_pending`) are `200` responses too, but push nothing; the purchase is pushed when the call that finishes the payment (placing the order again, `payForOrder()` or `confirmReturn()`) returns `order_placed`. An order placed that the customer still pays (a voucher, BLIK, a bank transfer) is `order_placed` too, so it counts:
+
+```js
+{ event: 'clear_ecommerce', ecommerce: null }
+{
+  event: 'purchase',
+  ecommerce: {
+    transaction_id: '2159', // the order's ID
+    currency: 'USD',        // the order's currency, or the `currency` option
+    value: 24.8,            // the order total in major units, when the response has it
+  }
+}
+```
 
 Example dataLayer push for `add_to_cart`:
 

@@ -1,0 +1,67 @@
+{
+  "name": "Confirming a subscription's new payment method returns the subscription: payment_method_changed, with subscriptionId and no order",
+  "source": "CoCart Plus 2.0 checkout spec",
+  "call": {
+    "target": "checkout",
+    "method": "confirmReturn",
+    "args": [
+      "https://shop.example.com/order/217?key=wc_order_abc&order_id=217&wc_payment_method=stripe&_wpnonce=n0nce&payment_intent=pi_123&payment_intent_client_secret=pi_123_secret_x&redirect_status=succeeded"
+    ]
+  },
+  "exchanges": [
+    {
+      "request": {
+        "method": "POST",
+        "path": "cocart/v2/order-received/217/confirm",
+        "query": {},
+        "body": {
+          "order_key": "wc_order_abc",
+          "return_params": {
+            "key": "wc_order_abc",
+            "order_id": "217",
+            "wc_payment_method": "stripe",
+            "_wpnonce": "n0nce",
+            "payment_intent": "pi_123",
+            "payment_intent_client_secret": "pi_123_secret_x",
+            "redirect_status": "succeeded"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "object": "subscription",
+          "result": {
+            "code": "payment_method_changed",
+            "message": "Your subscription will now be paid with Visa ending in 3220.",
+            "action": null,
+            "redirect_url": null,
+            "error": null
+          },
+          "id": 512,
+          "number": "512",
+          "status": {
+            "code": "active",
+            "label": "Active"
+          },
+          "payment": {
+            "method": "stripe",
+            "title": "Visa ending in 4242",
+            "needs_payment": false
+          },
+          "actions": {}
+        }
+      }
+    }
+  ],
+  "expect": {
+    "result": {
+      "code": "payment_method_changed",
+      "object": "subscription",
+      "isComplete": true,
+      "subscriptionId": 512,
+      "orderId": null,
+      "orderKey": null
+    }
+  }
+}

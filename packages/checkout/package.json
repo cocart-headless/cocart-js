@@ -49,7 +49,7 @@
   "author": "CoCart Headless, LLC",
   "license": "MIT",
   "peerDependencies": {
-    "@cocartheadless/sdk": "^1.1.2",
+    "@cocartheadless/sdk": "^1.3.0",
     "react": "^18 || ^19",
     "react-dom": "^18 || ^19"
   },

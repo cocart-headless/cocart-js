@@ -31,6 +31,14 @@ See [Authentication](./authentication.md) for the full guide including JWT auto-
 
 ---
 
+## How responses look
+
+Every account response is a document that says what it is in `object` (`customer`, `order`, `subscription`…). A request that changes something puts what it did first, in `result`: a `code` to branch on and a `message` for the customer. `actions` lists what can be done next, keyed by action, each with a `label`, `method` and `href`.
+
+Amounts are minor-unit strings (`"4999"`), as in the cart. Pass `formatted: true` for amounts ready to display (`"$49.99"`), and `meta_keys` to narrow the order or customer `meta` to the keys you need. The documents are typed from the CoCart Plus spec: `AccountProfile` (the customer), `Order`, `OrderList`, `Subscription`, `SubscriptionList` and `Downloads`, with every schema in `CoCartPlusSchemas`.
+
+---
+
 ## Registration
 
 Registers a new customer account. Unlike every other account method, `register()` does not require the customer to be logged in — it's the entry point before authentication, not after.
@@ -44,10 +52,13 @@ const response = await client.account().register({
   requestedPassword: 'a-strong-password', // optional if the store generates passwords
 });
 
-const result = response.toObject();
-console.log(result.user_id);   // 42
-console.log(result.username);  // 'jane'
-console.log(result.message);   // 'Registration complete.'
+const customer = response.toObject();
+console.log(customer.result?.code); // 'account_created'
+console.log(customer.id);           // 42
+console.log(customer.username);     // 'jane'
+
+// Log in next.
+await client.login('jane', 'a-strong-password');
 ```
 
 **Input type:** `RegisterCustomerInput`
@@ -61,29 +72,26 @@ console.log(result.message);   // 'Registration complete.'
 > [!NOTE]
 > On the wire these are sent as `requested_username`/`requested_password`, not `username`/`password`. This is deliberate: CoCart Starter's auth layer treats a request containing non-empty `username`/`password` fields as a Basic Auth attempt, which would collide with — and reject — this endpoint's own registration fields.
 
-**Response type:** `RegisteredCustomer`
-
-| Field | Type | Description |
-|---|---|---|
-| `user_id` | `number` | The new customer's WordPress user ID |
-| `username` | `string` | The (generated or provided) username |
-| `message` | `string` | Human-readable confirmation |
+**Response type:** `RegisteredCustomer`: the new customer, as `getProfile()` gives it, with `account_created` in `result`. The response is a `201`.
 
 ### Errors
 
 | Status | Code | Meaning |
 |---|---|---|
-| `400` | `cocart_registration_error_reserved_username` | The requested username is on the store's reserved list (e.g. `admin`, `root`) |
-| `404` | `cocart_registration_invalid_email` | Email missing or invalid |
-| `404` | `registration-error-missing-password` | Password required by the store but not provided |
-| `405` | `cocart_registration_error_email_exists` | Email is already registered |
-| `405` | `cocart_registration_error_username_exists` | Username is already taken |
+| `400` | `cocart_invalid_email` | Email missing or invalid |
+| `400` | `cocart_registration_invalid_username` | The username isn't valid |
+| `400` | `cocart_registration_reserved_username` | The username is on the store's reserved list (e.g. `admin`) |
+| `400` | `cocart_registration_missing_password` | The store needs a password and none was given |
+| `400` | `cocart_registration_weak_password` | The password is too weak |
+| `400` | `cocart_account_creation_failed` | WooCommerce couldn't create the account |
+| `409` | `cocart_account_exists` | The email is already registered |
+| `409` | `cocart_registration_username_exists` | The username is already taken |
 
 ```ts
 try {
   await client.account().register({ email: 'jane@example.com' });
 } catch (error) {
-  if (error instanceof CoCartError && error.errorCode === 'cocart_registration_error_email_exists') {
+  if (error instanceof CoCartError && error.errorCode === 'cocart_account_exists') {
     // Prompt the customer to log in instead
   }
 }
@@ -97,78 +105,70 @@ You can check whether registration is enabled, and whether username/password fie
 
 ### Get Profile
 
-Returns the customer's account details including billing and shipping addresses, order count, and total spend.
+Returns the signed-in customer: name, email, addresses, what they've bought and what they can do next.
 
 ```ts
 const response = await client.account().getProfile();
-const profile = response.toObject();
+const customer = response.toObject();
 
-console.log(profile.user.first_name);              // 'Jane'
-console.log(profile.user.email);                   // 'jane@example.com'
-console.log(profile.user.orders_count);            // 14
-console.log(profile.user.total_spent);             // '320.00'
-console.log(profile.user.is_paying_customer);      // true
-console.log(profile.user.avatar_url);              // 'https://...'
-console.log(profile.user.addresses.billing);       // AccountAddress
-console.log(profile.user.addresses.shipping);      // AccountAddress
-
-// Most recent order (null if no orders yet)
-console.log(profile.recent_order.order_id);        // 1042
-console.log(profile.recent_order.order_date);      // '2025-11-03T10:22:00'
-
-// Store-side meta
-console.log(profile.meta.is_vat_exempt);           // false
+console.log(customer.first_name);               // 'Jane'
+console.log(customer.email);                    // 'jane@example.com'
+console.log(customer.pending_email);            // a new email waiting to be confirmed, or null
+console.log(customer.stats.orders_count);       // 14
+console.log(customer.stats.total_spent);        // '32000' (minor units; formatted: true for '$320.00')
+console.log(customer.billing?.formatted);       // the billing address on one line
+console.log(customer.shipping);                 // null when the store doesn't ship to a separate address
+console.log(customer.related.recent_order);     // the most recent order, or null
+console.log(customer.tax.is_vat_exempt);        // false
 ```
 
 **Response type:** `AccountProfile`
 
 | Field | Type | Description |
 |---|---|---|
-| `user.id` | `number` | WordPress user ID |
-| `user.date_registered` | `string` | ISO 8601 registration timestamp |
-| `user.email` | `string` | Email address |
-| `user.first_name` | `string` | First name |
-| `user.last_name` | `string` | Last name |
-| `user.display_name` | `string` | Display name |
-| `user.addresses.billing` | `AccountAddress` | Billing address |
-| `user.addresses.shipping` | `AccountAddress` | Shipping address |
-| `user.orders_count` | `number` | Total number of orders |
-| `user.total_spent` | `string` | Formatted lifetime spend |
-| `user.is_paying_customer` | `boolean` | Has at least one completed order |
-| `user.avatar_url` | `string` | Gravatar or custom avatar URL |
-| `recent_order.order_id` | `number \| null` | Most recent order ID |
-| `recent_order.order_date` | `string \| null` | Most recent order date |
-| `recent_order.order_data` | `string \| null` | Link to order detail |
-| `meta.is_customer_outside_base` | `boolean` | Customer is outside store's base country |
-| `meta.is_vat_exempt` | `boolean` | VAT exempt status |
+| `id` | `number` | WordPress user ID |
+| `username` | `string` | The username the account logs in with |
+| `email` | `string` | The email the account logs in with (may not be the billing email) |
+| `pending_email` | `string \| null` | A new email waiting to be confirmed through the link sent to it |
+| `first_name`, `last_name`, `display_name` | `string` | Names |
+| `avatar_url` | `string` | Avatar URL |
+| `date_registered` | `{ iso, label } \| null` | When the customer registered |
+| `currency` | `object` | The store currency, which `total_spent` is in |
+| `stats` | `{ orders_count, total_spent, is_paying_customer }` | What the customer has bought |
+| `billing`, `shipping` | `object \| null` | Addresses, each with `formatted` for display |
+| `tax` | `{ is_vat_exempt, is_outside_base }` | How tax applies |
+| `related.recent_order` | `object \| null` | The most recent order |
+| `actions`, `meta`, `extensions` | `object` | What can be done next, allowed meta, other plugins' data |
 
 ---
 
 ### Update Profile
 
-Updates the customer's name, display name, and email address.
+Saves the account details. Send only what changes. Every field at fault is reported at once:
 
 ```ts
-const response = await client.account().updateProfile({
-  account_first_name: 'Jane',
-  account_last_name: 'Doe',
-  account_display_name: 'Jane Doe',
-  account_email: 'jane@example.com',
-});
-
-const result = response.toObject();
-console.log(result.success); // true
-console.log(result.message); // 'Account details updated.'
+try {
+  const customer = (await client.account().updateProfile({
+    account_first_name: 'Jane',
+    account_email: 'jane.doe@example.com',
+  })).toObject();
+  console.log(customer.result?.code); // 'account_updated'
+  console.log(customer.pending_email); // set when the store confirms a new email first
+} catch (error) {
+  if (error instanceof CoCartError) {
+    for (const [field, message] of Object.entries(error.getFields())) showFieldError(field, message);
+  }
+}
 ```
 
 **Input type:** `AccountUpdateInput`
 
-| Field | Required | Description |
-|---|---|---|
-| `account_first_name` | Yes | First name |
-| `account_last_name` | Yes | Last name |
-| `account_display_name` | Yes | Display name |
-| `account_email` | Yes | Email address |
+| Field | Description |
+|---|---|
+| `account_first_name` | First name |
+| `account_last_name` | Last name |
+| `account_display_name` | Display name |
+| `account_email` | Email address. When the store asks for it, the change is confirmed by email first (`pending_email`), then with `verifyEmail()` |
 
 ---
 
@@ -190,20 +190,13 @@ await client.account().changePassword({
 | `password` | Yes | New password |
 | `confirm` | Yes | New password confirmation — must match `password` |
 
-CoCart Plus takes the new password on `POST /my-account`, which also requires the account's names and email. `changePassword()` reads them from the profile first (one extra request); pass them as the second argument to skip that:
-
-```ts
-await client.account().changePassword(
-  { current: 'old-password', password: 'new-password', confirm: 'new-password' },
-  { account_first_name: 'Jane', account_last_name: 'Doe', account_display_name: 'Jane', account_email: 'jane@example.com' },
-);
-```
+It's one `POST /my-account` with only the password fields; the rest of the account is left as it is. A wrong current password is a `ValidationError` with code `cocart_account_incorrect_current_password`; passwords that don't match are `cocart_account_new_passwords_do_not_match`.
 
 ---
 
 ### Update Address
 
-Saves the customer's billing and/or shipping address. Fields are unprefixed:
+Saves the customer's billing and/or shipping address, and returns the customer. Fields are unprefixed:
 
 ```ts
 await client.account().updateAddress({
@@ -212,90 +205,79 @@ await client.account().updateAddress({
 });
 ```
 
+Both addresses are checked before either is saved; every field at fault is in `error.getFields()` (`cocart_invalid_address_fields`).
+
 ---
 
 ## Orders
 
 ### List Orders
 
-Returns a paginated list of the customer's orders.
+Returns a page of the customer's orders, newest first, each as a summary.
 
 ```ts
 const response = await client.account().getOrders();
-const data = response.toObject();
+const { orders, pagination } = response.toObject();
 
-for (const order of data.orders) {
-  console.log(order.order_id);     // 1042
-  console.log(order.order_status); // 'completed'
-  console.log(order.order_date);   // '2025-11-03'
-  console.log(order.item_count);   // 3
-  console.log(order.order_total);  // '64.50'
+for (const order of orders) {
+  console.log(order.id);            // 1042
+  console.log(order.number);        // '1042'
+  console.log(order.status.code);   // 'completed' (use this in code)
+  console.log(order.status.label);  // 'Completed' (translated, for display)
+  console.log(order.date_created?.label);
+  console.log(order.totals.total);  // '6450'
+  console.log(Object.keys(order.actions)); // e.g. ['view', 'pay', 'cancel']
 }
 
-// Pagination links
-console.log(data.pagination.next);     // URL or null
-console.log(data.pagination.previous); // URL or null
+console.log(pagination.total_items, pagination.total_pages); // also in X-WP-Total / X-WP-TotalPages
 ```
 
 **Parameters:** `AccountOrdersParams`
 
 | Parameter | Type | Default | Description |
 |---|---|---|---|
-| `page` | `number` | `1` | Page number (1–100) |
-| `per_page` | `number` | `10` | Results per page (1–50) |
+| `page` | `number` | `1` | Page number |
+| `per_page` | `number` | `10` | Results per page |
 | `order` | `'ASC' \| 'DESC'` | `'DESC'` | Sort direction |
+| `status` | `string \| string[]` | every status | Only these statuses, e.g. `['processing', 'on-hold']` |
+| `after` / `before` | `string` | — | Only orders placed after/before this date (ISO 8601; without an offset it's UTC) |
+| `subscription_order_type` | `'parent' \| 'renewal' \| 'switch' \| 'resubscribe'` | — | Only orders with this relationship to a subscription |
+| `formatted` | `boolean` | `false` | Amounts formatted for display |
+| `meta_keys` | `string[]` | every allowed key | Only these keys in each `meta` |
 
 ```ts
-// Page 2, 20 per page, oldest first
-const response = await client.account().getOrders({ page: 2, per_page: 20, order: 'ASC' });
+// Processing orders from this year, 20 per page
+const response = await client.account().getOrders({ status: 'processing', after: '2026-01-01T00:00:00', per_page: 20 });
 ```
 
 ---
 
 ### Get a Single Order
 
-Returns full detail for one order.
+Returns the whole order: what was bought, the totals as lines to display, the payment, the customer, the delivery (shipping lines and downloads), notes and what can be done next.
 
 ```ts
-const response = await client.account().getOrder(1042);
-const order = response.toObject();
+const order = (await client.account().getOrder(1042)).toObject();
 
-console.log(order.order_number);   // '1042'
-console.log(order.order_status);   // 'completed'
-console.log(order.order_currency); // 'USD'
-console.log(order.items);          // line items array
-console.log(order.totals);         // totals object
-console.log(order.downloads);      // AccountDownload[]
+console.log(order.status.code);          // 'completed'
+console.log(order.items);                // each line with its product, quantity, price and totals
+console.log(order.total_lines);          // [{ key, label, amount, detail }] in display order
+console.log(order.payment.title);        // 'Credit card'
+console.log(order.payment.needs_payment); // true while it can still be paid
+console.log(order.delivery.downloads);   // the files this order can download
 ```
+
+Someone else's order, or one that doesn't exist, is `404 cocart_order_not_found`.
 
 ### Get a Guest Order
 
-For guest order look-up pages — no auth required, but the order ID and billing email must match:
+For guest order look-up pages — no login, but the order ID and billing email must match. The order comes without its `key` (which would let the holder pay for it), and look-ups are rate limited (`429 cocart_guest_lookup_rate_limited`):
 
 ```ts
 const response = await client.account().getGuestOrder(1042, 'jane@example.com');
 ```
 
-**Response type:** `AccountOrderDetail`
-
-| Field | Type | Description |
-|---|---|---|
-| `order_id` | `number` | Order ID |
-| `order_number` | `string` | Order number (may differ from ID) |
-| `order_date` | `string` | Order date |
-| `order_status` | `string` | WooCommerce order status |
-| `order_currency` | `string` | Currency code |
-| `billing_address` | `string` | Formatted billing address |
-| `shipping_address` | `string` | Formatted shipping address |
-| `phone` | `string` | Billing phone |
-| `email` | `string` | Billing email |
-| `ship_to_billing` | `boolean` | Whether shipping matches billing |
-| `items` | `Record<string, unknown>[]` | Line items |
-| `totals` | `Record<string, unknown>` | Order totals |
-| `order_note` | `string` | Customer-provided note |
-| `order_notes` | `Record<string, unknown>[]` | Store notes |
-| `downloads` | `AccountDownload[]` | Downloadable files on this order |
-| `order_actions` | `Record<string, { url, name }>` | Available actions (e.g. reorder, cancel) |
+**Response type:** `AccountOrderDetail` (the `Order` document)
 
 ---
 
@@ -303,59 +285,52 @@ const response = await client.account().getGuestOrder(1042, 'jane@example.com');
 
 ### All Downloads
 
-Returns every downloadable file available to the customer across all orders.
+Returns every file the customer can download, across all orders.
 
 ```ts
-const response = await client.account().getDownloads();
-const downloads = response.toObject();
+const { downloads } = (await client.account().getDownloads()).toObject();
 
 for (const file of downloads) {
-  console.log(file.product_name);          // 'My eBook'
-  console.log(file.download_name);         // 'my-ebook-v2.pdf'
-  console.log(file.file);                  // 'https://store.com/wp-content/...'
-  console.log(file.downloads_remaining);   // '3' or 'Unlimited'
-  console.log(file.download_expires);      // '2026-12-31' or 'Never'
+  console.log(file.name);                 // 'my-ebook-v2.pdf'
+  console.log(file.product.name);         // 'My eBook'
+  console.log(file.downloads_remaining);  // 3, or null when unlimited
+  console.log(file.expires?.label);       // or null when it never expires
+  console.log(file.href);                 // the link that downloads the file
 }
 ```
 
-**Response type:** `AccountDownload[]`
-
-| Field | Type | Description |
-|---|---|---|
-| `product_name` | `string` | Product the file belongs to |
-| `download_name` | `string` | File name |
-| `file` | `string` | Download URL |
-| `downloads_remaining` | `string` | Remaining download count, or `'Unlimited'` |
-| `download_expires` | `string` | Expiry date, or `'Never'` |
+**Response type:** `Downloads` (`{ downloads: AccountDownload[] }`)
 
 ---
 
 ### Downloads for a Single Order
 
-Returns only the downloadable files attached to a specific order. They're read from the order's details (`downloads`), so this is the same request as `getOrder()`.
+Returns the files one order can download (`GET /my-account/orders/{id}/downloads`), in the same shape:
 
 ```ts
-const response = await client.account().getOrderDownloads(1042);
-const files = response.toObject();
+const { downloads } = (await client.account().getOrderDownloads(1042)).toObject();
 ```
 
 ### Guest Order Downloads
 
-For guest order look-up pages — no auth required, but the order ID and billing email must match:
+For guest order look-up pages — no login, but the order ID and billing email must match:
 
 ```ts
-const response = await client.account().getGuestOrderDownloads(1042, 'jane@example.com');
+const { downloads } = (await client.account().getGuestOrderDownloads(1042, 'jane@example.com')).toObject();
 ```
 
 ---
 
 ## Cancel an Order
 
-Cancels one of the customer's orders where WooCommerce allows it (for example a pending or failed order):
+Cancels one of the customer's orders where WooCommerce allows it (for example a pending or failed order), and returns the order with what happened in `result`:
 
 ```ts
-const { order_status } = (await client.account().cancelOrder(1042)).toObject(); // 'cancelled'
+const order = (await client.account().cancelOrder(1042)).toObject();
+console.log(order.status.code); // 'cancelled'
 ```
+
+An order that can't be cancelled is `409 cocart_order_cannot_be_cancelled`.
 
 ---
 
@@ -374,12 +349,16 @@ const reviews = response.toObject();
 
 ```ts
 // Confirm a pending email change, with the key and user ID from the emailed link.
-await client.account().verifyEmail(key, userId);
+const change = (await client.account().verifyEmail(key, userId)).toObject();
+console.log(change.email); // the address the account now has
 
 // Prove ownership of the account email so WooCommerce links past guest orders to it (WooCommerce 11+).
-const { status } = (await client.account().sendOrderEmailVerification()).toObject(); // 'sent' or 'throttled' (once a minute)
-await client.account().verifyOrderEmail(key, userId);
+const sent = (await client.account().sendOrderEmailVerification()).toObject();
+console.log(sent.retry_after); // seconds before another email can be asked for
+await client.account().verifyOrderEmail(key, userId); // returns the customer
 ```
+
+An expired or wrong key is `400 cocart_invalid_or_expired_key`; an email already verified is `409 cocart_email_already_verified`.
 
 ---
 
@@ -388,25 +367,72 @@ await client.account().verifyOrderEmail(key, userId);
 Needs WooCommerce Subscriptions.
 
 ```ts
-const list = await client.account().getSubscriptions({ page: 1, per_page: 10 });
+const { subscriptions, pagination } = (await client.account().getSubscriptions({ status: 'active' })).toObject();
 const one = await client.account().getSubscription(512);
 
 await client.account().suspendSubscription(512);
 await client.account().reactivateSubscription(512);
 await client.account().cancelSubscription(512);
 await client.account().setSubscriptionAutoRenew(512, false);
-await client.account().updateSubscriptionPaymentMethod(512, { payment_method: 'stripe', token_id: 7 });
 
 // Resubscribe puts the ended subscription's items in the cart; check out as usual, or undo it.
 await client.account().resubscribe(512);
 await client.account().cancelResubscribe(512);
 ```
 
+Each change returns the subscription with what happened in `result`. A change the subscription's state refuses is a `409` (e.g. `cocart_subscription_cannot_suspend`).
+
+### Changing a Subscription's Payment Method
+
+A subscription can switch to a payment method the customer has saved, or to a new card. Use a gateway that can charge renewals. The saved methods come from the checkout package's `getSavedPaymentMethods()`, whose `supportsSubscriptions` says so.
+
+```ts
+// A saved payment method
+const result = await client.account().updateSubscriptionPaymentMethod(512, { payment_method: 'stripe', token_id: 7 });
+
+// A new card, from stripe.createPaymentMethod() (Elements in `mode: 'setup'`: nothing is charged now)
+const result = await client.account().updateSubscriptionPaymentMethod(512, {
+  payment_method: 'stripe',
+  payment_data: { 'wc-stripe-payment-method': paymentMethod.id },
+});
+```
+
+A new card may need 3D Secure, so this returns a `CheckoutResult`, read as at checkout:
+
+```ts
+if (result.isComplete) {
+  // code 'payment_method_changed'; result.message says which method it now renews with.
+  const subscription = result.response.toObject() as SubscriptionPaymentMethodChange;
+  console.log(result.subscriptionId, subscription.payment.title); // 512, 'Visa ending in 4242'
+} else if (result.needsConfirmation) {
+  // Usually a SetupIntent (result.intentType === 'setup_intent'): confirm it, then call again with the same input.
+  const { error } = await stripe.handleNextAction({ clientSecret: result.clientSecret! });
+} else if (result.needsRedirect) {
+  // A bank that authorises a mandate off-site. When the customer comes back, confirmReturn() gives
+  // the subscription (result.object === 'subscription').
+  window.location.href = result.redirectUrl!;
+} else if (result.isPending) {
+  // Not confirmed yet: getSubscription(512) shows the new method once it is.
+} else {
+  showError(result.message); // a declined card is a failed result, not an exception
+}
+```
+
+| Code (thrown) | Meaning |
+|---|---|
+| `cocart_subscription_not_found` | No such subscription for this customer (`404`) |
+| `cocart_subscription_payment_method_change_unsupported` | The subscription's payment method can't be changed (`400`) |
+| `cocart_subscription_cannot_change_payment_method` | The subscription's state doesn't allow it now (`409`) |
+| `cocart_subscription_payment_token_required` | Pass a saved method's `token_id`, or a new card in `payment_data` (`400`) |
+| `cocart_invalid_payment_method` | The payment method isn't usable for this (`400`) |
+| `cocart_subscription_payment_token_needs_confirmation` | The saved method must be confirmed before it can pay renewals (`400`) |
+| `cocart_payment_in_progress` | Another change is still taking payment for this subscription: check it before trying again (`409`) |
+
 ---
 
 ## Order Withdrawal
 
-Submits a right-of-withdrawal request (WooCommerce's order withdrawal feature). No login needed; the response is the same whether or not the order matched:
+Submits a right-of-withdrawal request (WooCommerce's order withdrawal feature, WooCommerce 11.1+). No login needed; the response is the same whether or not the order matched, with `withdrawal_requested` in `result` and the email the acknowledgement went to:
 
 ```ts
 await client.account().requestOrderWithdrawal({

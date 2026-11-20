@@ -2,7 +2,7 @@ import { Endpoint } from './endpoint.js';
 import type { Response } from '../response.js';
 import { Paginator } from '../paginator.js';
 import type {
-  ProductListParams, ProductParams, SortOrder, StockStatus, ProductOrderBy, ProductReviewInput, ProductShippingRatesParams,
+  ProductListParams, ProductParams, SortOrder, StockStatus, ProductOrderBy, ProductReviewInput, ProductShippingRatesParams, ProductShippingRates,
 } from '../cocart.types.js';
 
 /**
@@ -33,7 +33,7 @@ export class Products extends Endpoint {
 
   /** Get a single product by slug. */
   async findBySlug(slug: string, params?: ProductParams): Promise<Response> {
-    this.client.requiresBasic('products()->findBySlug');
+    this.client.requiresStarter('products()->findBySlug');
     return this.get(slug, params ? this.stringifyParams(params) : undefined);
   }
 
@@ -125,7 +125,7 @@ export class Products extends Endpoint {
 
   /** Get a specific variation. */
   async variation(productId: number, variationId: number, params?: Record<string, string>): Promise<Response> {
-    this.client.requiresBasic('products()->variation');
+    this.client.requiresStarter('products()->variation');
     return this.get(`${productId}/variations/${variationId}`, params);
   }
 
@@ -138,7 +138,7 @@ export class Products extends Endpoint {
 
   /** Get a single category. */
   async category(categoryId: number, params?: Record<string, string>): Promise<Response> {
-    this.client.requiresBasic('products()->category');
+    this.client.requiresStarter('products()->category');
     return this.get(`categories/${categoryId}`, params);
   }
 
@@ -151,7 +151,7 @@ export class Products extends Endpoint {
 
   /** Get a single tag. */
   async tag(tagId: number, params?: Record<string, string>): Promise<Response> {
-    this.client.requiresBasic('products()->tag');
+    this.client.requiresStarter('products()->tag');
     return this.get(`tags/${tagId}`, params);
   }
 
@@ -179,19 +179,19 @@ export class Products extends Endpoint {
 
   /** Get an attribute by its slug. */
   async attributeBySlug(slug: string, params?: Record<string, string>): Promise<Response> {
-    this.client.requiresBasic('products()->attributeBySlug');
+    this.client.requiresStarter('products()->attributeBySlug');
     return this.get(`attributes/${slug}`, params);
   }
 
   /** Get terms for an attribute by the attribute's slug. */
   async attributeTermsBySlug(slug: string, params?: Record<string, string>): Promise<Response> {
-    this.client.requiresBasic('products()->attributeTermsBySlug');
+    this.client.requiresStarter('products()->attributeTermsBySlug');
     return this.get(`attributes/${slug}/terms`, params);
   }
 
   /** Get a specific term by slug for an attribute by slug. */
   async attributeTermBySlug(attrSlug: string, termSlug: string, params?: Record<string, string>): Promise<Response> {
-    this.client.requiresBasic('products()->attributeTermBySlug');
+    this.client.requiresStarter('products()->attributeTermBySlug');
     return this.get(`attributes/${attrSlug}/terms/${termSlug}`, params);
   }
 
@@ -199,19 +199,19 @@ export class Products extends Endpoint {
 
   /** Get product brands. */
   async brands(params?: Record<string, string>): Promise<Response> {
-    this.client.requiresBasic('products()->brands');
+    this.client.requiresStarter('products()->brands');
     return this.get('brands', params);
   }
 
   /** Get a single brand. */
   async brand(brandId: number, params?: Record<string, string>): Promise<Response> {
-    this.client.requiresBasic('products()->brand');
+    this.client.requiresStarter('products()->brand');
     return this.get(`brands/${brandId}`, params);
   }
 
   /** Get products by brand. */
   async byBrand(brandSlug: string, params: ProductListParams = {}): Promise<Response> {
-    this.client.requiresBasic('products()->byBrand');
+    this.client.requiresStarter('products()->byBrand');
     return this.all({ ...params, brand: brandSlug });
   }
 
@@ -234,30 +234,31 @@ export class Products extends Endpoint {
 
   /** Get the current authenticated user's product reviews. */
   async myReviews(params?: Record<string, string>): Promise<Response> {
-    this.client.requiresBasic('products()->myReviews');
+    this.client.requiresStarter('products()->myReviews');
     return this.get('reviews/mine', params);
   }
 
-  // --- SEO (requires CoCart SEO Pack plugin) ---
-
-  /** Get SEO data for a product by ID. */
   /**
    * Shipping rates for a product before it's added to the cart (CoCart Plus). `productId` may be
    * a variation ID or a SKU. Sent without the cart key: the route prices a simulated cart and
-   * refuses one (403). External and grouped products can't be priced (403).
+   * refuses one (`400 cocart_calculate_product_shipping_rates_cart_access_denied`). External and
+   * grouped products can't be priced (`400`).
    */
-  async shippingRates(productId: number | string, params: ProductShippingRatesParams = {}): Promise<Response> {
+  async shippingRates(productId: number | string, params: ProductShippingRatesParams = {}): Promise<Response<ProductShippingRates>> {
     const query: Record<string, string> = {};
     if (params.quantity !== undefined) query['quantity'] = String(params.quantity);
     for (const [k, v] of Object.entries(params.variation ?? {})) query[`variation[${k}]`] = v;
     for (const [k, v] of Object.entries(params.item_data ?? {})) query[`item_data[${k}]`] = v;
     try {
-      return await this.client.requestRaw('GET', `${this.client.getNamespace()}/v2/products/${encodeURIComponent(String(productId))}/shipping-rates`, query, null, { omitCartKey: true });
+      return (await this.client.requestRaw('GET', `${this.client.getNamespace()}/v2/products/${encodeURIComponent(String(productId))}/shipping-rates`, query, null, { omitCartKey: true })) as Response<ProductShippingRates>;
     } catch (e) {
       this.handleNoRoute(e);
     }
   }
 
+  // --- SEO (requires CoCart SEO Pack plugin) ---
+
+  /** Get SEO data for a product by ID. */
   async seo(productId: number): Promise<Response> {
     return this.get(`${productId}/seo`);
   }

@@ -1,0 +1,114 @@
+{
+  "name": "3D Secure in the page: action_required with a client_secret",
+  "source": "CoCart Plus 2.0 checkout spec",
+  "call": {
+    "target": "checkout",
+    "method": "placeOrder",
+    "args": [
+      {
+        "billing_address": {
+          "first_name": "Jane",
+          "last_name": "Doe",
+          "address_1": "1 Main Street",
+          "city": "Paris",
+          "postcode": "75001",
+          "country": "FR",
+          "email": "jane@example.com"
+        },
+        "shipping_method": "flat_rate:1",
+        "payment_method": "stripe",
+        "payment_data": {
+          "wc-stripe-payment-method": "pm_123"
+        },
+        "checkout_id": "chk_fixture_0000000001"
+      }
+    ]
+  },
+  "exchanges": [
+    {
+      "request": {
+        "method": "POST",
+        "path": "cocart/v2/checkout",
+        "query": {},
+        "body": {
+          "billing_address": {
+            "first_name": "Jane",
+            "last_name": "Doe",
+            "address_1": "1 Main Street",
+            "city": "Paris",
+            "postcode": "75001",
+            "country": "FR",
+            "email": "jane@example.com"
+          },
+          "shipping_method": "flat_rate:1",
+          "payment_method": "stripe",
+          "payment_data": [
+            {
+              "key": "wc-stripe-payment-method",
+              "value": "pm_123"
+            }
+          ],
+          "checkout_id": "chk_fixture_0000000001"
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "object": "order",
+          "result": {
+            "code": "action_required",
+            "message": "Confirm the payment to finish your order.",
+            "action": {
+              "type": "stripe_confirm_payment",
+              "data": {
+                "client_secret": "pi_secret_123",
+                "intent_type": "payment_intent"
+              }
+            },
+            "redirect_url": null,
+            "error": null
+          },
+          "id": 217,
+          "number": "217",
+          "key": "wc_order_abc",
+          "status": {
+            "code": "pending",
+            "label": "Pending payment"
+          },
+          "currency": {
+            "currency_code": "USD",
+            "currency_symbol": "$",
+            "currency_minor_unit": 2
+          },
+          "item_count": 1,
+          "totals": {
+            "subtotal": "1800",
+            "total_tax": "0",
+            "shipping_total": "500",
+            "total": "2300"
+          },
+          "payment": {
+            "method": "stripe",
+            "title": "Credit card",
+            "needs_payment": true,
+            "date_paid": null
+          },
+          "actions": {}
+        }
+      }
+    }
+  ],
+  "expect": {
+    "result": {
+      "code": "action_required",
+      "isComplete": false,
+      "needsConfirmation": true,
+      "needsRedirect": false,
+      "clientSecret": "pi_secret_123",
+      "intentType": "payment_intent",
+      "actionType": "stripe_confirm_payment",
+      "orderId": 217,
+      "message": "Confirm the payment to finish your order."
+    }
+  }
+}

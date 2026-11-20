@@ -1,0 +1,52 @@
+{
+  "name": "Another payment still running for the order is an error (409 cocart_payment_in_progress): check the order before trying again",
+  "source": "CoCart Plus 2.0 checkout spec",
+  "call": {
+    "target": "checkout",
+    "method": "payForOrder",
+    "args": [
+      1234,
+      "wc_order_abc123",
+      {
+        "payment_method": "stripe",
+        "payment_data": {
+          "wc-stripe-payment-method": "pm_1H8x2y2eZvKYlo2C"
+        }
+      }
+    ]
+  },
+  "exchanges": [
+    {
+      "request": {
+        "method": "POST",
+        "path": "cocart/v2/order-received/1234/pay",
+        "query": {},
+        "body": {
+          "payment_method": "stripe",
+          "payment_data": [
+            {
+              "key": "wc-stripe-payment-method",
+              "value": "pm_1H8x2y2eZvKYlo2C"
+            }
+          ],
+          "order_key": "wc_order_abc123"
+        }
+      },
+      "response": {
+        "status": 409,
+        "body": {
+          "code": "cocart_payment_in_progress",
+          "message": "A payment for this order is already being processed. Check the order before trying again.",
+          "data": {
+            "status": 409
+          }
+        }
+      }
+    }
+  ],
+  "expect": {
+    "error": {
+      "code": "cocart_payment_in_progress"
+    }
+  }
+}

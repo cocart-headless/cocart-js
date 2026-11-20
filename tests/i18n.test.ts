@@ -15,7 +15,7 @@ const frCatalog = {
   'validation.invalidEmail':     'Une adresse e-mail valide est requise',
   'jwt.tokenMissing':            'Jeton JWT introuvable dans la réponse de connexion.',
   'jwt.noRefreshToken':          'Aucun jeton de rafraîchissement disponible.',
-  'version.requiresBasic':       '{method}() nécessite CoCart Starter.',
+  'version.requiresStarter':       '{method}() nécessite CoCart Starter.',
   'endpoint.pluginRequired':     'Cette méthode nécessite une extension CoCart supplémentaire.',
   'request.networkError':        'Erreur réseau',
   'request.timeout':             'Délai dépassé après {timeout}ms',
@@ -85,8 +85,8 @@ describe('t() translation function', () => {
     expect(t('request.timeout', { timeout: 3000 }, 'fr')).toBe('Délai dépassé après 3000ms');
   });
 
-  it('interpolates {method} in version.requiresBasic', () => {
-    expect(t('version.requiresBasic', { method: 'products()->findBySlug' }))
+  it('interpolates {method} in version.requiresStarter', () => {
+    expect(t('version.requiresStarter', { method: 'products()->findBySlug' }))
       .toContain('products()->findBySlug');
   });
 

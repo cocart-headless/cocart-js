@@ -1,0 +1,92 @@
+{
+  "name": "An offline gateway sends no payment_data; the order is placed on hold, with nothing to do",
+  "source": "CoCart Plus 2.0 checkout spec",
+  "call": {
+    "target": "checkout",
+    "method": "placeOrder",
+    "args": [
+      {
+        "billing_address": {
+          "first_name": "Jane",
+          "last_name": "Doe",
+          "address_1": "1 Main Street",
+          "city": "Paris",
+          "postcode": "75001",
+          "country": "FR",
+          "email": "jane@example.com"
+        },
+        "payment_method": "bacs",
+        "checkout_id": "chk_fixture_0000000001"
+      }
+    ]
+  },
+  "exchanges": [
+    {
+      "request": {
+        "method": "POST",
+        "path": "cocart/v2/checkout",
+        "query": {},
+        "body": {
+          "billing_address": {
+            "first_name": "Jane",
+            "last_name": "Doe",
+            "address_1": "1 Main Street",
+            "city": "Paris",
+            "postcode": "75001",
+            "country": "FR",
+            "email": "jane@example.com"
+          },
+          "payment_method": "bacs",
+          "checkout_id": "chk_fixture_0000000001"
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "object": "order",
+          "result": {
+            "code": "order_placed",
+            "message": "Thank you. Your order has been received.",
+            "action": null,
+            "redirect_url": "https://shop.example.com/checkout/order-received/217/?key=wc_order_abc",
+            "error": null
+          },
+          "id": 217,
+          "number": "217",
+          "key": "wc_order_abc",
+          "status": {
+            "code": "on-hold",
+            "label": "On hold"
+          },
+          "currency": {
+            "currency_code": "USD",
+            "currency_symbol": "$",
+            "currency_minor_unit": 2
+          },
+          "item_count": 1,
+          "totals": {
+            "subtotal": "1800",
+            "total_tax": "0",
+            "shipping_total": "500",
+            "total": "2300"
+          },
+          "payment": {
+            "method": "bacs",
+            "title": "bacs",
+            "needs_payment": false,
+            "date_paid": null
+          },
+          "actions": {}
+        }
+      }
+    }
+  ],
+  "expect": {
+    "result": {
+      "code": "order_placed",
+      "isComplete": true,
+      "isAwaitingPayment": false,
+      "orderStatus": "on-hold"
+    }
+  }
+}

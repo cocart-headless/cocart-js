@@ -33,4 +33,35 @@ export class CoCartError extends Error {
     const cart = data?.cart;
     return cart && typeof cart === 'object' && !Array.isArray(cart) ? (cart as CartResponse) : null;
   }
+
+  /**
+   * Every field at fault, by path (e.g. `billing.postcode`), with its message: CoCart Plus checks
+   * a whole form at once (`data.fields`). Empty when the error isn't about fields.
+   */
+  getFields(): Record<string, string> {
+    const fields = this.data()?.fields;
+    if (!fields || typeof fields !== 'object' || Array.isArray(fields)) return {};
+    const out: Record<string, string> = {};
+    for (const [path, message] of Object.entries(fields as Record<string, unknown>)) {
+      if (typeof message === 'string') out[path] = message;
+    }
+    return out;
+  }
+
+  /** The first field at fault, as a path such as `billing.postcode` (`data.field`), or `null`. */
+  getField(): string | null {
+    const field = this.data()?.field;
+    return typeof field === 'string' && field !== '' ? field : null;
+  }
+
+  /** The underlying plugin's own reason, when there is one (`data.reason`), or `null`. */
+  getReason(): string | null {
+    const reason = this.data()?.reason;
+    return typeof reason === 'string' && reason !== '' ? reason : null;
+  }
+
+  private data(): Record<string, unknown> | undefined {
+    const data = this.responseData.data;
+    return data && typeof data === 'object' && !Array.isArray(data) ? (data as Record<string, unknown>) : undefined;
+  }
 }

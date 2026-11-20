@@ -1,29 +1,32 @@
 # Shipping Methods
 
-Shipping methods are fetched from the cart before the checkout form is rendered. The customer selects a method, and the chosen key is passed to `submit()`.
+Shipping methods are read from the checkout before the checkout form is rendered. The customer selects a rate, and the rate's `id` is passed to `submit()`.
 
 ---
 
 ## Fetching available methods
 
-`getShippingMethods()` proxies to the core CoCart cart endpoint and returns a typed array of `CheckoutShippingPackage`. Each package has a `rates` map of available `CheckoutShippingRate` objects and a `chosen_method` indicating the currently selected rate key.
+`getShippingMethods()` reads the checkout's `delivery.packages` (from `getCheckout()`) and returns a typed array of `CheckoutShippingPackage`. Each package has an `id`, a `name`, a `rates` list of available `CheckoutShippingRate` objects, and a `chosen_rate`: the `id` of the rate currently selected. It's empty when the cart needs no shipping (`delivery.needs_shipping: false`).
 
 ```ts
 const packages = await client.checkout.getShippingMethods();
 
 // Flatten all rates across packages into a single list for a single-package store
-const rates = packages.flatMap((pkg) => Object.values(pkg.rates));
+const rates = packages.flatMap((pkg) => pkg.rates);
 ```
 
 Each `CheckoutShippingRate` has:
 
 | Field | Type | Description |
 |---|---|---|
-| `key` | `string` | Unique rate key (e.g. `flat_rate:1`) — pass this to `submit()` |
+| `id` | `string` | Unique rate ID (e.g. `flat_rate:1`) — send this as `shipping_method` |
 | `method_id` | `string` | Method identifier (e.g. `flat_rate`, `free_shipping`) |
+| `instance_id` | `number` | The shipping method's instance in its zone |
 | `label` | `string` | Human-readable name shown to the customer |
-| `cost` | `string` | Formatted shipping cost |
-| `tax` | `string` | Formatted tax on shipping |
+| `cost` | `string` | Shipping cost, in minor units unless the checkout was fetched with `formatted: true` |
+| `tax` | `string` | Tax on shipping, the same way |
+
+`getShippingMethods()` calls `getCheckout()`, which records the total the customer is shown: call it for the review page, not right before the order is placed.
 
 ---
 
@@ -33,15 +36,15 @@ Pass the flattened rates to `createForm()` via `shippingMethods`. This adds a `s
 
 ```ts
 const packages = await client.checkout.getShippingMethods();
-const rates = packages.flatMap((pkg) => Object.values(pkg.rates));
+const rates = packages.flatMap((pkg) => pkg.rates);
 
 const form = client.checkout.createForm({ shippingMethods: rates });
 // form.sections includes { id: 'shipping-methods', fields: [{ type: 'radio', options: [...] }] }
 ```
 
 Each radio option has:
-- `label` — `"Flat rate — 5.00"` (rate label + cost)
-- `value` — the rate key (`flat_rate:1`)
+- `label` — `"Flat rate — 500"` (rate label + cost)
+- `value` — the rate ID (`flat_rate:1`)
 - `description` — the method ID (`flat_rate`)
 
 If `shippingMethods` is omitted or empty, the `shipping-methods` section is not included.
@@ -50,10 +53,10 @@ If `shippingMethods` is omitted or empty, the `shipping-methods` section is not 
 
 ## Submitting with a selected method
 
-The selected rate key goes in `update.shipping_method`:
+The selected rate ID goes in `update.shipping_method`:
 
 ```ts
-const { processResponse } = await client.checkout.submit({
+const { result } = await client.checkout.submit({
   gatewayId: 'stripe',
   update: {
     billing_address: { /* ... */ },
@@ -61,6 +64,8 @@ const { processResponse } = await client.checkout.submit({
   },
 });
 ```
+
+To save the choice as soon as the customer picks it (and show the new total), send it with `updateCheckout({ shipping_method })`. A rate that isn't available is listed in `result.not_applied`, with the rest of the update applied.
 
 ---
 
@@ -78,27 +83,28 @@ const client = new CoCart('https://your-store.com').use(createCheckout({
 
 // Fetch available shipping methods before rendering the form
 const packages = await client.checkout.getShippingMethods();
-const rates = packages.flatMap((pkg) => Object.values(pkg.rates));
+const rates = packages.flatMap((pkg) => pkg.rates);
 
-// Pre-select the chosen method from the first package (if any)
-const chosenMethod = packages[0]?.chosen_method;
+// Pre-select the chosen rate from the first package (if any)
+const chosenRate = packages[0]?.chosen_rate;
 
 const form = client.checkout.createForm({ shippingMethods: rates });
 
-// On submit — use the rate key the customer selected
-const selectedMethod = 'flat_rate:1'; // from form field value
+// On submit — use the rate ID the customer selected
+const selectedRate = 'flat_rate:1'; // from form field value
 
-const { processResponse } = await client.checkout.submit({
+const { result } = await client.checkout.submit({
   gatewayId: 'stripe',
   update: {
     billing_address: { /* collected form values */ },
-    shipping_method: selectedMethod,
+    shipping_method: selectedRate,
   },
 });
 
-const result = processResponse.toObject();
-if (result.payment_result?.redirect_url) {
-  window.location.href = result.payment_result.redirect_url;
+if (result.isFailed) {
+  showError(result.message);
+} else if (result.redirectUrl) {
+  window.location.href = result.redirectUrl;
 }
 ```
 
@@ -106,13 +112,12 @@ if (result.payment_result?.redirect_url) {
 
 ## Multiple shipping packages
 
-Some WooCommerce setups split the cart into multiple packages (e.g. different warehouses or vendors). Each package has its own set of rates and a `chosen_method`. When multiple packages are present, render a selector per package:
+Some WooCommerce setups split the cart into multiple packages (e.g. different warehouses or vendors). Each package has its own `rates` and `chosen_rate`. When multiple packages are present, render a selector per package:
 
 ```ts
 for (const pkg of packages) {
-  const rates = Object.values(pkg.rates);
-  // render a selector for pkg.package_name using rates
-  // the selected value is the rate key to pass for that package
+  // render a selector for pkg.name using pkg.rates, pre-selecting pkg.chosen_rate
+  // the selected value is the rate ID to pass for that package
 }
 ```
 

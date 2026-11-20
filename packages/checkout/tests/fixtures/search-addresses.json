@@ -1,0 +1,74 @@
+{
+  "name": "searchAddresses calls GET cocart/v2/address/search",
+  "source": "CoCart Plus 2.0 checkout spec",
+  "call": {
+    "target": "checkout",
+    "method": "searchAddresses",
+    "args": [
+      {
+        "query": "123 Main",
+        "country": "US",
+        "type": "billing"
+      }
+    ]
+  },
+  "exchanges": [
+    {
+      "request": {
+        "method": "GET",
+        "path": "cocart/v2/address/search",
+        "query": {
+          "query": "123 Main",
+          "country": "US",
+          "type": "billing"
+        },
+        "body": null
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "suggestions": [
+            {
+              "id": "addr_1",
+              "label": "123 Main Street, Springfield",
+              "matched_substrings": [
+                {
+                  "offset": 0,
+                  "length": 8
+                }
+              ]
+            }
+          ],
+          "query": "123 Main",
+          "provider": {
+            "id": "google_places",
+            "name": "Google Places"
+          },
+          "search_country": "US"
+        }
+      }
+    }
+  ],
+  "expect": {
+    "responseBody": {
+      "suggestions": [
+        {
+          "id": "addr_1",
+          "label": "123 Main Street, Springfield",
+          "matched_substrings": [
+            {
+              "offset": 0,
+              "length": 8
+            }
+          ]
+        }
+      ],
+      "query": "123 Main",
+      "provider": {
+        "id": "google_places",
+        "name": "Google Places"
+      },
+      "search_country": "US"
+    }
+  }
+}

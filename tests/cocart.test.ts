@@ -248,7 +248,7 @@ describe('CoCart', () => {
       expect(client.getCartKey()).toBe('ck_new');
     });
 
-    it('sends only the Cart-Key header for the default (basic/Starter) plugin, never CoCart-API-Cart-Key', async () => {
+    it('sends only the Cart-Key header for the default (Starter) plugin, never CoCart-API-Cart-Key', async () => {
       // Regression test: sending both header names at once used to break
       // every browser request, since each plugin's CORS config only
       // allowlists its own name in Access-Control-Allow-Headers.

@@ -1,0 +1,81 @@
+{
+  "name": "A failed payment with no reason from the gateway gives errorCode payment_failed",
+  "source": "CoCart Plus 2.0 checkout spec",
+  "call": {
+    "target": "checkout",
+    "method": "payForOrder",
+    "args": [
+      1234,
+      "wc_order_abc123",
+      {
+        "payment_method": "cod"
+      }
+    ]
+  },
+  "exchanges": [
+    {
+      "request": {
+        "method": "POST",
+        "path": "cocart/v2/order-received/1234/pay",
+        "query": {},
+        "body": {
+          "payment_method": "cod",
+          "order_key": "wc_order_abc123"
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "object": "order",
+          "result": {
+            "code": "payment_failed",
+            "message": "Payment processing failed.",
+            "action": null,
+            "redirect_url": null,
+            "error": {
+              "code": "payment_failed",
+              "gateway_code": null,
+              "gateway_message": null
+            }
+          },
+          "id": 1234,
+          "number": "1234",
+          "key": "wc_order_abc123",
+          "status": {
+            "code": "failed",
+            "label": "Failed"
+          },
+          "currency": {
+            "currency_code": "USD",
+            "currency_symbol": "$",
+            "currency_minor_unit": 2
+          },
+          "item_count": 1,
+          "totals": {
+            "subtotal": "1800",
+            "total_tax": "0",
+            "shipping_total": "500",
+            "total": "2300"
+          },
+          "payment": {
+            "method": "cod",
+            "title": "cod",
+            "needs_payment": true,
+            "date_paid": null
+          },
+          "actions": {}
+        }
+      }
+    }
+  ],
+  "expect": {
+    "result": {
+      "code": "payment_failed",
+      "isFailed": true,
+      "message": "Payment processing failed.",
+      "errorCode": "payment_failed",
+      "gatewayErrorCode": null,
+      "gatewayMessage": null
+    }
+  }
+}

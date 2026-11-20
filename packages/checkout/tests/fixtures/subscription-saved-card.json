@@ -1,0 +1,82 @@
+{
+  "name": "Switches a subscription to a saved card: payment_method_changed, with the subscription in the response",
+  "source": "CoCart Plus 2.0 checkout spec",
+  "call": {
+    "target": "account",
+    "method": "updateSubscriptionPaymentMethod",
+    "args": [
+      512,
+      {
+        "payment_method": "stripe",
+        "token_id": 7
+      }
+    ]
+  },
+  "exchanges": [
+    {
+      "request": {
+        "method": "POST",
+        "path": "cocart/v2/my-account/subscriptions/512/payment-method",
+        "query": {},
+        "body": {
+          "payment_method": "stripe",
+          "token_id": 7
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "object": "subscription",
+          "result": {
+            "code": "payment_method_changed",
+            "message": "Your subscription will now be paid with Visa ending in 4242.",
+            "action": null,
+            "redirect_url": null,
+            "error": null
+          },
+          "id": 512,
+          "number": "512",
+          "status": {
+            "code": "active",
+            "label": "Active"
+          },
+          "payment": {
+            "method": "stripe",
+            "title": "Visa ending in 4242",
+            "needs_payment": false
+          },
+          "actions": {}
+        }
+      }
+    }
+  ],
+  "expect": {
+    "result": {
+      "code": "payment_method_changed",
+      "isComplete": true,
+      "subscriptionId": 512
+    },
+    "responseBody": {
+      "object": "subscription",
+      "result": {
+        "code": "payment_method_changed",
+        "message": "Your subscription will now be paid with Visa ending in 4242.",
+        "action": null,
+        "redirect_url": null,
+        "error": null
+      },
+      "id": 512,
+      "number": "512",
+      "status": {
+        "code": "active",
+        "label": "Active"
+      },
+      "payment": {
+        "method": "stripe",
+        "title": "Visa ending in 4242",
+        "needs_payment": false
+      },
+      "actions": {}
+    }
+  }
+}

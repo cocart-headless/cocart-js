@@ -1,19 +1,46 @@
 # Coupons
 
-Coupons are applied at the cart level before checkout is processed. After applying or removing a coupon, re-fetch the checkout state to get the updated total and `needs_payment` flag.
+Coupons are applied to the checkout before the order is placed. `applyCoupon()` and `removeCoupon()` return the checkout with its new totals and `payment.needs_payment` flag, so there's nothing to re-fetch.
 
 ---
 
 ## Applying a coupon
 
 ```ts
-await client.checkout.applyCoupon('SAVE10');
+const checkout = (await client.checkout.applyCoupon('SAVE10')).toObject();
+
+checkout.coupons;        // [{ coupon: 'save10', label: 'Coupon: save10', saving: '200' }]
+checkout.totals.total;   // the new total
 ```
 
-This delegates to the core CoCart cart endpoint (`POST cart/apply-coupon`). The cart total is updated immediately.
+This goes through the checkout endpoint (`PUT /checkout` with `coupon_code` and `coupon_action: 'apply'`), and returns the checkout as `updateCheckout()` does. The returned checkout is the one the customer now sees, so its total is the one CoCart Plus expects when the order is placed.
+
+A coupon the store rejects (expired, a minimum spend not reached…) is a `400 cocart_coupon_not_applied` error, with the store's reason as its message, and nothing changes:
+
+```ts
+try {
+  await client.checkout.applyCoupon(code);
+} catch (error) {
+  if (error instanceof CoCartError && error.errorCode === 'cocart_coupon_not_applied') {
+    showCouponError(error.message); // 'The minimum spend for coupon "bigspend" is $100,000.00.'
+  }
+}
+```
+
+To apply a coupon along with other changes, send it in `updateCheckout()`. If the coupon can't be applied, the rest still is: `result.code` is `checkout_partly_updated` and the coupon is listed in `result.not_applied`:
+
+```ts
+const checkout = (await client.checkout.updateCheckout({
+  billing_address: { /* ... */ },
+  coupon_code: code,
+})).toObject();
+
+const rejected = checkout.result?.not_applied?.find((entry) => entry.field === 'coupon_code');
+if (rejected) showCouponError(rejected.message);
+```
 
 > [!NOTE]
-> A coupon may reduce the order total to zero. Always re-check `needs_payment` after applying — see [Zero-Total Checkout](./zero-total.md).
+> A coupon may reduce the order total to zero. Always check `payment.needs_payment` after applying — see [Zero-Total Checkout](./zero-total.md).
 
 ---
 
@@ -23,15 +50,16 @@ This delegates to the core CoCart cart endpoint (`POST cart/apply-coupon`). The 
 await client.checkout.removeCoupon('SAVE10');
 ```
 
+This sends `coupon_action: 'remove'`, and returns the checkout with its new totals.
+
 ---
 
 ## Re-checking needs_payment after a coupon
 
 ```ts
-await client.checkout.applyCoupon('FREESHIP');
+const checkout = (await client.checkout.applyCoupon('FREESHIP')).toObject();
 
-const state = (await client.checkout.getCheckout()).toObject();
-const needsPayment = state.needs_payment !== false;
+const needsPayment = checkout.payment.needs_payment;
 const gatewayId = needsPayment ? 'stripe' : 'bacs';
 ```
 
@@ -57,7 +85,14 @@ for (const coupon of summary.coupons) {
 // summary.totals — order totals
 console.log('Total:', summary.totals.total);
 console.log('Discount:', summary.totals.discount_total);
+
+// summary.lines — the receipt's lines, in order, ready to print
+for (const line of summary.lines) {
+  console.log(line.label, line.amount, line.detail ?? '');
+}
 ```
+
+Amounts are in minor units (`'2480'` for $24.80), as the checkout gives them.
 
 To include a structural placeholder in the form definition, pass `includeSummary: true` to `createForm()`. The section has no form fields — populate it by calling `getOrderSummary()` separately:
 
@@ -66,7 +101,7 @@ const form = client.checkout.createForm({ includeSummary: true });
 // form.sections includes { id: 'order-summary', fields: [], className: theme.orderSummaryClassName }
 
 const summary = await client.checkout.getOrderSummary();
-// render summary.items / summary.coupons / summary.totals into the section
+// render summary.items / summary.coupons / summary.lines into the section
 ```
 
 ---
@@ -86,12 +121,11 @@ const client = new CoCart('https://your-store.com').use(createCheckout({
   ],
 }));
 
-// Apply a coupon code entered by the customer
-await client.checkout.applyCoupon(couponCode);
+// Apply a coupon code entered by the customer: the checkout comes back with the new totals
+const checkout = (await client.checkout.applyCoupon(couponCode)).toObject();
 
-// Re-check state — coupon may have zeroed the total
-const state = (await client.checkout.getCheckout()).toObject();
-const needsPayment = state.needs_payment !== false;
+// The coupon may have zeroed the total
+const needsPayment = checkout.payment.needs_payment;
 const gatewayId = needsPayment ? 'stripe' : 'bacs';
 
 // Fetch a typed summary to render to the customer
@@ -101,7 +135,7 @@ const summary = await client.checkout.getOrderSummary();
 const form = client.checkout.createForm({ gatewayId, needsPayment, includeSummary: true });
 
 // On submit
-const { processResponse } = await client.checkout.submit({
+const { result } = await client.checkout.submit({
   gatewayId,
   zeroTotal: !needsPayment,
   update: {
@@ -109,8 +143,11 @@ const { processResponse } = await client.checkout.submit({
   },
 });
 
-const result = processResponse.toObject();
-if (result.payment_result?.redirect_url) {
-  window.location.href = result.payment_result.redirect_url;
+if (result.isFailed) {
+  showError(result.message);
+} else if (result.redirectUrl) {
+  window.location.href = result.redirectUrl;
 }
 ```
+
+If the total changed between the review and the submit (a coupon expired, a price changed), `submit()` throws `409 cocart_checkout_total_mismatch` before taking payment: show the new total and let the customer submit again. See [Checkout Flow → When the total changed](checkout-flow.md#when-the-total-changed).

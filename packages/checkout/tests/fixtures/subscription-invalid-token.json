@@ -1,0 +1,43 @@
+{
+  "name": "Errors other than a declined card are thrown with their code",
+  "source": "CoCart Plus 2.0 checkout spec",
+  "call": {
+    "target": "account",
+    "method": "updateSubscriptionPaymentMethod",
+    "args": [
+      512,
+      {
+        "payment_method": "stripe",
+        "token_id": 99
+      }
+    ]
+  },
+  "exchanges": [
+    {
+      "request": {
+        "method": "POST",
+        "path": "cocart/v2/my-account/subscriptions/512/payment-method",
+        "query": {},
+        "body": {
+          "payment_method": "stripe",
+          "token_id": 99
+        }
+      },
+      "response": {
+        "status": 400,
+        "body": {
+          "code": "cocart_invalid_payment_method",
+          "message": "Invalid payment method.",
+          "data": {
+            "status": 400
+          }
+        }
+      }
+    }
+  ],
+  "expect": {
+    "error": {
+      "code": "cocart_invalid_payment_method"
+    }
+  }
+}

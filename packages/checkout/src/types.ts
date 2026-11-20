@@ -1,4 +1,4 @@
-import type { CoCart, CoCartExtension, Response } from '@cocartheadless/sdk';
+import type { CheckoutResult, CoCart, CoCartExtension, CoCartPlusCheckoutSchemas, PaymentDataInput, Response } from '@cocartheadless/sdk';
 
 export type CheckoutFieldType =
   | 'text'
@@ -33,10 +33,15 @@ export interface CheckoutUpdateInput {
   payment_method?: string;
   shipping_method?: string;
   currency?: string;
+  /** Apply (or, with `coupon_action: 'remove'`, remove) a coupon as part of the update. */
   coupon_code?: string;
   coupon_action?: 'apply' | 'remove';
   customer_note?: string;
   create_account?: boolean;
+  /** Amounts formatted for display instead of minor units. */
+  formatted?: boolean;
+  /** `false` leaves each item's `featured_image` empty. */
+  thumb?: boolean;
   [key: string]: unknown;
 }
 
@@ -57,115 +62,128 @@ export interface CheckoutProcessInput extends CheckoutUpdateInput {
   customer_password?: string;
 }
 
-export interface PaymentToken {
-  id: string;
-  token: string;
-  type: string;
-  gateway_id: string;
-  is_default: boolean;
-  expires?: string;
-  [key: string]: unknown;
-}
-
-export interface CheckoutPaymentMethod {
-  id?: string;
-  title?: string;
-  description?: string;
-  supports?: string[];
-  has_fields?: boolean;
-  order_button_text?: string;
-  method_title?: string;
-  method_description?: string;
-  config?: {
-    test_mode?: boolean;
-    is_connected?: boolean;
-    supports_tokenization?: boolean;
-    supports_refunds?: boolean;
-    supports_subscriptions?: boolean;
-    requires_billing_address?: boolean;
-    [key: string]: unknown;
-  };
-  saved_tokens?: PaymentToken[];
-  supports_save_payment?: boolean;
-  [key: string]: unknown;
-}
-
-export interface CheckoutPaymentMethodsResponse {
-  [gatewayId: string]: CheckoutPaymentMethod;
-}
-
-export interface CheckoutShippingRate {
-  key: string;
-  method_id: string;
-  instance_id: number;
-  label: string;
-  cost: string;
-  tax: string;
-  [key: string]: unknown;
-}
-
-export interface CheckoutShippingPackage {
-  package_name: string;
-  rates: Record<string, CheckoutShippingRate>;
-  chosen_method: string;
-  [key: string]: unknown;
-}
-
-export interface ShippingMethodOption {
-  id: string;
-  label: string;
-  cost: string;
-  method_id: string;
-  instance_id: number;
-  [key: string]: unknown;
-}
-
-/** Response shape of `GET`/`PUT`/`PATCH /checkout` — the current checkout data, no order created yet. */
-export interface CheckoutState {
-  cart_hash?: string;
-  cart_key?: string;
-  currency?: Record<string, unknown>;
-  customer?: {
-    customer_id?: number;
-    billing_address?: CheckoutAddressInput;
-    shipping_address?: CheckoutAddressInput;
-    [key: string]: unknown;
-  };
-  items?: Record<string, unknown>;
-  coupons?: unknown[];
-  needs_payment?: boolean;
-  needs_shipping?: boolean;
-  shipping_methods?: Record<string, ShippingMethodOption>;
-  payment_method?: string;
-  fees?: unknown[];
-  cart_totals?: Record<string, unknown>;
-  message?: string;
-  [key: string]: unknown;
+/**
+ * `placeOrder()` input: what `POST /checkout` takes, with `payment_data` as a map of the keys the
+ * WooCommerce gateway reads (or already as `{key, value}` pairs). A free order needs neither
+ * `payment_method` nor `payment_data`.
+ */
+export interface PlaceOrderInput extends CheckoutUpdateInput {
+  billing_address?: CheckoutAddressInput;
+  payment_data?: PaymentDataInput;
+  customer_password?: string;
+  /**
+   * An ID for this checkout (16 to 64 letters, digits, `-` or `_`), to ask `getCheckoutStatus()`
+   * about it. `placeOrder()` makes a random one when you leave it out, and refuses one that
+   * doesn't fit (`checkout_invalid_checkout_id`).
+   */
+  checkout_id?: string;
+  /** Only these keys in the order's `meta`. */
+  meta_keys?: string[];
 }
 
 /**
- * Known `action_type` values for `PaymentResult.action_type`. Not exhaustive — any gateway
- * without a dedicated compat integration falls back to `gateway_redirect_required`, and a
- * store could add its own via the `cocart_payment_result` filter server-side. Kept as a loose
- * union (`| (string & {})`) so unknown values still type-check without losing autocomplete for
- * the known ones.
+ * How a checkout ended, from `getCheckoutStatus()` (`GET /checkout/status`). The order fields are
+ * `null` unless the checkout placed an order.
+ */
+export interface CheckoutStatus {
+  checkoutId: string;
+  /**
+   * `order_placed`: show the order. `payment_required`: the order was placed but isn't paid; pay it
+   * with `payForOrder()`. `in_progress`: the checkout is still running; ask again in a few seconds.
+   * `not_placed`: nothing went through; place the order again (it reuses the draft order).
+   */
+  code: 'order_placed' | 'payment_required' | 'in_progress' | 'not_placed' | (string & {});
+  /** A message for the customer. */
+  message: string;
+  orderId: number | null;
+  orderKey: string | null;
+  orderNumber: string | null;
+  /** The order's status code, e.g. `processing` or `pending`. */
+  orderStatus: string | null;
+}
+
+/** A logged-in customer's saved payment method, from `getSavedPaymentMethods()`. */
+export interface SavedPaymentMethod {
+  /** Pass as `wc-{gatewayId}-payment-token` in `payment_data`, or as `token_id` to change a subscription's card. */
+  id: number;
+  gatewayId: string;
+  /** As the customer sees it, e.g. `Visa ending in 4242`. */
+  label: string;
+  type: string;
+  /** `MM/YYYY`, or `null` when it has no expiry. */
+  expires: string | null;
+  isDefault: boolean;
+  /** The gateway can charge subscription renewals with it. */
+  supportsSubscriptions: boolean;
+}
+
+/** All component schemas of the CoCart Plus v2 checkout spec. */
+type Schemas = CoCartPlusCheckoutSchemas;
+
+/** `GET /checkout/payment-methods`: `{ payment_methods: [...] }`, in the order the store lists them. */
+export type CheckoutPaymentMethodsResponse = Schemas['PaymentMethods'];
+
+/** One payment method: `id`, `title`, `description`, `supports`, `saved_tokens`… */
+export type CheckoutPaymentMethod = CheckoutPaymentMethodsResponse['payment_methods'][number];
+
+/** A saved payment method on `CheckoutPaymentMethod.saved_tokens`: `id`, `label`, `type`, `is_default`, `expires`. */
+export type PaymentToken = CheckoutPaymentMethod['saved_tokens'][number];
+
+/** `GET`, `PUT` and `PATCH /checkout`: the checkout as it stands, like a receipt. No order yet. */
+export type CheckoutState = Schemas['Checkout'];
+
+/** One shipping package of the checkout (`delivery.packages`), with its rates and the one chosen. */
+export type CheckoutShippingPackage = CheckoutState['delivery']['packages'][number];
+
+/** One shipping rate of a package. Send its `id` as `shipping_method`. */
+export type CheckoutShippingRate = CheckoutShippingPackage['rates'][number];
+
+/** @deprecated Use `CheckoutShippingRate`. */
+export type ShippingMethodOption = CheckoutShippingRate;
+
+/**
+ * Known `action.type` values on a payment's `result`. Not exhaustive: any gateway without a
+ * dedicated integration falls back to `gateway_redirect_required`, and a store can add its own.
+ * Kept as a loose union (`| (string & {})`) so unknown values still type-check.
  */
 export type CheckoutActionType =
   | 'stripe_confirm_payment'
+  | 'stripe_wallet_payment'
+  | 'stripe_voucher_payment'
+  | 'stripe_blik_confirmation_pending'
   | 'wcpay_confirm_payment'
   | 'wcpay_multibanco_voucher'
   | 'paypal_approve'
   | 'paypal_confirm_3ds'
+  | 'mercadopago_confirm_3ds'
+  | 'mercadopago_pix_payment'
+  | 'mercadopago_ticket_payment'
+  | 'mollie_bank_transfer_instructions'
+  | 'elavon_checkout_js_payment'
+  | 'razorpay_checkout_subscription'
   | 'gateway_redirect_required'
   | (string & {});
 
-/** `action_data` for `stripe_confirm_payment` / `wcpay_confirm_payment` — confirm client-side with the gateway's Stripe.js instance, then retry. */
+/** `action.data` for `stripe_confirm_payment` / `wcpay_confirm_payment` (`action_required`): confirm with the gateway's Stripe.js, then place the order again. */
 export interface ConfirmPaymentActionData {
   client_secret: string;
   intent_type: 'payment_intent' | 'setup_intent';
 }
 
-/** `action_data` for `wcpay_multibanco_voucher`. Appears alongside `payment_status: 'on_hold'`, not `requires_action` — the order is already placed; there's nothing to retry, just details to show the customer. */
+/**
+ * `action.data` for `stripe_wallet_payment` (Cash App Pay, WeChat Pay) and `stripe_voucher_payment`
+ * (Boleto, OXXO, Multibanco). Comes with `order_placed`: the order is placed but not paid. The
+ * customer pays in the page with the Stripe.js method for `payment_method_type`
+ * (`createStripeGateway`'s `confirmAction` does it in `submit()`), and Stripe's webhook marks the
+ * order paid. There's nothing to retry.
+ */
+export interface StripeAsyncPaymentActionData {
+  /** `cashapp`, `wechat_pay`, `boleto`, `oxxo` or `multibanco`. */
+  payment_method_type: string;
+  client_secret: string;
+}
+
+/** `action.data` for `wcpay_multibanco_voucher`. Comes with `order_placed`: details to show the customer, nothing to retry. */
 export interface MultibancoVoucherActionData {
   entity: string;
   reference: string;
@@ -174,11 +192,10 @@ export interface MultibancoVoucherActionData {
 }
 
 /**
- * `action_data` for `paypal_approve`, `paypal_confirm_3ds`, and the generic `gateway_redirect_required`
- * fallback — open `redirect` in the browser. Stripe uses `gateway_redirect_required` when it sends the
- * customer to a Stripe-hosted 3D Secure page. When the customer comes back (to the store's
- * order-received URL, which CoCart rewrites to the Front-end site URL), call `confirmReturn()` so the
- * gateway can finish the order — don't assume the payment is done as soon as the redirect returns.
+ * `action.data` for `paypal_approve`, `paypal_confirm_3ds`, and the generic `gateway_redirect_required`
+ * fallback (`action_required`): send the customer to `redirect`. When they come back (to the store's
+ * order-received URL, which CoCart rewrites to the frontend), call `confirmReturn()` so the gateway
+ * can finish the order. Don't assume the payment is done as soon as the redirect returns.
  */
 export interface RedirectActionData {
   redirect: string;
@@ -202,192 +219,59 @@ export type PaymentErrorCode =
   | 'payment_failed'
   | (string & {});
 
-/** Why a payment failed: `payment_result.error` when `payment_status` is `failed` (CoCart Plus 2.0). */
+/**
+ * What a payment did: `result` on the order that `POST /checkout`, `POST /order-received/{id}/pay`
+ * and `POST /order-received/{id}/confirm` return. `code` is `order_placed`, `action_required`
+ * (see `action`), `payment_pending` or `payment_failed` (see `error`). Read it with `CheckoutResult`.
+ */
+export type PaymentResult = Schemas['OrderPayment']['result'];
+
+/** Why a payment failed: `result.error` when `result.code` is `payment_failed`. */
 export interface PaymentError {
   /** Stable code to branch on. Stripe and WooPayments report their reasons; other gateways give `payment_failed`. */
   code: PaymentErrorCode;
-  /** The gateway's own error or decline code, lowercased (e.g. Stripe's `generic_decline`), or `''`. */
-  gateway_code?: string;
-  /** The gateway's own message, for logging. Show `payment_result.message` to the customer. */
-  gateway_message?: string;
+  /** The gateway's own error or decline code (e.g. Stripe's `generic_decline`), or `null`. */
+  gateway_code: string | null;
+  /** The gateway's own message, for logging, or `null`. Show `result.message` to the customer. */
+  gateway_message: string | null;
 }
 
-/**
- * The outcome of payment processing on `POST /checkout` (and `POST /order-received/{id}/pay`).
- * Which fields are present depends on `payment_status`:
- * - `success` / `no_payment_required` → `redirect_url`
- * - `failed` → `message`
- * - `on_hold` → the payment was authorized/captured but needs manual or fraud/risk review —
- *   not an error, and not something the *customer* needs to act on. `redirect_url` is present
- *   the same as `success`. Occasionally also carries `action_type`/`action_data` (e.g.
- *   `wcpay_multibanco_voucher`) when there's extra information to show the customer even
- *   though nothing needs to be retried on this endpoint.
- * - `requires_action` → `action_type` and `action_data` instead of `redirect_url`/`message`. The
- *   order and cart session are deliberately left intact — the gateway needs the customer to do
- *   something else (e.g. Stripe 3D Secure/SCA, an off-site approval redirect) before the payment
- *   can complete. Resolve the action client-side (see `CheckoutGatewayAdapter.confirmAction`),
- *   then call `processCheckout()`/`submit()` again with the same cart/session to land on the
- *   same order rather than creating a duplicate. If a gateway reports success with genuinely
- *   nothing to act on, this is reported as a plain `failed` instead — never an unresolvable
- *   `requires_action`.
- */
-export interface PaymentResult {
-  /** `pending` only comes from `POST /order-received/{id}/confirm`: the payment isn't confirmed yet (see `ConfirmOrderPaymentResponse`). */
-  payment_status?: 'success' | 'no_payment_required' | 'failed' | 'requires_action' | 'on_hold' | 'pending' | (string & {});
-  /** Present when `payment_status` is `success`, `no_payment_required`, or `on_hold`. */
-  redirect_url?: string;
-  /** Present when `payment_status` is `failed`. */
-  message?: string;
-  /** Present when `payment_status` is `failed` (CoCart Plus 2.0): why, in a form to branch on. */
-  error?: PaymentError;
-  /** Present when `payment_status` is `requires_action`, and occasionally `on_hold`. See `CheckoutActionType`. */
-  action_type?: CheckoutActionType;
-  /** Present alongside `action_type`. Shape depends on `action_type` — see `ConfirmPaymentActionData`/`MultibancoVoucherActionData`/`RedirectActionData`. */
-  action_data?: Record<string, unknown>;
-  [key: string]: unknown;
-}
-
-/** Response shape of `POST /checkout` — an order has been created (and payment attempted). */
-export interface CheckoutProcessResponse {
-  order_id?: number;
-  status?: string;
-  order_key?: string;
-  order_number?: string;
-  payment_result?: PaymentResult;
-  customer_id?: number;
-  billing_address?: CheckoutAddressInput;
-  shipping_address?: CheckoutAddressInput;
-  [key: string]: unknown;
-}
+/** `POST /checkout`: the order it placed, with what the payment did in `result`. Read it with `CheckoutResult`. */
+export type CheckoutProcessResponse = Schemas['OrderPayment'];
 
 // --- Checkout config (GET /checkout/config) ---
 
-export interface CheckoutFieldDefinition {
-  type?: string;
-  label?: string;
-  placeholder?: string;
-  required?: boolean;
-  class?: string[];
-  autocomplete?: string;
-  priority?: number;
-  validate?: string[];
-  custom_attributes?: Record<string, unknown>;
-  options?: Record<string, string>;
-  default?: string;
-  country_field?: string;
-  maxlength?: number;
-  input_class?: string[];
-  label_class?: string[];
-  [key: string]: unknown;
-}
-
-export interface CheckoutCountriesConfig {
-  allowed_countries?: Record<string, string>;
-  shipping_countries?: Record<string, string>;
-  states?: Record<string, Record<string, string>>;
-  default_country?: string;
-  eu_countries?: string[];
-}
-
-export interface CheckoutShippingConfig {
-  enabled?: boolean;
-  calc_shipping?: boolean;
-  ship_to_countries?: string;
-  ship_to_billing_address?: boolean;
-  shipping_cost_requires_address?: boolean;
-}
-
-export interface CheckoutAccountConfig {
-  allow_registration?: boolean;
-  registration_generate_username?: boolean;
-  registration_generate_password?: boolean;
-  guest_checkout_enabled?: boolean;
-  must_create_account?: boolean;
-}
-
-export interface CheckoutStoreConfig {
-  currency?: string;
-  currency_symbol?: string;
-  currency_position?: string;
-  price_decimal_sep?: string;
-  price_thousand_sep?: string;
-  price_decimals?: number;
-  tax_enabled?: boolean;
-  tax_display_cart?: string;
-  prices_include_tax?: boolean;
-  coupons_enabled?: boolean;
-  terms_page_id?: number | null;
-  privacy_page_id?: number | null;
-  store_address?: {
-    address_1?: string;
-    address_2?: string;
-    city?: string;
-    postcode?: string;
-    country?: string;
-    state?: string;
-  };
-  /** Only present when a terms page is configured. */
-  terms_text?: string;
-}
-
-export interface CheckoutValidationConfig {
-  postcode?: { patterns?: Record<string, string> };
-  phone?: { enabled?: boolean };
-  email?: { enabled?: boolean };
-}
-
-/** Response of `GET /checkout/config`. Public — does not require a cart session. */
-export interface CheckoutConfig {
-  fields?: {
-    billing?: Record<string, CheckoutFieldDefinition>;
-    shipping?: Record<string, CheckoutFieldDefinition>;
-    account?: Record<string, CheckoutFieldDefinition>;
-    order?: Record<string, CheckoutFieldDefinition>;
-  };
-  /** Per-country locale overrides for address fields (label, required, etc.). */
-  locale_settings?: Record<string, unknown>;
-  countries?: CheckoutCountriesConfig;
-  shipping?: CheckoutShippingConfig;
-  account?: CheckoutAccountConfig;
-  store?: CheckoutStoreConfig;
-  validation?: CheckoutValidationConfig;
-}
+/**
+ * `GET /checkout/config`. Public: doesn't need a cart session. Includes `order_received_url`
+ * (where gateways send the customer back after an off-site step: your page for `confirmReturn()`),
+ * `address_autocomplete` (`enabled` and the `providers`: without one, address search is `404`), and
+ * in `store` the terms text with its links (`terms_text`, `terms_links`, `terms_url`, `privacy_url`).
+ */
+export type CheckoutConfig = Schemas['CheckoutConfig'];
+/** One field definition in `CheckoutConfig.fields`. */
+export type CheckoutFieldDefinition = CheckoutConfig['fields']['billing'][number];
+export type CheckoutCountriesConfig = CheckoutConfig['countries'];
+export type CheckoutShippingConfig = CheckoutConfig['shipping'];
+export type CheckoutAccountConfig = CheckoutConfig['account'];
+export type CheckoutStoreConfig = CheckoutConfig['store'];
+export type CheckoutValidationConfig = CheckoutConfig['validation'];
 
 // --- Address autocomplete (GET /address/search, GET /address/details) ---
 
-export interface AddressProvider {
-  id?: string;
-  name?: string;
-}
-
-export interface AddressMatchedSubstring {
-  offset: number;
-  length: number;
-}
-
-export interface AddressSuggestion {
-  /** Opaque suggestion ID, pass to `getAddressDetails()` to resolve the full address. */
-  id: string;
-  label: string;
-  matched_substrings?: AddressMatchedSubstring[];
-}
+/** `GET /address/search`. */
+export type AddressSearchResult = Schemas['AddressSearch'];
+export type AddressSuggestion = AddressSearchResult['suggestions'][number];
+export type AddressMatchedSubstring = AddressSuggestion['matched_substrings'][number];
+export type AddressProvider = AddressSearchResult['provider'];
 
 export interface AddressSearchParams {
-  /** Must be at least 3 characters long. */
+  /** At least 3 characters. */
   query: string;
   /** Two-letter country code to scope the search to. */
   country?: string;
   type?: 'billing' | 'shipping';
-  /** Specific address provider ID to use. Defaults to the first available provider. */
+  /** Address provider ID (`CheckoutConfig.address_autocomplete.providers`). Defaults to the first. */
   provider?: string;
-}
-
-export interface AddressSearchResult {
-  suggestions: AddressSuggestion[];
-  count: number;
-  provider: AddressProvider;
-  search_country: string;
-  query: string;
 }
 
 export interface AddressDetailsParams {
@@ -397,132 +281,51 @@ export interface AddressDetailsParams {
   provider: string;
 }
 
-export interface AddressDetails {
-  address: {
-    address_1?: string;
-    address_2?: string;
-    city?: string;
-    state?: string;
-    postcode?: string;
-    country?: string;
-  };
-  provider: AddressProvider;
-}
+/** `GET /address/details`. */
+export type AddressDetails = Schemas['AddressDetails'];
 
 // --- Order received / pay for order (GET /order-received/{id}, POST /order-received/{id}/pay) ---
 
-export interface OrderAddress {
-  first_name?: string;
-  last_name?: string;
-  company?: string;
-  address_1?: string;
-  address_2?: string;
-  city?: string;
-  state?: string;
-  postcode?: string;
-  country?: string;
-  email?: string;
-  phone?: string;
-}
-
-export interface OrderLineItemMeta {
-  id?: number;
-  key?: string;
-  display_key?: string;
-  display_value?: string;
-}
-
-export interface OrderLineItem {
-  item_id: number;
-  product_id: number;
-  /** 0 when the item is not a variation. */
-  variation_id: number;
-  product_name: string;
-  product_image?: string;
-  quantity: number;
-  subtotal: string;
-  total: string;
-  meta_data?: OrderLineItemMeta[];
-}
-
-export interface OrderTotalLine {
-  key: string;
-  label: string;
-  value: string;
-}
-
-export interface AvailablePaymentMethod {
-  id: string;
-  title: string;
-  description?: string;
-  has_fields?: boolean;
-}
-
-/** Response of `GET /order-received/{order_id}` — order confirmation data for the thank-you page. */
-export interface OrderReceived {
-  order_id: number;
-  order_number: string;
-  order_key: string;
-  status: string;
-  status_name: string;
-  date_created: string;
-  date_paid?: string | null;
-  currency: string;
-  total: string;
-  subtotal: string;
-  tax_total: string;
-  shipping_total: string;
-  discount_total: string;
-  payment_method: string;
-  payment_method_title: string;
-  customer_id: number;
-  customer_note?: string;
-  billing_address: OrderAddress;
-  shipping_address: OrderAddress;
-  items: OrderLineItem[];
-  totals: OrderTotalLine[];
-  needs_payment: boolean;
-  needs_shipping: boolean;
-  has_downloads: boolean;
-  /** Only present when `has_downloads` is true. */
-  download_url?: string | null;
-  /** Only present when `needs_payment` is true. */
-  available_payment_methods?: AvailablePaymentMethod[];
-}
+/**
+ * `GET /order-received/{order_id}`: the order, as a thank-you page shows it (and as my account
+ * gives it). `actions` has `pay` while it needs payment, and `downloads` when it has files.
+ */
+export type OrderReceived = Schemas['Order'];
+/** The billing address on an order (`customer.billing`), with `formatted` for display. */
+export type OrderAddress = NonNullable<OrderReceived['customer']['billing']>;
+export type OrderLineItem = OrderReceived['items'][number];
+export type OrderLineItemMeta = OrderLineItem['meta_data'][number];
+/** One line of the order's totals, for display: `key`, `label`, `amount`, `detail`. */
+export type OrderTotalLine = OrderReceived['total_lines'][number];
+/** A payment method the order can be paid with while it needs payment (`payment.available_methods`). */
+export type AvailablePaymentMethod = OrderReceived['payment']['available_methods'][number];
 
 export interface PayForOrderInput {
   payment_method: string;
-  payment_data?: PaymentDataItem[];
+  /** A map of the keys the gateway reads, or `{key, value}` pairs. */
+  payment_data?: PaymentDataInput;
 }
 
-/**
- * Response of `POST /order-received/{order_id}/pay`.
- * Unlike `POST /checkout`, a payment failure here raises a `400 cocart_payment_failed`
- * error rather than being returned inline via `order_status`.
- */
-export interface PayForOrderResponse {
-  success: boolean;
-  order_id: number;
-  order_status: string;
-  redirect_url?: string;
-}
+/** `POST /order-received/{order_id}/pay`: the order, with what the payment did in `result`. Read it with `CheckoutResult`. */
+export type PayForOrderResponse = Schemas['OrderPayment'];
 
 /**
- * Response of `POST /order-received/{order_id}/confirm` — sent after the customer returns from an
- * off-site payment step (e.g. a Stripe-hosted 3D Secure page). `payment_result.payment_status` is:
- * - `success` / `on_hold` → paid (or held for review). The cart session that placed the order is cleared.
- * - `failed` → declined or cancelled at the provider; `message` says why. Retry with `payForOrder()`.
- * - `pending` → not confirmed yet (the gateway's webhook may still be settling it, or the gateway has
- *   no confirm integration). Poll `getOrderReceived()` until `status` changes.
- *
- * Safe to call more than once: an already-paid order is reported as `success`.
+ * `POST /order-received/{order_id}/confirm`: the order (or, for a subscription whose payment method
+ * was being changed, the subscription, as `object` says), with what the confirmation found in
+ * `result`. `payment_pending` means it isn't confirmed yet. Safe to call more than once.
  */
-export interface ConfirmOrderPaymentResponse {
-  order_id: number;
-  status: string;
-  order_key: string;
-  order_number: string;
-  payment_result: PaymentResult;
+export type ConfirmOrderPaymentResponse = Schemas['PaymentConfirmation'];
+
+/** Options for `getCheckout()` and `getOrderReceived()`. */
+export interface CheckoutParams {
+  /** Show prices in this currency (multi-currency stores). `getCheckout()` only. */
+  currency?: string;
+  /** Amounts formatted for display (`"$18.00"`) instead of minor units (`"1800"`). */
+  formatted?: boolean;
+  /** `false` leaves each item's `featured_image` empty. `getCheckout()` only. */
+  thumb?: boolean;
+  /** Only these keys in the order's `meta`. `getOrderReceived()` only. */
+  meta_keys?: string[];
 }
 
 /** Options for `confirmReturn()`, overriding what it reads from the return URL. */
@@ -560,6 +363,8 @@ export interface CheckoutOrderSummary {
   items: CheckoutSummaryItem[];
   coupons: CheckoutSummaryCoupon[];
   totals: CheckoutSummaryTotals;
+  /** The totals as lines to display, in order: `key`, `label`, `amount`, `detail`. */
+  lines: CheckoutState['total_lines'];
 }
 
 export interface CheckoutFormFieldOption {
@@ -690,15 +495,17 @@ export interface CheckoutGatewayActionContext {
   client: CoCart;
   checkout: CheckoutSDK;
   gatewayId: string;
-  /** From `payment_result.action_type` on the `POST /checkout` response. See `CheckoutActionType`. */
+  /** `result.action.type` on the `POST /checkout` response (`CheckoutResult.actionType`). See `CheckoutActionType`. */
   actionType: CheckoutActionType;
-  /** From `payment_result.action_data` — shape is gateway-specific, e.g. `{ client_secret, intent_type }` for Stripe. */
+  /** `result.action.data` — shape is gateway-specific, e.g. `{ client_secret, intent_type }` for Stripe. */
   actionData: Record<string, unknown>;
   checkoutState?: CheckoutState;
   /** Success URL with `{CHECKOUT_ID}` substituted from the current checkout state, if available. */
   successUrl?: string;
   /** Return URL for failed or cancelled payments. */
   returnUrl?: string;
+  /** `result.redirect_url`: the order-received URL, when the order is already placed (`order_placed`). */
+  redirectUrl?: string;
 }
 
 export interface CheckoutGatewayAdapter {
@@ -717,12 +524,16 @@ export interface CheckoutGatewayAdapter {
   /** Gathers `payment_data` before the first `POST /checkout` call, if this gateway needs any (e.g. a captured PayPal order ID). */
   tokenize?: (context: CheckoutGatewayTokenizeContext) => Promise<Record<string, unknown>>;
   /**
-   * Called by `submit()` when `POST /checkout` returns `payment_result.payment_status: 'requires_action'`
-   * (e.g. 3D Secure/SCA). Should perform whatever client-side confirmation the gateway needs — for Stripe,
+   * Called by `submit()` when `POST /checkout` returns `result.code: 'action_required'` with
+   * something to do in the page (e.g. 3D Secure/SCA). Should perform whatever client-side confirmation the gateway needs — for Stripe,
    * `stripe.confirmCardPayment()`/`confirmCardSetup()` using `actionData.client_secret`. `submit()` then calls `processCheckout()`
    * again automatically; return additional `payment_data` to merge into that retry, or nothing if it
-   * needs none. If a gateway has no `confirmAction`, `submit()` returns the `requires_action` response
+   * needs none. If a gateway has no `confirmAction`, `submit()` returns the `action_required` result
    * as-is for the caller to handle.
+   *
+   * Also called for an `order_placed` result whose `action.data` has a `client_secret` (Stripe's Cash App
+   * Pay, WeChat Pay and vouchers: `CheckoutResult.isAwaitingPayment`): the order is placed, the customer pays in the page, and the
+   * gateway's webhook marks the order paid. `submit()` doesn't retry then, and ignores anything returned.
    */
   confirmAction?: (context: CheckoutGatewayActionContext) => Promise<Record<string, unknown> | void>;
 }
@@ -780,14 +591,16 @@ export interface CheckoutSubmitInput {
 export interface CheckoutSubmitResult {
   updateResponse?: Response;
   /**
-   * Final `POST /checkout` response. If the gateway's `confirmAction` resolved a
-   * `requires_action` result, this is the response from the automatic retry, not
-   * the original `requires_action` response.
+   * Final `POST /checkout` response. If the gateway's `confirmAction` resolved an
+   * `action_required` result, this is the response from the automatic retry, not
+   * the original `action_required` response.
    */
   processResponse: Response<CheckoutProcessResponse>;
+  /** What the final `POST /checkout` did, read from `processResponse`: `isComplete`, `isFailed`, `orderId`… */
+  result: CheckoutResult;
   paymentData?: Record<string, unknown>;
   /**
-   * Set when the payment needs an off-site step — a `requires_action` result whose `action_data`
+   * Set when the payment needs an off-site step: an `action_required` result whose `action.data`
    * carries a `redirect` URL rather than something to confirm in-page (e.g. `gateway_redirect_required`
    * for a Stripe-hosted 3D Secure page). Send the customer here; `submit()` doesn't retry in this case.
    * When they return, call `confirmReturn()` on the page they land on.
@@ -801,25 +614,28 @@ export interface CheckoutSDK {
   hasGateway(id: string): boolean;
   getGateway(id: string): CheckoutGatewayAdapter;
   listGateways(remoteMethods?: CheckoutPaymentMethodsResponse): CheckoutGatewayPresentation[];
-  getCheckout(params?: Record<string, string>): Promise<Response<CheckoutState>>;
+  getCheckout(params?: CheckoutParams): Promise<Response<CheckoutState>>;
   updateCheckout(data: CheckoutUpdateInput): Promise<Response<CheckoutState>>;
   processCheckout(data: CheckoutProcessInput): Promise<Response<CheckoutProcessResponse>>;
+  placeOrder(input: PlaceOrderInput): Promise<CheckoutResult>;
+  getCheckoutStatus(checkoutId: string): Promise<CheckoutStatus>;
   getPaymentMethods(): Promise<Response<CheckoutPaymentMethodsResponse>>;
+  getSavedPaymentMethods(gatewayId?: string): Promise<SavedPaymentMethod[]>;
   createForm(options?: { gatewayId?: string; theme?: CheckoutTheme; needsPayment?: boolean; includeSummary?: boolean; shippingMethods?: CheckoutShippingRate[] }): CheckoutFormDefinition;
   listExpressGateways(): CheckoutGatewayPresentation[];
   createExpressCheckoutBar(options?: { layout?: 'scroll' | 'stack'; theme?: CheckoutTheme }): CheckoutExpressBar;
   submit(input: CheckoutSubmitInput): Promise<CheckoutSubmitResult>;
-  applyCoupon(code: string): Promise<Response>;
-  removeCoupon(code: string): Promise<Response>;
+  applyCoupon(code: string): Promise<Response<CheckoutState>>;
+  removeCoupon(code: string): Promise<Response<CheckoutState>>;
   getOrderSummary(): Promise<CheckoutOrderSummary>;
   getShippingMethods(): Promise<CheckoutShippingPackage[]>;
   getCheckoutConfig(): Promise<Response<CheckoutConfig>>;
   searchAddresses(params: AddressSearchParams): Promise<Response<AddressSearchResult>>;
   getAddressDetails(params: AddressDetailsParams): Promise<Response<AddressDetails>>;
-  getOrderReceived(orderId: number, orderKey: string): Promise<Response<OrderReceived>>;
-  payForOrder(orderId: number, orderKey: string, data: PayForOrderInput): Promise<Response<PayForOrderResponse>>;
+  getOrderReceived(orderId: number, orderKey: string, params?: CheckoutParams): Promise<Response<OrderReceived>>;
+  payForOrder(orderId: number, orderKey: string, data: PayForOrderInput): Promise<CheckoutResult>;
   confirmOrderPayment(orderId: number, orderKey: string, returnParams?: Record<string, string>): Promise<Response<ConfirmOrderPaymentResponse>>;
-  confirmReturn(url: string | URL, options?: ConfirmReturnOptions): Promise<Response<ConfirmOrderPaymentResponse>>;
+  confirmReturn(url: string | URL, options?: ConfirmReturnOptions): Promise<CheckoutResult>;
 }
 
 export interface CheckoutOptions extends CheckoutSDKOptions {
@@ -852,16 +668,34 @@ export interface StripeInstance {
    * Confirms a PaymentIntent by client secret alone — no `elements` needed, since the
    * PaymentMethod was already attached to the intent server-side by the initial charge
    * attempt. Used by `createStripeGateway`/`createWooPaymentsGateway`'s pre-wired
-   * `confirmAction` to resolve `requires_action`/`{stripe,wcpay}_confirm_payment` when
-   * `action_data.intent_type === 'payment_intent'`.
+   * `confirmAction` to resolve `action_required`/`{stripe,wcpay}_confirm_payment` when
+   * `action.data.intent_type === 'payment_intent'`.
    */
   confirmCardPayment(
     clientSecret: string,
   ): Promise<{ error?: { message?: string }; paymentIntent?: { id: string; status?: string } }>;
-  /** Same as `confirmCardPayment`, for the `action_data.intent_type === 'setup_intent'` case (order total is 0 — free trial/100%-off coupon). */
+  /** Same as `confirmCardPayment`, for the `action.data.intent_type === 'setup_intent'` case (order total is 0 — free trial/100%-off coupon). */
   confirmCardSetup(
     clientSecret: string,
   ): Promise<{ error?: { message?: string }; setupIntent?: { id: string; status?: string } }>;
+  /**
+   * The Stripe.js methods for an order placed on hold (`order_placed` with an action) that the customer still pays in the page
+   * (`stripe_wallet_payment`, `stripe_voucher_payment`). Real Stripe.js has them all; only the ones
+   * for the payment methods the store offers are needed.
+   */
+  confirmCashappPayment?(clientSecret: string, data?: Record<string, unknown>): Promise<StripeAsyncPaymentResult>;
+  confirmCashappSetup?(clientSecret: string, data?: Record<string, unknown>): Promise<StripeAsyncPaymentResult>;
+  confirmWechatPayPayment?(clientSecret: string, data?: Record<string, unknown>): Promise<StripeAsyncPaymentResult>;
+  confirmBoletoPayment?(clientSecret: string, data?: Record<string, unknown>): Promise<StripeAsyncPaymentResult>;
+  confirmOxxoPayment?(clientSecret: string, data?: Record<string, unknown>): Promise<StripeAsyncPaymentResult>;
+  confirmMultibancoPayment?(clientSecret: string, data?: Record<string, unknown>): Promise<StripeAsyncPaymentResult>;
+}
+
+/** What Stripe.js's Cash App Pay, WeChat Pay and voucher methods resolve with. */
+export interface StripeAsyncPaymentResult {
+  error?: { message?: string };
+  paymentIntent?: { id: string; status?: string; last_payment_error?: { message?: string } | null };
+  setupIntent?: { id: string; status?: string; last_setup_error?: { message?: string } | null };
 }
 
 /** Minimal Stripe Elements interface required by the pre-wired gateway helper. */
@@ -889,8 +723,8 @@ export interface StripeBillingDetails {
  * result as `payment_data: [{ key: 'wc-stripe-payment-method', value: paymentMethod.id }]` —
  * the literal `$_POST` key `WC_Gateway_Stripe::process_payment()` reads; without it the charge
  * fails outright, there is no bootstrap-free path. If the response comes back
- * `requires_action` (3D Secure/SCA), `confirmAction` calls `stripe.confirmCardPayment()` (or
- * `confirmCardSetup()` for a `setup_intent`) with `action_data.client_secret` — no `elements`
+ * `action_required` (3D Secure/SCA), `confirmAction` calls `stripe.confirmCardPayment()` (or
+ * `confirmCardSetup()` for a `setup_intent`) with `action.data.client_secret` — no `elements`
  * needed for this step, the PaymentMethod is already attached to the intent server-side — then
  * `submit()` retries `processCheckout()` automatically, with no `payment_data` needed on retry.
  *

@@ -23,7 +23,7 @@ export type MessageKey =
   | 'jwt.tokenMissing'
   | 'jwt.noRefreshToken'
   // Version
-  | 'version.requiresBasic'
+  | 'version.requiresStarter'
   // Endpoint
   | 'endpoint.pluginRequired'
   // Extension

@@ -7,7 +7,7 @@ import { MemoryStorage } from './storage/memory-storage.js';
 import { LocalStorage } from './storage/local-storage.js';
 import { EncryptedStorage } from './storage/encrypted-storage.js';
 import type { StorageInterface } from './storage/storage.interface.js';
-import type { CoCartOptions, AuthCredentials, CoCartEventMap, CoCartEventListener, CoCartExtension, CoCartExtensionRegistry, BatchRequestItem } from './cocart.types.js';
+import type { CoCartOptions, MainPlugin, AuthCredentials, CoCartEventMap, CoCartEventListener, CoCartExtension, CoCartExtensionRegistry, BatchRequestItem } from './cocart.types.js';
 import { Account } from './endpoints/account.js';
 import { Cart } from './endpoints/cart.js';
 import { Products } from './endpoints/products.js';
@@ -56,7 +56,7 @@ export class CoCart {
   private etagEnabled: boolean = true;
   private etagCache: Map<string, { etag: string; body: string; headers: Headers }> = new Map();
   private inFlightGetRequests: Map<string, Promise<Response>> = new Map();
-  private mainPlugin: 'basic' | 'legacy' = 'basic';
+  private mainPlugin: MainPlugin = 'starter';
   private extensions: Map<string, unknown> = new Map();
   private locale: string | undefined;
 
@@ -284,13 +284,13 @@ export class CoCart {
     return this;
   }
 
-  /** Get the configured CoCart main plugin identifier. */
-  getMainPlugin(): 'basic' | 'legacy' {
+  /** Get the configured CoCart main plugin identifier: 'starter' or 'legacy'. */
+  getMainPlugin(): MainPlugin {
     return this.mainPlugin;
   }
 
-  /** Set the CoCart main plugin identifier ('basic' or 'legacy'). */
-  setMainPlugin(plugin: 'basic' | 'legacy'): this {
+  /** Set the CoCart main plugin identifier: 'starter' or 'legacy'. */
+  setMainPlugin(plugin: MainPlugin): this {
     this.mainPlugin = plugin;
     return this;
   }
@@ -310,7 +310,7 @@ export class CoCart {
    * Guard that throws if a method requires CoCart Starter but the SDK
    * is configured for the legacy plugin.
    */
-  requiresBasic(method: string): void {
+  requiresStarter(method: string): void {
     if (this.mainPlugin === 'legacy') {
       throw new VersionError(method, this.locale);
     }
@@ -424,13 +424,13 @@ export class CoCart {
     const d = data as Record<string, unknown>;
     switch (event) {
       case 'request':
-        console.log(t('debug.request', { method: String(d['method']), url: String(d['url']) }, this.locale));
+        console.log(t('debug.request', { method: String(d['method']), url: redactQuery(String(d['url'])) }, this.locale));
         break;
       case 'response':
-        console.log(t('debug.response', { method: String(d['method']), url: String(d['url']), status: String(d['status']), duration: String(d['duration']) }, this.locale));
+        console.log(t('debug.response', { method: String(d['method']), url: redactQuery(String(d['url'])), status: String(d['status']), duration: String(d['duration']) }, this.locale));
         break;
       case 'error':
-        console.error(t('debug.error', { method: String(d['method']), url: String(d['url']) }, this.locale), d['error']);
+        console.error(t('debug.error', { method: String(d['method']), url: redactQuery(String(d['url'])) }, this.locale), d['error']);
         break;
       case 'retry':
         console.log(t('debug.retry', { attempt: String(d['attempt']), maxRetries: String(d['maxRetries']), delay: String(d['delay']), reason: String(d['reason']) }, this.locale));
@@ -655,7 +655,23 @@ export class CoCart {
     const headers = this.buildHeaders(!options.omitCartKey);
     const body = data ? JSON.stringify(data) : undefined;
 
-    const fetchResponse = await this.fetchWithTimeout(method, url, headers, body);
+    // The same events as the other requests, so debug output and listeners (analytics) see the
+    // CoCart Plus routes too. Never sent again: a raw request can take payment.
+    this.emit('request', { method, url, headers, body });
+    const startTime = Date.now();
+
+    let fetchResponse: globalThis.Response;
+    try {
+      fetchResponse = await this.fetchWithTimeout(method, url, headers, body);
+    } catch (e) {
+      const error = e instanceof CoCartError ? e : new CoCartError(
+        e instanceof Error ? e.message : t('request.networkError', undefined, this.locale),
+        0,
+        'network_error',
+      );
+      this.emit('error', { method, url, error });
+      throw error;
+    }
     const responseBody = await fetchResponse.text();
 
     this.lastResponseValue = new Response(
@@ -666,8 +682,15 @@ export class CoCart {
 
     await this.extractCartKeyFromHeaders(this.lastResponseValue);
 
+    this.emit('response', { method, url, status: fetchResponse.status, duration: Date.now() - startTime, response: this.lastResponseValue });
+
     if (fetchResponse.status >= 400) {
-      this.handleErrorResponse(this.lastResponseValue);
+      try {
+        this.handleErrorResponse(this.lastResponseValue, method, url);
+      } catch (error) {
+        this.emit('error', { method, url, error: error as Error });
+        throw error;
+      }
     }
 
     return this.applyTransformer(this.lastResponseValue);
@@ -740,7 +763,9 @@ export class CoCart {
       try {
         fetchResponse = await this.fetchWithTimeout(method, url, headers, body);
       } catch (e) {
-        if (attempt < this.maxRetries && this.isTransientError(e)) {
+        // Only a GET is sent again: a request that changes something may have run before the
+        // connection dropped, and running it twice could, for example, charge a card twice.
+        if (attempt < this.maxRetries && method === 'GET' && this.isTransientError(e)) {
           attempt++;
           const delay = this.getRetryDelay(attempt);
           this.emit('retry', { method, url, attempt, maxRetries: this.maxRetries, delay, reason: 'transient_error' });
@@ -774,16 +799,17 @@ export class CoCart {
 
       await this.extractCartKeyFromHeaders(this.lastResponseValue);
 
-      // ETag: cache the ETag + body from a fresh (non-304) response
-      if (method === 'GET' && this.etagEnabled && !isNotModified) {
+      // ETag: cache the ETag + body from a fresh (non-304) response, unless the store says the
+      // response mustn't be kept (checkout, orders and the account are `no-store, private`).
+      if (method === 'GET' && this.etagEnabled && !isNotModified && mayStore(fetchResponse.headers.get('Cache-Control'))) {
         const etag = this.lastResponseValue.getETag();
         if (etag) {
           this.etagCache.set(url, { etag, body: responseBody, headers: fetchResponse.headers });
         }
       }
 
-      // Retry on transient HTTP status codes (429, 503)
-      if (attempt < this.maxRetries && this.isRetryableStatus(fetchResponse.status)) {
+      // Retry on transient HTTP status codes (429, and 503 for a GET)
+      if (attempt < this.maxRetries && this.isRetryableStatus(method, fetchResponse.status)) {
         attempt++;
         const delay = this.getRetryDelay(attempt, this.lastResponseValue);
         this.emit('retry', { method, url, attempt, maxRetries: this.maxRetries, delay, reason: `http_${fetchResponse.status}` });
@@ -792,11 +818,11 @@ export class CoCart {
       }
 
       if (fetchResponse.status >= 400) {
-        this.emit('response', { method, url, status: fetchResponse.status, duration });
+        this.emit('response', { method, url, status: fetchResponse.status, duration, response: this.lastResponseValue });
         this.handleErrorResponse(this.lastResponseValue, method, url);
       }
 
-      this.emit('response', { method, url, status: fetchResponse.status, duration });
+      this.emit('response', { method, url, status: fetchResponse.status, duration, response: this.lastResponseValue });
       return this.applyTransformer(this.lastResponseValue);
     }
   }
@@ -914,6 +940,12 @@ export class CoCart {
       throw new AuthenticationError(message, httpCode, code, data);
     }
 
+    // A refused state (409), a rate limit (429) or the server's fault (5xx) is never a validation
+    // error, whatever its code says (e.g. `cocart_order_invalid_status` is a 409).
+    if (httpCode === 409 || httpCode === 429 || httpCode >= 500) {
+      throw new CoCartError(message, httpCode, code, data);
+    }
+
     // Validation errors
     if (httpCode === 400 || (typeof code === 'string' && (code.includes('invalid') || code.includes('missing')))) {
       throw new ValidationError(message, httpCode, code, data);
@@ -930,13 +962,18 @@ export class CoCart {
     return false;
   }
 
-  private isRetryableStatus(status: number): boolean {
-    return status === 429 || status === 503;
+  /**
+   * A 429 is refused before the request runs, so any method can be sent again. A 503 can come
+   * from a proxy after the store has run the request, so only a GET is.
+   */
+  private isRetryableStatus(method: string, status: number): boolean {
+    return status === 429 || (status === 503 && method === 'GET');
   }
 
   private getRetryDelay(attempt: number, response?: Response): number {
     if (response) {
-      const retryAfter = response.getHeader('Retry-After');
+      // CoCart Plus sends `RateLimit-Retry-After`; a proxy may send `Retry-After`.
+      const retryAfter = response.getHeader('RateLimit-Retry-After') ?? response.getHeader('Retry-After');
       if (retryAfter !== null && !isNaN(Number(retryAfter))) {
         return Math.min(Number(retryAfter), 60) * 1000;
       }
@@ -962,6 +999,25 @@ export class CoCart {
   private sleep(ms: number): Promise<void> {
     return new Promise(resolve => setTimeout(resolve, ms));
   }
+}
+
+/**
+ * A URL for debug output, with every query value replaced by `***`: the query can hold the cart
+ * key, an order key, an email address or a verification key, which mustn't end up in logs.
+ */
+function redactQuery(url: string): string {
+  const i = url.indexOf('?');
+  if (i < 0) return url;
+  const query = url.slice(i + 1).split('&').map((pair) => {
+    const eq = pair.indexOf('=');
+    return eq < 0 ? pair : `${pair.slice(0, eq)}=***`;
+  });
+  return `${url.slice(0, i)}?${query.join('&')}`;
+}
+
+/** Whether a response may be kept in the ETag cache: not when `Cache-Control` says `no-store` or `private`. */
+function mayStore(cacheControl: string | null): boolean {
+  return !cacheControl || !/(^|[\s,])(no-store|private)([\s,;=]|$)/i.test(cacheControl);
 }
 
 /**

@@ -1,0 +1,76 @@
+{
+  "name": "Takes the order ID and key from the options when the URL carries them elsewhere",
+  "source": "CoCart Plus 2.0 checkout spec",
+  "call": {
+    "target": "checkout",
+    "method": "confirmReturn",
+    "args": [
+      "/thank-you?payment_intent=pi_123",
+      {
+        "orderId": 55,
+        "orderKey": "wc_order_k"
+      }
+    ]
+  },
+  "exchanges": [
+    {
+      "request": {
+        "method": "POST",
+        "path": "cocart/v2/order-received/55/confirm",
+        "query": {},
+        "body": {
+          "order_key": "wc_order_k",
+          "return_params": {
+            "payment_intent": "pi_123"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "object": "order",
+          "result": {
+            "code": "order_placed",
+            "message": "Thank you. Your order has been received.",
+            "action": null,
+            "redirect_url": "https://shop.example.com/checkout/order-received/55/?key=wc_order_k",
+            "error": null
+          },
+          "id": 55,
+          "number": "55",
+          "key": "wc_order_k",
+          "status": {
+            "code": "processing",
+            "label": "Processing"
+          },
+          "currency": {
+            "currency_code": "USD",
+            "currency_symbol": "$",
+            "currency_minor_unit": 2
+          },
+          "item_count": 1,
+          "totals": {
+            "subtotal": "1800",
+            "total_tax": "0",
+            "shipping_total": "500",
+            "total": "2300"
+          },
+          "payment": {
+            "method": "stripe",
+            "title": "Credit card",
+            "needs_payment": false,
+            "date_paid": null
+          },
+          "actions": {}
+        }
+      }
+    }
+  ],
+  "expect": {
+    "result": {
+      "code": "order_placed",
+      "isComplete": true,
+      "orderId": 55
+    }
+  }
+}

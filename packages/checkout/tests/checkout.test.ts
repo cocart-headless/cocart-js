@@ -11,6 +11,7 @@ import {
   createStripeExpressGateway,
   createStripeGateway,
   createWooPaymentsGateway,
+  CheckoutOutcomeUnknownError,
   createTailwindCheckoutTheme,
   createShadcnCheckoutTheme,
 } from '../src/index.js';
@@ -55,7 +56,7 @@ describe('@cocartheadless/checkout', () => {
     const requestRaw = vi.spyOn(client, 'requestRaw')
       .mockResolvedValueOnce({ toObject: () => ({}) } as never)
       .mockResolvedValueOnce({ toObject: () => ({ updated: true }) } as never)
-      .mockResolvedValueOnce({ toObject: () => ({ payment_result: { payment_status: 'success' } }) } as never);
+      .mockResolvedValueOnce({ toObject: () => ({ object: 'order', result: { code: 'order_placed', action: null } }) } as never);
 
     await client.checkout.submit({
       gatewayId: 'stripe',
@@ -136,7 +137,7 @@ describe('@cocartheadless/checkout', () => {
 
     const requestRaw = vi.spyOn(client, 'requestRaw')
       .mockResolvedValueOnce({ toObject: () => ({}) } as never)
-      .mockResolvedValueOnce({ toObject: () => ({ payment_result: { payment_status: 'success', redirect_url: 'https://store.com/order-received/1' } }) } as never);
+      .mockResolvedValueOnce({ toObject: () => ({ object: 'order', result: { code: 'order_placed', action: null, redirect_url: 'https://store.com/order-received/1' } }) } as never);
 
     const result = await client.checkout.submit({ gatewayId: 'stripe' });
 
@@ -151,7 +152,7 @@ describe('@cocartheadless/checkout', () => {
       expect.objectContaining({ payment_data: [{ key: 'wc-stripe-payment-method', value: 'pm_123' }] }),
     );
     expect(result.paymentData).toEqual({ 'wc-stripe-payment-method': 'pm_123' });
-    expect(result.processResponse.toObject().payment_result?.payment_status).toBe('success');
+    expect(result.result.isComplete).toBe(true);
   });
 
   it('pre-wired stripe gateway calls elements.submit() first and sends the checkout billing address as billing_details', async () => {
@@ -172,7 +173,7 @@ describe('@cocartheadless/checkout', () => {
     }));
     vi.spyOn(client, 'requestRaw')
       .mockResolvedValueOnce({ toObject: () => ({}) } as never) // PUT /checkout (update)
-      .mockResolvedValueOnce({ toObject: () => ({ payment_result: { payment_status: 'success' } }) } as never);
+      .mockResolvedValueOnce({ toObject: () => ({ object: 'order', result: { code: 'order_placed', action: null } }) } as never);
 
     await client.checkout.submit({
       gatewayId: 'stripe',
@@ -231,24 +232,25 @@ describe('@cocartheadless/checkout', () => {
       .mockResolvedValueOnce({ toObject: () => ({}) } as never)
       .mockResolvedValueOnce({
         toObject: () => ({
-          payment_result: {
-            payment_status: 'requires_action',
-            action_type: 'stripe_confirm_payment',
-            action_data: { client_secret: 'pi_secret_123', intent_type: 'payment_intent' },
+          object: 'order',
+          result: {
+            code: 'action_required',
+            action: { type: 'stripe_confirm_payment', data: { client_secret: 'pi_secret_123', intent_type: 'payment_intent' } },
           },
         }),
       } as never)
-      .mockResolvedValueOnce({ toObject: () => ({ payment_result: { payment_status: 'success', redirect_url: 'https://store.com/order-received/1' } }) } as never);
+      .mockResolvedValueOnce({ toObject: () => ({ object: 'order', result: { code: 'order_placed', action: null, redirect_url: 'https://store.com/order-received/1' } }) } as never);
 
     const result = await client.checkout.submit({ gatewayId: 'stripe' });
 
     expect(confirmCardPayment).toHaveBeenCalledWith('pi_secret_123');
     expect(confirmCardSetup).not.toHaveBeenCalled();
     expect(requestRaw).toHaveBeenCalledTimes(3);
-    expect(result.processResponse.toObject().payment_result?.payment_status).toBe('success');
+    expect(result.result.code).toBe('order_placed');
+    expect(result.result.isComplete).toBe(true);
   });
 
-  it('a requires_action response with no confirmAction on the gateway is returned as-is for the caller to handle', async () => {
+  it('an action_required response with no confirmAction on the gateway is returned as-is for the caller to handle', async () => {
     const client = new CoCart('https://store.com').use(createCheckout({
       consumerKey: 'ck_test',
       consumerSecret: 'cs_test',
@@ -260,16 +262,16 @@ describe('@cocartheadless/checkout', () => {
     const requestRaw = vi.spyOn(client, 'requestRaw')
       .mockResolvedValueOnce({ toObject: () => ({}) } as never)
       .mockResolvedValueOnce({
-        toObject: () => ({ payment_result: { payment_status: 'requires_action', action_type: 'some_gateway_action', action_data: {} } }),
+        toObject: () => ({ object: 'order', result: { code: 'action_required', action: { type: 'some_gateway_action', data: {} } } }),
       } as never);
 
     const result = await client.checkout.submit({ gatewayId: 'paypal' });
 
     expect(requestRaw).toHaveBeenCalledTimes(2);
-    expect(result.processResponse.toObject().payment_result?.payment_status).toBe('requires_action');
+    expect(result.result.code).toBe('action_required');
   });
 
-  it('an on_hold payment_result is treated as terminal — no confirmAction retry', async () => {
+  it('an order placed on hold with nothing to do is terminal — no confirmAction retry', async () => {
     const confirmAction = vi.fn();
     const client = new CoCart('https://store.com').use(createCheckout({
       consumerKey: 'ck_test',
@@ -289,7 +291,9 @@ describe('@cocartheadless/checkout', () => {
       .mockResolvedValueOnce({ toObject: () => ({}) } as never)
       .mockResolvedValueOnce({
         toObject: () => ({
-          payment_result: { payment_status: 'on_hold', redirect_url: 'https://store.com/order-received/1' },
+          object: 'order',
+          result: { code: 'order_placed', action: null, redirect_url: 'https://store.com/order-received/1' },
+          status: { code: 'on-hold', label: 'On hold' },
         }),
       } as never);
 
@@ -297,10 +301,11 @@ describe('@cocartheadless/checkout', () => {
 
     expect(confirmAction).not.toHaveBeenCalled();
     expect(requestRaw).toHaveBeenCalledTimes(2);
-    expect(result.processResponse.toObject().payment_result?.payment_status).toBe('on_hold');
+    expect(result.result.isComplete).toBe(true);
+    expect(result.result.orderStatus).toBe('on-hold');
   });
 
-  it('createWooPaymentsGateway sends wcpay-payment-method on the first attempt and confirms via confirmCardPayment on requires_action', async () => {
+  it('createWooPaymentsGateway sends wcpay-payment-method on the first attempt and confirms via confirmCardPayment on action_required', async () => {
     const createPaymentMethod = vi.fn().mockResolvedValue({ paymentMethod: { id: 'pm_456' } });
     const confirmCardPayment = vi.fn().mockResolvedValue({ paymentIntent: { id: 'pi_confirmed' } });
     const confirmCardSetup = vi.fn();
@@ -319,14 +324,14 @@ describe('@cocartheadless/checkout', () => {
       .mockResolvedValueOnce({ toObject: () => ({}) } as never)
       .mockResolvedValueOnce({
         toObject: () => ({
-          payment_result: {
-            payment_status: 'requires_action',
-            action_type: 'wcpay_confirm_payment',
-            action_data: { client_secret: 'pi_secret_456', intent_type: 'payment_intent' },
+          object: 'order',
+          result: {
+            code: 'action_required',
+            action: { type: 'wcpay_confirm_payment', data: { client_secret: 'pi_secret_456', intent_type: 'payment_intent' } },
           },
         }),
       } as never)
-      .mockResolvedValueOnce({ toObject: () => ({ payment_result: { payment_status: 'success', redirect_url: 'https://store.com/order-received/1' } }) } as never);
+      .mockResolvedValueOnce({ toObject: () => ({ object: 'order', result: { code: 'order_placed', action: null, redirect_url: 'https://store.com/order-received/1' } }) } as never);
 
     const result = await client.checkout.submit({ gatewayId: 'woocommerce_payments' });
 
@@ -343,10 +348,10 @@ describe('@cocartheadless/checkout', () => {
         payment_data: [{ key: 'wcpay-payment-method', value: 'pm_456' }],
       }),
     );
-    expect(result.processResponse.toObject().payment_result?.payment_status).toBe('success');
+    expect(result.result.code).toBe('order_placed');
   });
 
-  it('createWooPaymentsGateway surfaces a Multibanco voucher on_hold result without retrying', async () => {
+  it('createWooPaymentsGateway surfaces a Multibanco voucher (order placed, awaiting payment) without retrying', async () => {
     const createPaymentMethod = vi.fn().mockResolvedValue({ paymentMethod: { id: 'pm_789' } });
     const confirmCardPayment = vi.fn();
     const confirmCardSetup = vi.fn();
@@ -362,11 +367,11 @@ describe('@cocartheadless/checkout', () => {
       .mockResolvedValueOnce({ toObject: () => ({}) } as never)
       .mockResolvedValueOnce({
         toObject: () => ({
-          payment_result: {
-            payment_status: 'on_hold',
+          object: 'order',
+          result: {
+            code: 'order_placed',
             redirect_url: 'https://store.com/order-received/1',
-            action_type: 'wcpay_multibanco_voucher',
-            action_data: { entity: '12345', reference: '999888777', voucher_url: 'https://wcpay.test/voucher/1', expires_at: '2026-08-15' },
+            action: { type: 'wcpay_multibanco_voucher', data: { entity: '12345', reference: '999888777', voucher_url: 'https://wcpay.test/voucher/1', expires_at: '2026-08-15' } },
           },
         }),
       } as never);
@@ -376,10 +381,143 @@ describe('@cocartheadless/checkout', () => {
     expect(confirmCardPayment).not.toHaveBeenCalled();
     expect(confirmCardSetup).not.toHaveBeenCalled();
     expect(requestRaw).toHaveBeenCalledTimes(2);
-    const paymentResult = result.processResponse.toObject().payment_result;
-    expect(paymentResult?.payment_status).toBe('on_hold');
-    expect(paymentResult?.action_type).toBe('wcpay_multibanco_voucher');
-    expect((paymentResult?.action_data as Record<string, unknown>)?.reference).toBe('999888777');
+    expect(result.result.isAwaitingPayment).toBe(true);
+    expect(result.result.actionType).toBe('wcpay_multibanco_voucher');
+    expect(result.result.actionData?.reference).toBe('999888777');
+  });
+
+  it('createStripeGateway pays a Cash App order placed on hold in the page, without retrying', async () => {
+    const createPaymentMethod = vi.fn().mockResolvedValue({ paymentMethod: { id: 'pm_cashapp' } });
+    const confirmCashappPayment = vi.fn().mockResolvedValue({ paymentIntent: { id: 'pi_335', status: 'succeeded' } });
+    const confirmCardPayment = vi.fn();
+    const client = new CoCart('https://store.com').use(createCheckout({
+      consumerKey: 'ck_test',
+      consumerSecret: 'cs_test',
+      gatewayAdapters: [
+        createStripeGateway({ stripe: { createPaymentMethod, confirmCardPayment, confirmCardSetup: vi.fn(), confirmPayment: vi.fn(), confirmCashappPayment }, elements: {} }),
+      ],
+    }));
+
+    const requestRaw = vi.spyOn(client, 'requestRaw')
+      .mockResolvedValueOnce({ toObject: () => ({}) } as never)
+      .mockResolvedValueOnce({
+        toObject: () => ({
+          object: 'order',
+          result: {
+            code: 'order_placed',
+            redirect_url: 'https://shop.example.com/order/335?key=wc_order_abc',
+            action: { type: 'stripe_wallet_payment', data: { payment_method_type: 'cashapp', client_secret: 'pi_335_secret_abc' } },
+          },
+          id: 335,
+          key: 'wc_order_abc',
+        }),
+      } as never);
+
+    const result = await client.checkout.submit({ gatewayId: 'stripe' });
+
+    expect(confirmCashappPayment).toHaveBeenCalledWith('pi_335_secret_abc', { return_url: 'https://shop.example.com/order/335?key=wc_order_abc' });
+    expect(confirmCardPayment).not.toHaveBeenCalled();
+    expect(requestRaw).toHaveBeenCalledTimes(2);
+    expect(result.redirectUrl).toBeUndefined();
+    expect(result.result.isAwaitingPayment).toBe(true);
+  });
+
+  it('createStripeGateway uses confirmCashappSetup for a SetupIntent and the success URL to come back to', async () => {
+    const confirmCashappSetup = vi.fn().mockResolvedValue({ setupIntent: { id: 'seti_1', status: 'succeeded' } });
+    const confirmCashappPayment = vi.fn();
+    const client = new CoCart('https://store.com').use(createCheckout({
+      successUrl: 'https://shop.example.com/thanks',
+      gatewayAdapters: [
+        createStripeGateway({
+          tokenize: async () => ({ 'wc-stripe-payment-method': 'pm_cashapp' }),
+          stripe: { createPaymentMethod: vi.fn(), confirmCardPayment: vi.fn(), confirmCardSetup: vi.fn(), confirmPayment: vi.fn(), confirmCashappPayment, confirmCashappSetup },
+        }),
+      ],
+    }));
+
+    vi.spyOn(client, 'requestRaw')
+      .mockResolvedValueOnce({ toObject: () => ({}) } as never)
+      .mockResolvedValueOnce({
+        toObject: () => ({
+          object: 'order',
+          result: {
+            code: 'order_placed',
+            redirect_url: 'https://shop.example.com/order/336',
+            action: { type: 'stripe_wallet_payment', data: { payment_method_type: 'cashapp', client_secret: 'seti_1_secret_abc' } },
+          },
+        }),
+      } as never);
+
+    await client.checkout.submit({ gatewayId: 'stripe' });
+
+    expect(confirmCashappSetup).toHaveBeenCalledWith('seti_1_secret_abc', { return_url: 'https://shop.example.com/thanks' });
+    expect(confirmCashappPayment).not.toHaveBeenCalled();
+  });
+
+  it('createStripeGateway shows a Boleto voucher for an order placed on hold', async () => {
+    const confirmBoletoPayment = vi.fn().mockResolvedValue({ paymentIntent: { id: 'pi_2', status: 'requires_action' } });
+    const client = new CoCart('https://store.com').use(createCheckout({
+      gatewayAdapters: [
+        createStripeGateway({
+          tokenize: async () => ({ 'wc-stripe-payment-method': 'pm_boleto' }),
+          stripe: { createPaymentMethod: vi.fn(), confirmCardPayment: vi.fn(), confirmCardSetup: vi.fn(), confirmPayment: vi.fn(), confirmBoletoPayment },
+        }),
+      ],
+    }));
+
+    const requestRaw = vi.spyOn(client, 'requestRaw')
+      .mockResolvedValueOnce({ toObject: () => ({}) } as never)
+      .mockResolvedValueOnce({
+        toObject: () => ({
+          object: 'order',
+          result: {
+            code: 'order_placed',
+            redirect_url: 'https://shop.example.com/order/337',
+            action: { type: 'stripe_voucher_payment', data: { payment_method_type: 'boleto', client_secret: 'pi_2_secret_abc' } },
+          },
+        }),
+      } as never);
+
+    await client.checkout.submit({ gatewayId: 'stripe' });
+
+    expect(confirmBoletoPayment).toHaveBeenCalledWith('pi_2_secret_abc', {});
+    expect(requestRaw).toHaveBeenCalledTimes(2);
+  });
+
+  it('a Cash App payment the customer doesn\'t finish throws checkout_payment_not_completed with the order', async () => {
+    const confirmCashappPayment = vi.fn().mockResolvedValue({
+      paymentIntent: { id: 'pi_335', status: 'requires_payment_method', last_payment_error: { message: 'The customer declined this payment.' } },
+    });
+    const client = new CoCart('https://store.com').use(createCheckout({
+      gatewayAdapters: [
+        createStripeGateway({
+          tokenize: async () => ({ 'wc-stripe-payment-method': 'pm_cashapp' }),
+          stripe: { createPaymentMethod: vi.fn(), confirmCardPayment: vi.fn(), confirmCardSetup: vi.fn(), confirmPayment: vi.fn(), confirmCashappPayment },
+        }),
+      ],
+    }));
+
+    vi.spyOn(client, 'requestRaw')
+      .mockResolvedValueOnce({ toObject: () => ({}) } as never)
+      .mockResolvedValueOnce({
+        toObject: () => ({
+          object: 'order',
+          result: {
+            code: 'order_placed',
+            redirect_url: 'https://shop.example.com/order/335',
+            action: { type: 'stripe_wallet_payment', data: { payment_method_type: 'cashapp', client_secret: 'pi_335_secret_abc' } },
+          },
+          id: 335,
+          key: 'wc_order_abc',
+        }),
+      } as never);
+
+    const error = await client.checkout.submit({ gatewayId: 'stripe' }).catch((e: unknown) => e);
+
+    expect(error).toBeInstanceOf(CoCartError);
+    expect((error as CoCartError).errorCode).toBe('checkout_payment_not_completed');
+    expect((error as CoCartError).message).toBe('The customer declined this payment.');
+    expect((error as CoCartError).responseData).toEqual({ order_id: 335, order_key: 'wc_order_abc' });
   });
 
   it('pre-wired paypal gateway calls createOrder and onApprove during tokenize', async () => {
@@ -396,7 +534,7 @@ describe('@cocartheadless/checkout', () => {
 
     vi.spyOn(client, 'requestRaw')
       .mockResolvedValueOnce({ toObject: () => ({}) } as never)
-      .mockResolvedValueOnce({ toObject: () => ({ payment_result: { payment_status: 'processing' } }) } as never);
+      .mockResolvedValueOnce({ toObject: () => ({ object: 'order', result: { code: 'order_placed', action: null } }) } as never);
 
     const result = await client.checkout.submit({ gatewayId: 'paypal' });
 
@@ -424,7 +562,7 @@ describe('@cocartheadless/checkout', () => {
 
     vi.spyOn(client, 'requestRaw')
       .mockResolvedValueOnce({ toObject: () => ({}) } as never)
-      .mockResolvedValueOnce({ toObject: () => ({ payment_result: { payment_status: 'processing' } }) } as never);
+      .mockResolvedValueOnce({ toObject: () => ({ object: 'order', result: { code: 'order_placed', action: null } }) } as never);
 
     const result = await client.checkout.submit({ gatewayId: 'authorizenet' });
 
@@ -508,7 +646,7 @@ describe('@cocartheadless/checkout', () => {
 
     const requestRaw = vi.spyOn(client, 'requestRaw')
       .mockResolvedValueOnce({ toObject: () => ({}) } as never)
-      .mockResolvedValueOnce({ toObject: () => ({ payment_result: { payment_status: 'processing' } }) } as never);
+      .mockResolvedValueOnce({ toObject: () => ({ object: 'order', result: { code: 'order_placed', action: null } }) } as never);
 
     const result = await client.checkout.submit({ gatewayId: 'stripe', zeroTotal: true });
 
@@ -517,35 +655,41 @@ describe('@cocartheadless/checkout', () => {
     expect(result.paymentData).toBeUndefined();
   });
 
-  it('getShippingMethods proxies to the core cart endpoint and returns packages', async () => {
+  it('getShippingMethods lists the checkout\'s delivery packages', async () => {
     const client = new CoCart('https://store.com').use(createCheckout());
-    const mockPackages = [
-      {
-        package_name: 'Default',
-        chosen_method: 'flat_rate:1',
-        rates: {
-          'flat_rate:1': { key: 'flat_rate:1', method_id: 'flat_rate', instance_id: 1, label: 'Flat rate', cost: '5.00', tax: '0.00' },
-          'free_shipping:1': { key: 'free_shipping:1', method_id: 'free_shipping', instance_id: 1, label: 'Free shipping', cost: '0.00', tax: '0.00' },
-        },
-      },
-    ];
-
-    vi.spyOn(client, 'cart').mockReturnValue({
-      // The live shape: `shipping.packages` keyed by package ID.
-      getShippingMethods: vi.fn().mockResolvedValue(new Response(200, new Headers(), JSON.stringify({ shipping: { total_packages: 1, packages: { default: mockPackages[0] } } }))),
+    const pkg = {
+      id: '0',
+      name: 'Shipping',
+      chosen_rate: 'flat_rate:1',
+      rates: [
+        { id: 'flat_rate:1', method_id: 'flat_rate', instance_id: 1, label: 'Flat rate', cost: '500', tax: '0' },
+        { id: 'free_shipping:1', method_id: 'free_shipping', instance_id: 1, label: 'Free shipping', cost: '0', tax: '0' },
+      ],
+    };
+    const requestRaw = vi.spyOn(client, 'requestRaw').mockResolvedValue({
+      toObject: () => ({ object: 'checkout', delivery: { needs_shipping: true, packages: [pkg] } }),
     } as never);
 
     const packages = await client.checkout.getShippingMethods();
-    expect(packages).toHaveLength(1);
-    expect(packages[0].package_name).toBe('Default');
-    expect(packages[0].chosen_method).toBe('flat_rate:1');
+
+    expect(requestRaw).toHaveBeenCalledWith('GET', 'cocart/v2/checkout', {});
+    expect(packages).toEqual([pkg]);
+  });
+
+  it('getShippingMethods is empty when the cart needs no shipping', async () => {
+    const client = new CoCart('https://store.com').use(createCheckout());
+    vi.spyOn(client, 'requestRaw').mockResolvedValue({
+      toObject: () => ({ object: 'checkout', delivery: { needs_shipping: false, packages: [] } }),
+    } as never);
+
+    expect(await client.checkout.getShippingMethods()).toEqual([]);
   });
 
   it('createForm with shippingMethods renders a radio field with rate options', () => {
     const client = new CoCart('https://store.com').use(createCheckout());
     const rates = [
-      { key: 'flat_rate:1', method_id: 'flat_rate', instance_id: 1, label: 'Flat rate', cost: '5.00', tax: '0.00' },
-      { key: 'free_shipping:1', method_id: 'free_shipping', instance_id: 1, label: 'Free shipping', cost: '0.00', tax: '0.00' },
+      { id: 'flat_rate:1', method_id: 'flat_rate', instance_id: 1, label: 'Flat rate', cost: '5.00', tax: '0.00' },
+      { id: 'free_shipping:1', method_id: 'free_shipping', instance_id: 1, label: 'Free shipping', cost: '0.00', tax: '0.00' },
     ];
 
     const form = client.checkout.createForm({ shippingMethods: rates });
@@ -565,42 +709,47 @@ describe('@cocartheadless/checkout', () => {
     expect(form.sections.map((s) => s.id)).not.toContain('shipping-methods');
   });
 
-  it('applyCoupon delegates to the core cart endpoint', async () => {
+  it('applyCoupon applies the coupon through PUT /checkout, returning the checkout with its new totals', async () => {
     const client = new CoCart('https://store.com').use(createCheckout());
-    const spy = vi.fn().mockResolvedValue({ toObject: () => ({}) } as never);
-    vi.spyOn(client, 'cart').mockReturnValue({ applyCoupon: spy } as never);
+    const requestRaw = vi.spyOn(client, 'requestRaw').mockResolvedValue({ toObject: () => ({ object: 'checkout', totals: { total: '1620' } }) } as never);
 
     await client.checkout.applyCoupon('SAVE10');
-    expect(spy).toHaveBeenCalledWith('SAVE10');
+
+    expect(requestRaw).toHaveBeenCalledWith('PUT', 'cocart/v2/checkout', {}, { coupon_code: 'SAVE10', coupon_action: 'apply' });
   });
 
-  it('removeCoupon delegates to the core cart endpoint', async () => {
+  it('removeCoupon removes the coupon through PUT /checkout', async () => {
     const client = new CoCart('https://store.com').use(createCheckout());
-    const spy = vi.fn().mockResolvedValue({ toObject: () => ({}) } as never);
-    vi.spyOn(client, 'cart').mockReturnValue({ removeCoupon: spy } as never);
+    const requestRaw = vi.spyOn(client, 'requestRaw').mockResolvedValue({ toObject: () => ({ object: 'checkout', totals: { total: '1800' } }) } as never);
 
     await client.checkout.removeCoupon('SAVE10');
-    expect(spy).toHaveBeenCalledWith('SAVE10');
+
+    expect(requestRaw).toHaveBeenCalledWith('PUT', 'cocart/v2/checkout', {}, { coupon_code: 'SAVE10', coupon_action: 'remove' });
   });
 
   it('getOrderSummary maps cart items, coupons, and totals from checkout state', async () => {
     const client = new CoCart('https://store.com').use(createCheckout());
 
+    const lines = [
+      { key: 'subtotal', label: 'Subtotal', amount: '20.00', detail: null },
+      { key: 'total', label: 'Total', amount: '24.80', detail: null },
+    ];
     vi.spyOn(client, 'requestRaw').mockResolvedValue({
       toObject: () => ({
-        items: {
-          abc123: {
+        object: 'checkout',
+        items: [
+          {
             item_key: 'abc123',
             name: 'Test Product',
             price: '10.00',
             quantity: { value: 2 },
             totals: { subtotal: '20.00' },
           },
-        },
+        ],
         coupons: [
           { coupon: 'SAVE10', label: 'Save 10%', saving: '2.00', saving_html: '<del>2.00</del>' },
         ],
-        cart_totals: {
+        totals: {
           subtotal: '20.00',
           discount_total: '2.00',
           shipping_total: '5.00',
@@ -608,10 +757,12 @@ describe('@cocartheadless/checkout', () => {
           total_tax: '1.80',
           total: '24.80',
         },
+        total_lines: lines,
       }),
     } as never);
 
     const summary = await client.checkout.getOrderSummary();
+    expect(summary.lines).toEqual(lines);
 
     expect(summary.items).toHaveLength(1);
     expect(summary.items[0]).toEqual({ key: 'abc123', name: 'Test Product', price: '10.00', quantity: 2, subtotal: '20.00' });
@@ -736,7 +887,7 @@ describe('@cocartheadless/checkout', () => {
 
     const requestRaw = vi.spyOn(client, 'requestRaw')
       .mockResolvedValueOnce({ toObject: () => ({}) } as never)
-      .mockResolvedValueOnce({ toObject: () => ({ payment_result: { payment_status: 'on-hold' } }) } as never);
+      .mockResolvedValueOnce({ toObject: () => ({ object: 'order', result: { code: 'order_placed', action: null } }) } as never);
 
     const result = await client.checkout.submit({ gatewayId: 'bacs' });
 
@@ -793,10 +944,10 @@ describe('@cocartheadless/checkout', () => {
     });
   });
 
-  it('payForOrder calls POST cocart/v2/order-received/{id}/pay with order_key query param and body', async () => {
+  it('payForOrder calls POST cocart/v2/order-received/{id}/pay with the order key in the body, not the URL', async () => {
     const client = new CoCart('https://store.com').use(createCheckout());
     const requestRaw = vi.spyOn(client, 'requestRaw').mockResolvedValueOnce({
-      toObject: () => ({ success: true, order_id: 1234, order_status: 'processing' }),
+      toObject: () => ({ object: 'order', result: { code: 'order_placed', action: null }, id: 1234 }),
     } as never);
 
     await client.checkout.payForOrder(1234, 'wc_order_abc123', {
@@ -807,10 +958,11 @@ describe('@cocartheadless/checkout', () => {
     expect(requestRaw).toHaveBeenCalledWith(
       'POST',
       'cocart/v2/order-received/1234/pay',
-      { order_key: 'wc_order_abc123' },
+      {},
       {
         payment_method: 'stripe',
         payment_data: [{ key: 'paymentMethodID', value: 'pm_1H8x2y2eZvKYlo2C' }],
+        order_key: 'wc_order_abc123',
       },
     );
   });
@@ -818,7 +970,7 @@ describe('@cocartheadless/checkout', () => {
   it('confirmOrderPayment calls POST cocart/v2/order-received/{id}/confirm with the return params', async () => {
     const client = new CoCart('https://store.com').use(createCheckout());
     const requestRaw = vi.spyOn(client, 'requestRaw').mockResolvedValueOnce({
-      toObject: () => ({ order_id: 1234, status: 'processing', payment_result: { payment_status: 'success' } }),
+      toObject: () => ({ object: 'order', result: { code: 'order_placed', action: null }, id: 1234 }),
     } as never);
 
     await client.checkout.confirmOrderPayment(1234, 'wc_order_abc123', { payment_intent: 'pi_123', redirect_status: 'succeeded' });
@@ -826,7 +978,7 @@ describe('@cocartheadless/checkout', () => {
     expect(requestRaw).toHaveBeenCalledWith(
       'POST',
       'cocart/v2/order-received/1234/confirm',
-      { order_key: 'wc_order_abc123' },
+      {},
       { order_key: 'wc_order_abc123', return_params: { payment_intent: 'pi_123', redirect_status: 'succeeded' } },
     );
   });
@@ -842,7 +994,7 @@ describe('@cocartheadless/checkout', () => {
     expect(requestRaw).toHaveBeenCalledWith(
       'POST',
       'cocart/v2/order-received/217/confirm',
-      { order_key: 'wc_order_abc' },
+      {},
       {
         order_key: 'wc_order_abc',
         return_params: {
@@ -867,7 +1019,7 @@ describe('@cocartheadless/checkout', () => {
     expect(requestRaw).toHaveBeenCalledWith(
       'POST',
       'cocart/v2/order-received/55/confirm',
-      { order_key: 'wc_order_k' },
+      {},
       { order_key: 'wc_order_k', return_params: { payment_intent: 'pi_123' } },
     );
   });
@@ -897,13 +1049,13 @@ describe('@cocartheadless/checkout', () => {
       .mockResolvedValueOnce({ toObject: () => ({}) } as never)
       .mockResolvedValueOnce({
         toObject: () => ({
-          order_id: 217,
-          order_key: 'wc_order_abc',
-          payment_result: {
-            payment_status: 'requires_action',
-            action_type: 'gateway_redirect_required',
-            action_data: { redirect: 'https://hooks.stripe.com/3d_secure_2/hosted?payment_intent=pi_123' },
+          object: 'order',
+          result: {
+            code: 'action_required',
+            action: { type: 'gateway_redirect_required', data: { redirect: 'https://hooks.stripe.com/3d_secure_2/hosted?payment_intent=pi_123' } },
           },
+          id: 217,
+          key: 'wc_order_abc',
         }),
       } as never);
 
@@ -914,7 +1066,7 @@ describe('@cocartheadless/checkout', () => {
     expect(requestRaw).toHaveBeenCalledTimes(2);
   });
 
-  it('submit still confirms in-page (no redirectUrl) when action_data carries a client_secret', async () => {
+  it('submit still confirms in-page (no redirectUrl) when action.data carries a client_secret', async () => {
     const confirmCardPayment = vi.fn().mockResolvedValue({ paymentIntent: { id: 'pi_1' } });
     const mockStripe = {
       createPaymentMethod: vi.fn().mockResolvedValue({ paymentMethod: { id: 'pm_123' } }),
@@ -933,14 +1085,14 @@ describe('@cocartheadless/checkout', () => {
       .mockResolvedValueOnce({ toObject: () => ({}) } as never)
       .mockResolvedValueOnce({
         toObject: () => ({
-          payment_result: {
-            payment_status: 'requires_action',
-            action_type: 'stripe_confirm_payment',
-            action_data: { client_secret: 'pi_1_secret', intent_type: 'payment_intent', redirect: 'https://example.com/ignored' },
+          object: 'order',
+          result: {
+            code: 'action_required',
+            action: { type: 'stripe_confirm_payment', data: { client_secret: 'pi_1_secret', intent_type: 'payment_intent', redirect: 'https://example.com/ignored' } },
           },
         }),
       } as never)
-      .mockResolvedValueOnce({ toObject: () => ({ payment_result: { payment_status: 'success' } }) } as never);
+      .mockResolvedValueOnce({ toObject: () => ({ object: 'order', result: { code: 'order_placed', action: null } }) } as never);
 
     const result = await client.checkout.submit({ gatewayId: 'stripe' });
 
@@ -989,5 +1141,170 @@ describe('@cocartheadless/checkout', () => {
 
     expect(firstName.hidden).toBeUndefined();
     expect(lastName.hidden).toBeUndefined();
+  });
+});
+
+describe('placeOrder() when the answer is lost', () => {
+  const order = { payment_method: 'cod', billing_address: { email: 'jane@example.com' } };
+
+  it('sends a new random checkout_id with each order', async () => {
+    const client = new CoCart('https://store.com').use(createCheckout());
+    const requestRaw = vi.spyOn(client, 'requestRaw').mockResolvedValue(
+      new Response(200, new Headers(), JSON.stringify({ object: 'order', result: { code: 'order_placed', action: null }, id: 1 })),
+    );
+
+    await client.checkout.placeOrder(order);
+    await client.checkout.placeOrder(order);
+
+    const first = (requestRaw.mock.calls[0][3] as Record<string, unknown>).checkout_id as string;
+    const second = (requestRaw.mock.calls[1][3] as Record<string, unknown>).checkout_id as string;
+    expect(first).toMatch(/^chk_[0-9a-f]{32}$/);
+    expect(second).toMatch(/^chk_[0-9a-f]{32}$/);
+    expect(first).not.toBe(second);
+  });
+
+  it('sends the checkout_id it is given', async () => {
+    const client = new CoCart('https://store.com').use(createCheckout());
+    const requestRaw = vi.spyOn(client, 'requestRaw').mockResolvedValue(
+      new Response(200, new Headers(), JSON.stringify({ object: 'order', result: { code: 'order_placed', action: null }, id: 1 })),
+    );
+
+    await client.checkout.placeOrder({ ...order, checkout_id: 'chk_mine_00000000001' });
+
+    expect((requestRaw.mock.calls[0][3] as Record<string, unknown>).checkout_id).toBe('chk_mine_00000000001');
+  });
+
+  it.each([
+    ['a timeout', new CoCartError('Request timed out.', 0, 'request_timeout')],
+    ['a dropped connection', new CoCartError('fetch failed', 0, 'network_error')],
+    ['a proxy that gave up', new CoCartError('Gateway Timeout', 504, null)],
+  ])('throws CheckoutOutcomeUnknownError with the checkout_id after %s', async (_case, cause) => {
+    const client = new CoCart('https://store.com').use(createCheckout());
+    const requestRaw = vi.spyOn(client, 'requestRaw').mockRejectedValue(cause);
+
+    const error = await client.checkout.placeOrder(order).catch((e: unknown) => e);
+
+    expect(error).toBeInstanceOf(CheckoutOutcomeUnknownError);
+    expect(error).toBeInstanceOf(CoCartError);
+    expect((error as CheckoutOutcomeUnknownError).checkoutId).toBe((requestRaw.mock.calls[0][3] as Record<string, unknown>).checkout_id);
+    expect((error as CoCartError).errorCode).toBe(cause.errorCode);
+    expect((error as CoCartError).httpCode).toBe(cause.httpCode);
+  });
+
+  it('throws CheckoutOutcomeUnknownError when another request is still taking payment for the cart (409 cocart_payment_in_progress)', async () => {
+    const client = new CoCart('https://store.com').use(createCheckout());
+    vi.spyOn(client, 'requestRaw').mockRejectedValue(new CoCartError('This order is already being placed.', 409, 'cocart_payment_in_progress'));
+
+    const error = await client.checkout.placeOrder({ ...order, checkout_id: 'chk_mine_00000000001' }).catch((e: unknown) => e);
+
+    expect(error).toBeInstanceOf(CheckoutOutcomeUnknownError);
+    expect((error as CheckoutOutcomeUnknownError).checkoutId).toBe('chk_mine_00000000001');
+    expect((error as CoCartError).errorCode).toBe('cocart_payment_in_progress');
+  });
+
+  it('refuses a checkout_id CoCart Plus would not accept, before sending anything', async () => {
+    const client = new CoCart('https://store.com').use(createCheckout());
+    const requestRaw = vi.spyOn(client, 'requestRaw');
+
+    await expect(client.checkout.placeOrder({ ...order, checkout_id: 'bad id!' })).rejects.toMatchObject({ errorCode: 'checkout_invalid_checkout_id' });
+    expect(requestRaw).not.toHaveBeenCalled();
+  });
+
+  it('keeps an error the store answered with as it is', async () => {
+    const client = new CoCart('https://store.com').use(createCheckout());
+    vi.spyOn(client, 'requestRaw').mockRejectedValue(new CoCartError('Cannot checkout with empty cart.', 400, 'cocart_cant_checkout_empty_cart'));
+
+    const error = await client.checkout.placeOrder(order).catch((e: unknown) => e);
+
+    expect(error).not.toBeInstanceOf(CheckoutOutcomeUnknownError);
+    expect((error as CoCartError).errorCode).toBe('cocart_cant_checkout_empty_cart');
+  });
+
+  it('asks GET /checkout/status with the checkout_id', async () => {
+    const client = new CoCart('https://store.com').use(createCheckout());
+    const requestRaw = vi.spyOn(client, 'requestRaw').mockResolvedValue(
+      new Response(200, new Headers(), JSON.stringify({
+        object: 'checkout_status',
+        checkout_id: 'chk_mine_00000000001',
+        result: { code: 'in_progress', message: 'Your order is still being placed. Check again shortly.' },
+        order: null,
+      })),
+    );
+
+    const status = await client.checkout.getCheckoutStatus('chk_mine_00000000001');
+
+    expect(requestRaw).toHaveBeenCalledWith('GET', 'cocart/v2/checkout/status', expect.objectContaining({ checkout_id: 'chk_mine_00000000001' }));
+    expect(status).toEqual({
+      checkoutId: 'chk_mine_00000000001',
+      code: 'in_progress',
+      message: 'Your order is still being placed. Check again shortly.',
+      orderId: null,
+      orderKey: null,
+      orderNumber: null,
+      orderStatus: null,
+    });
+  });
+});
+
+describe('submit() and a total that changed', () => {
+  function client() {
+    return new CoCart('https://store.com').use(createCheckout({
+      gatewayAdapters: [createBankTransferGateway()],
+    }));
+  }
+
+  it('refuses to take payment when the checkout total changed since it was shown, with the new checkout to show', async () => {
+    const cocart = client();
+    const requestRaw = vi.spyOn(cocart, 'requestRaw')
+      .mockResolvedValueOnce({ toObject: () => ({ object: 'checkout', totals: { total: '2300' } }) } as never) // shown
+      .mockResolvedValueOnce({ toObject: () => ({ object: 'checkout', totals: { total: '2500' } }) } as never); // submit's own read
+
+    await cocart.checkout.getCheckout();
+    const error = (await cocart.checkout.submit({ gatewayId: 'bacs' }).catch((e: unknown) => e)) as CoCartError;
+
+    expect(error.errorCode).toBe('cocart_checkout_total_mismatch');
+    expect(error.httpCode).toBe(409);
+    expect((error.responseData.data as { checkout: { totals: { total: string } } }).checkout.totals.total).toBe('2500');
+    expect(requestRaw).toHaveBeenCalledTimes(2); // never POST /checkout
+  });
+
+  it('refuses when its own update changes the total (e.g. a shipping method chosen at submit)', async () => {
+    const cocart = client();
+    const requestRaw = vi.spyOn(cocart, 'requestRaw')
+      .mockResolvedValueOnce({ toObject: () => ({ object: 'checkout', totals: { total: '2300' } }) } as never)
+      .mockResolvedValueOnce({ toObject: () => ({ object: 'checkout', totals: { total: '2300' } }) } as never)
+      .mockResolvedValueOnce({ toObject: () => ({ object: 'checkout', totals: { total: '2900' } }) } as never);
+
+    await cocart.checkout.getCheckout();
+    await expect(cocart.checkout.submit({ gatewayId: 'bacs', update: { shipping_method: 'express:1' } })).rejects.toMatchObject({ errorCode: 'cocart_checkout_total_mismatch' });
+    expect(requestRaw).toHaveBeenCalledTimes(3);
+  });
+
+  it('places the order once the new total has been shown', async () => {
+    const cocart = client();
+    vi.spyOn(cocart, 'requestRaw')
+      .mockResolvedValueOnce({ toObject: () => ({ object: 'checkout', totals: { total: '2300' } }) } as never)
+      .mockResolvedValueOnce({ toObject: () => ({ object: 'checkout', totals: { total: '2500' } }) } as never)
+      .mockResolvedValueOnce({ toObject: () => ({ object: 'checkout', totals: { total: '2500' } }) } as never)
+      .mockResolvedValueOnce({ toObject: () => ({ object: 'order', result: { code: 'order_placed', action: null } }) } as never);
+
+    await cocart.checkout.getCheckout();
+    await cocart.checkout.submit({ gatewayId: 'bacs' }).catch(() => undefined);
+    const result = await cocart.checkout.submit({ gatewayId: 'bacs' });
+
+    expect(result.result.isComplete).toBe(true);
+  });
+
+  it('places the order when the total is the one shown', async () => {
+    const cocart = client();
+    vi.spyOn(cocart, 'requestRaw')
+      .mockResolvedValueOnce({ toObject: () => ({ object: 'checkout', totals: { total: '2300' } }) } as never)
+      .mockResolvedValueOnce({ toObject: () => ({ object: 'checkout', totals: { total: '2300' } }) } as never)
+      .mockResolvedValueOnce({ toObject: () => ({ object: 'order', result: { code: 'order_placed', action: null } }) } as never);
+
+    await cocart.checkout.getCheckout();
+    const result = await cocart.checkout.submit({ gatewayId: 'bacs' });
+
+    expect(result.result.code).toBe('order_placed');
   });
 });

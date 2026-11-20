@@ -1,0 +1,73 @@
+{
+  "name": "A declined card when changing a subscription's payment method is a failed result (a 200), not an exception",
+  "source": "CoCart Plus 2.0 checkout spec",
+  "call": {
+    "target": "account",
+    "method": "updateSubscriptionPaymentMethod",
+    "args": [
+      512,
+      {
+        "payment_method": "stripe",
+        "payment_data": {
+          "wc-stripe-payment-method": "pm_card_chargeDeclined"
+        }
+      }
+    ]
+  },
+  "exchanges": [
+    {
+      "request": {
+        "method": "POST",
+        "path": "cocart/v2/my-account/subscriptions/512/payment-method",
+        "query": {},
+        "body": {
+          "payment_method": "stripe",
+          "payment_data": [
+            {
+              "key": "wc-stripe-payment-method",
+              "value": "pm_card_chargeDeclined"
+            }
+          ]
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "object": "subscription",
+          "result": {
+            "code": "payment_failed",
+            "message": "Your card was declined. Please try a different card.",
+            "action": null,
+            "redirect_url": null,
+            "error": {
+              "code": "card_declined",
+              "gateway_code": "generic_decline",
+              "gateway_message": "Your card was declined."
+            }
+          },
+          "id": 512,
+          "number": "512",
+          "status": {
+            "code": "active",
+            "label": "Active"
+          },
+          "payment": {
+            "method": "stripe",
+            "title": "Visa ending in 4242",
+            "needs_payment": false
+          },
+          "actions": {}
+        }
+      }
+    }
+  ],
+  "expect": {
+    "result": {
+      "code": "payment_failed",
+      "isFailed": true,
+      "message": "Your card was declined. Please try a different card.",
+      "errorCode": "card_declined",
+      "subscriptionId": 512
+    }
+  }
+}

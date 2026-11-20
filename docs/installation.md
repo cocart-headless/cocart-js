@@ -32,10 +32,11 @@ const client = new CoCart('https://your-store.com', {
   // API namespace (default: 'cocart')
   namespace: 'cocart',
 
-  // CoCart main plugin: 'basic' (default) or 'legacy'
-  mainPlugin: 'basic',
+  // CoCart main plugin: 'starter' (default) or 'legacy'
+  mainPlugin: 'starter',
 
-  // Retry transient failures (429, 503, timeouts)
+  // Retry transient failures: 429 for any request; 503 and timeouts for GETs only,
+  // so an order or a cart change is never sent twice
   maxRetries: 2,
 
   // Storage adapter — auto-detected: LocalStorage in browsers, MemoryStorage in Node.js/SSR
@@ -79,7 +80,7 @@ const client = CoCart.create('https://your-store.com')
   .addHeader('X-Custom-Header', 'value')
   .setAuthHeaderName('X-Auth-Token')
   .setETag(true)
-  .setMainPlugin('basic')
+  .setMainPlugin('starter')
   .setLocale('en-us')
   .setDebug(true);
 ```

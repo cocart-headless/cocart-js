@@ -188,7 +188,7 @@ Renders a radio group of shipping rate options. The selected row is highlighted 
 | Prop | Type | Default | Description |
 |---|---|---|---|
 | `theme` | `CheckoutTheme` | required | Controls `sectionClassName` |
-| `rates` | `ShippingRate[]` | required | Shipping rate options to render. Wire to `client.checkout.getShippingMethods()` |
+| `rates` | `ShippingRate[]` | required | Shipping rate options to render. Wire to `client.checkout.getShippingMethods()`: map each package's `rates` (`id`, `label`, `cost`) to this shape, with the rate's `id` as `id` (it's what `shipping_method` takes) |
 | `loading` | `boolean` | `false` | Shows skeleton placeholders |
 | `freeShipping` | `boolean` | `false` | Strikes through paid rates and shows "Free" |
 | `placeholder` | `boolean` | `false` | Renders a prompt to enter a shipping address instead of the rate list |
@@ -342,7 +342,7 @@ Renders the list of cart items — thumbnail placeholder, name, variant, quantit
 | Prop | Type | Default | Description |
 |---|---|---|---|
 | `theme` | `CheckoutTheme` | required | Theme reference (reserved for future className support) |
-| `items` | `OrderLineItem[]` | required | Line items to render. Wire to `client.checkout.getCheckout()` data |
+| `items` | `OrderLineItem[]` | required | Line items to render. Wire to `client.checkout.getCheckout()`'s `items` (or `getOrderSummary()`'s `items`) |
 
 **`OrderLineItem`**
 

@@ -45,16 +45,20 @@ That's it. The extension initializes Datafast in the background and begins track
 
 ## Auto-tracked events
 
-The extension subscribes to CoCart API responses and maps them to Datafast events automatically.
+The extension subscribes to CoCart API responses and maps them to Datafast events automatically. Nothing is tracked for a response with a status of 400 or more (apart from `api_error`).
 
 | Event | Triggered when | Payload |
 |---|---|---|
 | `add_to_cart` | Item added to cart | `{ url }` |
 | `remove_from_cart` | Item removed from cart | `{ url }` |
 | `cart_cleared` | Cart cleared | `{ url }` |
-| `checkout_started` | Checkout updated (billing/shipping) | `{ url }` |
-| `purchase` | Order placed successfully | `{ url }` |
+| `checkout_started` | Checkout updated (`PUT /checkout`: addresses, shipping, payment method, or a coupon applied or removed at checkout) | `{ url }` |
+| `purchase` | An order was placed: placing the order, paying for an order, or confirming a payment returned the order with `result.code` `order_placed` | `{ url, transaction_id, currency, value }` |
 | `api_error` | Any API request fails | `{ method, url, message }` |
+
+`url` is the REST route only, e.g. `/cocart/v2/checkout`: no host and no query string, since the query can hold the cart key, an order key or an email address.
+
+`purchase` fires only for an order that went through. A declined card (`payment_failed`), a 3D Secure step or an off-site redirect (`action_required`), and a payment not confirmed yet (`payment_pending`) are `200` responses too, but track nothing; the purchase is tracked when the call that finishes the payment (placing the order again, `payForOrder()` or `confirmReturn()`) returns `order_placed`. An order placed that the customer still pays (a voucher, BLIK, a bank transfer) is `order_placed` too, so it counts. `transaction_id` is the order's ID; `value` is the order total in major units (`24.8`), and `currency` the order's currency code, when the response has them.
 
 ---
 
@@ -97,7 +101,7 @@ Force immediate transmission — useful before a page navigation or redirect:
 
 ```ts
 await client.datafast.flush();
-window.location.href = result.payment_result.redirect_url;
+window.location.href = result.redirectUrl!; // a CheckoutResult from the checkout package
 ```
 
 ### Reset visitor session

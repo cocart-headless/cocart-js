@@ -11,7 +11,7 @@ registerLocale('en-us', {
   'jwt.noRefreshToken':  'No refresh token available. Please login first.',
 
   // Version
-  'version.requiresBasic': '{method}() requires CoCart Starter. Please upgrade from the CoCart Community plugin to use this feature.',
+  'version.requiresStarter': '{method}() requires CoCart Starter. Please upgrade from the CoCart Community plugin to use this feature.',
 
   // Endpoint
   'endpoint.pluginRequired': 'This method is only available with another CoCart plugin. Please ask support for assistance!',

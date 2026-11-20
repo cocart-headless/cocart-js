@@ -36,9 +36,11 @@ const client = new CoCart('https://your-store.com', {
 | `add_to_cart` | Item added to cart |
 | `remove_from_cart` | Item removed from cart |
 | `cart_cleared` | Cart is cleared |
-| `checkout_started` | Checkout details updated (billing, shipping) |
-| `purchase` | Order placed successfully |
+| `checkout_started` | Checkout details updated (billing, shipping, payment method, a coupon) |
+| `purchase` | An order was placed: the response is an order with `result.code` `order_placed` (with `transaction_id`, `value` and `currency`) |
 | `api_error` | Any CoCart API request fails |
+
+Events carry the REST route only (no host, no query string), and nothing is tracked for a response with a status of 400 or more, apart from `api_error`. A declined card or a 3D Secure step is not a purchase. See [Getting Started](docs/getting-started.md#auto-tracked-events).
 
 ## Documentation
 

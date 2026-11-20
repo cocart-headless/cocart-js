@@ -4,6 +4,8 @@ export { Response } from './response.js';
 export { Paginator } from './paginator.js';
 export { JwtManager } from './jwt-manager.js';
 export { SessionManager } from './session-manager.js';
+export { CheckoutResult, toPaymentDataPairs } from './checkout-result.js';
+export type { PaymentResultCode, PaymentDataPair, PaymentDataInput } from './checkout-result.js';
 
 // Endpoints
 export { Account } from './endpoints/account.js';
@@ -39,7 +41,7 @@ export type { CookieStorageOptions } from './storage/cookie-storage.js';
 
 // Types
 export type {
-  CoCartOptions, JwtOptions, TwoFactorAuthChallenge, CartItemData, AuthCredentials, CoCartExtension, CoCartExtensionRegistry,
+  CoCartOptions, MainPlugin, JwtOptions, TwoFactorAuthChallenge, CartItemData, AuthCredentials, CoCartExtension, CoCartExtensionRegistry,
   // Response types
   CurrencyInfo, CartItem, CartItemImage, CartTotals, CartCustomer, CustomerAddress,
   CartCoupon, CartFee, ShippingRate, ShippingPackage, CrossSellProduct, CartResponse,
@@ -55,8 +57,14 @@ export type {
   AccountAddress, AccountUser, AccountProfile, AccountOrderSummary, AccountOrdersResponse,
   AccountOrderDetail, AccountDownload, AccountUpdateInput, AccountChangePasswordInput, AccountOrdersParams,
   RegisterCustomerInput, RegisteredCustomer,
-  AccountAddressUpdateInput, AccountCancelOrderResult, AccountSubscriptionPaymentMethodInput, OrderWithdrawalInput,
+  AccountAddressUpdateInput, AccountCancelOrderResult, AccountSubscriptionPaymentMethodInput, AccountSubscriptionPaymentMethodResult, OrderWithdrawalInput,
+  AccountSubscriptionsParams, DocumentParams,
   ProductShippingRatesParams, ProductReviewInput, RateLimitInfo,
+  // CoCart Plus 2.0 documents
+  CoCartPlusSchemas, CoCartPlusCheckoutSchemas, DocumentResult,
+  Order, OrderList, OrderUpdate, OrderPayment, Subscription, SubscriptionList, SubscriptionUpdate,
+  SubscriptionPaymentMethodChange, Downloads, MiniCart, CartCoupons, ProductShippingRates,
+  EmailChange, EmailVerification, OrderWithdrawal,
 } from './cocart.types.js';
 
 // Extension data (CoCart Plus integrations). The three location interfaces can be augmented.

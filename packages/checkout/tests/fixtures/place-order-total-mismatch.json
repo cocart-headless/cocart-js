@@ -1,0 +1,71 @@
+{
+  "name": "A total that changed since the checkout was shown is refused (409 cocart_checkout_total_mismatch): get the checkout again",
+  "source": "CoCart Plus 2.0 checkout spec",
+  "call": {
+    "target": "checkout",
+    "method": "placeOrder",
+    "args": [
+      {
+        "billing_address": {
+          "first_name": "Jane",
+          "last_name": "Doe",
+          "address_1": "1 Main Street",
+          "city": "Paris",
+          "postcode": "75001",
+          "country": "FR",
+          "email": "jane@example.com"
+        },
+        "shipping_method": "flat_rate:1",
+        "payment_method": "stripe",
+        "payment_data": {
+          "wc-stripe-payment-method": "pm_123"
+        },
+        "checkout_id": "chk_fixture_0000000001"
+      }
+    ]
+  },
+  "exchanges": [
+    {
+      "request": {
+        "method": "POST",
+        "path": "cocart/v2/checkout",
+        "query": {},
+        "body": {
+          "billing_address": {
+            "first_name": "Jane",
+            "last_name": "Doe",
+            "address_1": "1 Main Street",
+            "city": "Paris",
+            "postcode": "75001",
+            "country": "FR",
+            "email": "jane@example.com"
+          },
+          "shipping_method": "flat_rate:1",
+          "payment_method": "stripe",
+          "payment_data": [
+            {
+              "key": "wc-stripe-payment-method",
+              "value": "pm_123"
+            }
+          ],
+          "checkout_id": "chk_fixture_0000000001"
+        }
+      },
+      "response": {
+        "status": 409,
+        "body": {
+          "code": "cocart_checkout_total_mismatch",
+          "message": "The cart total has changed since it was last calculated. Please review the cart before trying to checkout again.",
+          "data": {
+            "status": 409
+          }
+        }
+      }
+    }
+  ],
+  "expect": {
+    "error": {
+      "code": "cocart_checkout_total_mismatch"
+    }
+  }
+}

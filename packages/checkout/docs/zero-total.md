@@ -1,17 +1,19 @@
 # Zero-Total Checkout
 
-When an order total is zero — fully discounted by a coupon, free product, or promotional offer — WooCommerce sets `needs_payment: false` in the checkout state. No payment processing is required.
+When an order total is zero — fully discounted by a coupon, free product, or promotional offer — the checkout says `payment.needs_payment: false`. No payment processing is required.
 
 ---
 
 ## Detecting a zero-total order
 
-Fetch the checkout state after the cart is loaded and check `needs_payment`:
+Fetch the checkout state after the cart is loaded and check `payment.needs_payment`:
 
 ```ts
 const state = (await client.checkout.getCheckout()).toObject();
-const needsPayment = state.needs_payment !== false; // true unless explicitly false
+const needsPayment = state.payment.needs_payment;
 ```
+
+`applyCoupon()` and `updateCheckout()` return the checkout too, so check it there after a change.
 
 ---
 
@@ -33,14 +35,17 @@ When `needsPayment` is `undefined` or `true`, the payment section is included as
 Pass `zeroTotal: true` to `submit()`. This skips tokenization entirely. The order is processed with `payment_method` set but no `payment_data`:
 
 ```ts
-const { processResponse } = await client.checkout.submit({
+const { result } = await client.checkout.submit({
   gatewayId: 'bacs',
   zeroTotal: true,
 });
+
+result.code;       // 'order_placed'
+result.isComplete; // true: nothing to pay
 ```
 
 > [!NOTE]
-> You still need a registered gateway for `submit()` because WooCommerce requires a `payment_method` value even for zero-total orders. An offline gateway such as `createBankTransferGateway()` works well as a neutral fallback.
+> `submit()` always sends the registered gateway as `payment_method`, so it needs one even for zero-total orders. An offline gateway such as `createBankTransferGateway()` works well as a neutral fallback. `placeOrder()` needs neither `payment_method` nor `payment_data` for a free order.
 
 ---
 
@@ -61,13 +66,13 @@ const client = new CoCart('https://your-store.com').use(createCheckout({
 
 // On page load — fetch state and decide which gateway/form to use
 const state = (await client.checkout.getCheckout()).toObject();
-const needsPayment = state.needs_payment !== false;
+const needsPayment = state.payment.needs_payment;
 const gatewayId = needsPayment ? 'stripe' : 'bacs';
 
 const form = client.checkout.createForm({ gatewayId, needsPayment });
 
 // On form submit
-const { processResponse } = await client.checkout.submit({
+const { result } = await client.checkout.submit({
   gatewayId,
   zeroTotal: !needsPayment,
   update: {
@@ -75,8 +80,9 @@ const { processResponse } = await client.checkout.submit({
   },
 });
 
-const result = processResponse.toObject();
-if (result.payment_result?.redirect_url) {
-  window.location.href = result.payment_result.redirect_url;
+if (result.isFailed) {
+  showError(result.message);
+} else if (result.redirectUrl) {
+  window.location.href = result.redirectUrl; // the order-received page
 }
 ```

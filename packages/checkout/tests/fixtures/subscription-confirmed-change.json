@@ -1,0 +1,70 @@
+{
+  "name": "After the customer confirmed the new card, the same request finishes the change",
+  "source": "CoCart Plus 2.0 checkout spec",
+  "call": {
+    "target": "account",
+    "method": "updateSubscriptionPaymentMethod",
+    "args": [
+      512,
+      {
+        "payment_method": "stripe",
+        "payment_data": {
+          "wc-stripe-payment-method": "pm_card_threeDSecure2Required"
+        }
+      }
+    ]
+  },
+  "exchanges": [
+    {
+      "request": {
+        "method": "POST",
+        "path": "cocart/v2/my-account/subscriptions/512/payment-method",
+        "query": {},
+        "body": {
+          "payment_method": "stripe",
+          "payment_data": [
+            {
+              "key": "wc-stripe-payment-method",
+              "value": "pm_card_threeDSecure2Required"
+            }
+          ]
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "object": "subscription",
+          "result": {
+            "code": "payment_method_changed",
+            "message": "Your subscription will now be paid with Visa ending in 3220.",
+            "action": null,
+            "redirect_url": null,
+            "error": null
+          },
+          "id": 512,
+          "number": "512",
+          "status": {
+            "code": "active",
+            "label": "Active"
+          },
+          "payment": {
+            "method": "stripe",
+            "title": "Visa ending in 3220",
+            "needs_payment": false
+          },
+          "actions": {}
+        }
+      }
+    }
+  ],
+  "expect": {
+    "result": {
+      "code": "payment_method_changed",
+      "object": "subscription",
+      "isComplete": true,
+      "needsConfirmation": false,
+      "subscriptionId": 512,
+      "orderId": null
+    }
+  }
+}

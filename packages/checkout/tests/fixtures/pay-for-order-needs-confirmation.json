@@ -1,0 +1,92 @@
+{
+  "name": "Pay-for-order asks for 3D Secure as placeOrder does: needsConfirmation, and the order stays pending",
+  "source": "CoCart Plus 2.0 checkout spec",
+  "call": {
+    "target": "checkout",
+    "method": "payForOrder",
+    "args": [
+      1234,
+      "wc_order_abc123",
+      {
+        "payment_method": "stripe",
+        "payment_data": {
+          "wc-stripe-payment-method": "pm_card_threeDSecure2Required"
+        }
+      }
+    ]
+  },
+  "exchanges": [
+    {
+      "request": {
+        "method": "POST",
+        "path": "cocart/v2/order-received/1234/pay",
+        "query": {},
+        "body": {
+          "payment_method": "stripe",
+          "payment_data": [
+            {
+              "key": "wc-stripe-payment-method",
+              "value": "pm_card_threeDSecure2Required"
+            }
+          ],
+          "order_key": "wc_order_abc123"
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "object": "order",
+          "result": {
+            "code": "action_required",
+            "message": "Confirm the payment to finish your order.",
+            "action": {
+              "type": "stripe_confirm_payment",
+              "data": {
+                "client_secret": "pi_secret_1234",
+                "intent_type": "payment_intent"
+              }
+            },
+            "redirect_url": null,
+            "error": null
+          },
+          "id": 1234,
+          "number": "1234",
+          "key": "wc_order_abc123",
+          "status": {
+            "code": "pending",
+            "label": "Pending payment"
+          },
+          "currency": {
+            "currency_code": "USD",
+            "currency_symbol": "$",
+            "currency_minor_unit": 2
+          },
+          "item_count": 1,
+          "totals": {
+            "subtotal": "1800",
+            "total_tax": "0",
+            "shipping_total": "500",
+            "total": "2300"
+          },
+          "payment": {
+            "method": "stripe",
+            "title": "Credit card",
+            "needs_payment": true,
+            "date_paid": null
+          },
+          "actions": {}
+        }
+      }
+    }
+  ],
+  "expect": {
+    "result": {
+      "code": "action_required",
+      "needsConfirmation": true,
+      "clientSecret": "pi_secret_1234",
+      "intentType": "payment_intent",
+      "orderId": 1234,
+      "orderStatus": "pending"
+    }
+  }
+}
