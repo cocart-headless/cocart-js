@@ -5,14 +5,15 @@
 [![Zero Dependencies](https://img.shields.io/badge/dependencies-0-brightgreen?style=for-the-badge&labelColor=000000)](https://www.npmjs.com/package/@cocartheadless/checkout)
 [![Tests](https://img.shields.io/github/actions/workflow/status/cocart-headless/cocart-js/tests.yml?label=tests&style=for-the-badge&labelColor=000000)](https://github.com/cocart-headless/cocart-js/actions/workflows/tests.yml)
 [![Socket](https://img.shields.io/badge/Socket-secured-brightgreen?style=for-the-badge&labelColor=000000)](https://socket.dev/npm/package/@cocartheadless/checkout)
-[![License](https://img.shields.io/github/license/jayanratna/resend-php?color=9cf&style=for-the-badge&labelColor=000000)](https://github.com/cocart-headless/cocart-js/blob/main/LICENSE)
+[![License](https://img.shields.io/github/license/cocart-headless/cocart-js?color=9cf&style=for-the-badge&labelColor=000000)](https://github.com/cocart-headless/cocart-js/blob/main/LICENSE)
 
 A checkout orchestration layer that bridges CoCart's Checkout API with your headless WooCommerce frontend — form definitions, gateway tokenization, and payment context.
 
 This package is separate from `@cocartheadless/sdk` and installs as an extension on the core CoCart client. It is designed for a more seamless checkout experience with:
 
 **Gateways Supported**
-- Stripe
+- Stripe (cards with 3D Secure, Cash App Pay, WeChat Pay, Boleto, OXXO and Multibanco vouchers)
+- WooPayments
 - PayPal
 - Authorize.Net
 - Direct Bank Transfer (BACS)
@@ -39,6 +40,12 @@ This package is separate from `@cocartheadless/sdk` and installs as an extension
 
 > [!IMPORTANT]
 > This SDK is still an MVP and is looking for feedback, if you experience a bug or feel something can be better, please report it.
+
+## Requirements
+
+- **CoCart Plus 2.0** on the store (not released yet): the checkout, payment and order-received routes come from it, on top of CoCart Starter 5.
+- [`@cocartheadless/sdk`](https://www.npmjs.com/package/@cocartheadless/sdk) (peer dependency): the checkout installs on its client as an extension.
+- The gateway's own JavaScript in the browser for card payments (Stripe.js with your publishable key, e.g. `pk_test_…` while testing). Card details go to the gateway, never through CoCart.
 
 ## Installation
 

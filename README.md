@@ -6,7 +6,7 @@
 [![Zero Dependencies](https://img.shields.io/badge/dependencies-0-brightgreen?style=for-the-badge&labelColor=000000)](https://www.npmjs.com/package/@cocartheadless/sdk)
 [![Tests](https://img.shields.io/github/actions/workflow/status/cocart-headless/cocart-js/tests.yml?label=tests&style=for-the-badge&labelColor=000000)](https://github.com/cocart-headless/cocart-js/actions/workflows/tests.yml)
 [![Socket](https://img.shields.io/badge/Socket-secured-brightgreen?style=for-the-badge&labelColor=000000)](https://socket.dev/npm/package/@cocartheadless/sdk)
-[![License](https://img.shields.io/github/license/jayanratna/resend-php?color=9cf&style=for-the-badge&labelColor=000000)](https://github.com/cocart-headless/cocart-js/blob/main/LICENSE)
+[![License](https://img.shields.io/github/license/cocart-headless/cocart-js?color=9cf&style=for-the-badge&labelColor=000000)](https://github.com/cocart-headless/cocart-js/blob/main/LICENSE)
 
 Official TypeScript SDK for the [CoCart](https://cocartapi.com) REST API. Build **headless WooCommerce storefronts** — meaning your frontend (React, Astro, Next.js, or any framework) talks to WooCommerce through its API instead of using PHP templates.
 
@@ -17,8 +17,8 @@ Official TypeScript SDK for the [CoCart](https://cocartapi.com) REST API. Build 
 
 * [ ] Add SDK docs to documentation site
 * [ ] Add support for Cart API extras
-* [x] Add Checkout API support
-* [x] Add Customers Account API support
+* [x] Add Checkout API support — implemented ([`@cocartheadless/checkout`](packages/checkout/README.md)); needs CoCart Plus 2.0, which isn't released yet
+* [x] Add Customers Account API support — implemented ([`client.account()`](docs/account.md)); needs CoCart Plus 2.0, which isn't released yet
 
 ---
 
@@ -26,6 +26,7 @@ Official TypeScript SDK for the [CoCart](https://cocartapi.com) REST API. Build 
 
 - **Node.js 20+** — Node.js is the JavaScript runtime that lets you run JavaScript outside a browser (e.g., on a server). Version 20 or higher is required because it includes a built-in `fetch` function for making HTTP requests. You can check your version by running `node -v` in your terminal.
 - **CoCart plugin** installed on your WooCommerce store — This is the WordPress plugin that provides the REST API endpoints the SDK communicates with.
+- **CoCart Plus 2.0** for the account and checkout APIs (not released yet) — The add-on plugin that provides customer accounts, checkout and payment. The cart and product APIs don't need it.
 - [CoCart JWT Authentication](https://wordpress.org/plugins/cocart-jwt-authentication/) plugin for JWT features (optional) — Only needed if you want to use JSON Web Token authentication (explained in the [Authentication](docs/authentication.md) guide).
 - **TypeScript 5.0+** (recommended) — Not strictly required, but you get the best experience (autocompletion, type checking) with TypeScript.
 
@@ -162,9 +163,9 @@ console.log(cart.get('totals.total')); // Reach into nested data with dot notati
 | [Configuration & Setup](docs/installation.md) | Options, fluent config, framework adapters, white-labelling |
 | [Authentication](docs/authentication.md) | Guest, Basic Auth, JWT, consumer keys |
 | [Cart API](docs/cart.md) | Add, update, remove items, coupons, shipping, fees |
-| [Checkout SDK](packages/checkout/README.md) | Separate npm package for Checkout API, gateway helpers, and headless checkout forms |
+| [Checkout SDK](packages/checkout/README.md) | Separate npm package for Checkout API, gateway helpers, and headless checkout forms (needs CoCart Plus 2.0, not released yet) |
 | [Products API](docs/products.md) | List, filter, search, categories, tags, brands |
-| [Account API](docs/account.md) | Customer profile, orders, downloads, and reviews |
+| [Account API](docs/account.md) | Registration, customer profile, password, addresses, orders, downloads, reviews and subscriptions (needs CoCart Plus 2.0, not released yet) |
 | [Sessions API](docs/sessions.md) | Admin sessions, SessionManager, storage adapters |
 | [Error Handling](docs/error-handling.md) | Error hierarchy, catching errors, common scenarios |
 | [Utilities](docs/utilities.md) | Currency formatter, timezone helper, response transformer |
