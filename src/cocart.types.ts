@@ -471,7 +471,8 @@ export interface AccountAddress {
 //
 // Every document has `object` (what it is: `order`, `subscription`, `customer`…), and a response
 // to a request that changes something has `result` first: `{ code, message }`, the code to branch
-// on. `actions` lists what can be done next, keyed by action, each `{ label, method, href }`.
+// on. An order or subscription has `allowed_actions`: what the customer may do with it now, as a
+// list of names (`pay`, `cancel`, `suspend`...).
 // Amounts are minor-unit strings, or formatted for display with `formatted: true`.
 
 /** All component schemas of the CoCart Plus v2 spec (cart, products, my account, others). */
@@ -512,7 +513,7 @@ export type SubscriptionUpdate = CoCartPlusSchemas['SubscriptionUpdate'];
 /** A subscription after its payment method changed, with what the change did in `result`. */
 export type SubscriptionPaymentMethodChange = CoCartPlusSchemas['SubscriptionPaymentMethodChange'];
 
-/** `GET /my-account/downloads` and `GET /my-account/orders/{id}/downloads`: `{ downloads: [...] }`. */
+/** `GET /my-account/downloads` and `GET /my-account/orders/{id}/downloads`: the files, as a list. */
 export type Downloads = CoCartPlusSchemas['Downloads'];
 
 /** `GET /cart/mini`: a part of the cart for a mini cart. */
@@ -533,7 +534,7 @@ export type EmailVerification = CoCartPlusSchemas['EmailVerification'];
 /** `POST /order-withdrawal`, with `result` (`withdrawal_requested`). */
 export type OrderWithdrawal = CoCartPlusSchemas['OrderWithdrawal'];
 
-/** The signed-in customer (`GET /my-account`): name, email, addresses, stats, `actions`. */
+/** The signed-in customer (`GET /my-account`): name, email, addresses and stats. */
 export type AccountProfile = CoCartPlusSchemas['Customer'];
 
 /** @deprecated The customer's details are at the top of `AccountProfile` now, not under `user`. */
@@ -548,8 +549,8 @@ export type AccountOrdersResponse = OrderList;
 /** `GET /my-account/orders/{id}`. */
 export type AccountOrderDetail = Order;
 
-/** One file in `Downloads.downloads`. */
-export type AccountDownload = Downloads['downloads'][number];
+/** One file in `Downloads`. */
+export type AccountDownload = Downloads[number];
 
 /**
  * `POST /my-account`. Send only what changes. A new email is confirmed by email first when the

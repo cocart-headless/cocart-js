@@ -171,7 +171,7 @@ export class CheckoutClient implements CheckoutSDK {
   }
 
   listGateways(remoteMethods?: CheckoutPaymentMethodsResponse): CheckoutGatewayPresentation[] {
-    const methods = new Map((remoteMethods?.payment_methods ?? []).map((method) => [method.id, method]));
+    const methods = new Map((remoteMethods ?? []).map((method) => [method.id, method]));
     const ids = new Set([...methods.keys(), ...this.adapters.keys()]);
 
     return [...ids].map((id) => {
@@ -192,7 +192,7 @@ export class CheckoutClient implements CheckoutSDK {
 
   /**
    * The checkout as it stands, like a receipt: items, coupons, fees, `totals` and `total_lines`,
-   * the payment method, the addresses, each shipping package with its rates, and `actions`.
+   * the payment method, the addresses, and each shipping package with its rates.
    * Call it for the page the customer reviews before paying: CoCart Plus remembers the total it
    * showed, and refuses the order if the total has changed by then (`cocart_checkout_total_mismatch`).
    */
@@ -320,7 +320,7 @@ export class CheckoutClient implements CheckoutSDK {
    */
   async getSavedPaymentMethods(gatewayId?: string): Promise<SavedPaymentMethod[]> {
     const response = (await this.getPaymentMethods()).toObject() as unknown;
-    const methods = isRecord(response) && Array.isArray(response.payment_methods) ? response.payment_methods : [];
+    const methods = Array.isArray(response) ? response : [];
     const cards: SavedPaymentMethod[] = [];
     for (const method of methods) {
       if (!isRecord(method) || typeof method.id !== 'string') continue;

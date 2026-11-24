@@ -94,7 +94,7 @@ describe('Account endpoint', () => {
 
   it('getOrderDownloads calls GET my-account/orders/{id}/downloads', async () => {
     const client = new CoCart('https://store.com', { username: 'user', password: 'pass' });
-    const requestRaw = vi.spyOn(client, 'requestRaw').mockResolvedValueOnce({ toObject: () => ({ downloads: [] }) } as never);
+    const requestRaw = vi.spyOn(client, 'requestRaw').mockResolvedValueOnce({ toObject: () => ([]) } as never);
 
     await client.account().getOrderDownloads(123);
 
@@ -103,7 +103,7 @@ describe('Account endpoint', () => {
 
   it('getGuestOrderDownloads sends the billing email to the same route', async () => {
     const client = new CoCart('https://store.com');
-    const requestRaw = vi.spyOn(client, 'requestRaw').mockResolvedValueOnce({ toObject: () => ({ downloads: [] }) } as never);
+    const requestRaw = vi.spyOn(client, 'requestRaw').mockResolvedValueOnce({ toObject: () => ([]) } as never);
 
     await client.account().getGuestOrderDownloads(123, 'jane@example.com');
 

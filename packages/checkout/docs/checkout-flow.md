@@ -32,7 +32,6 @@ The checkout reads like a receipt (`CheckoutState`):
 - `payment`: `needs_payment` and the chosen `method`
 - `customer`: `billing` and `shipping`, each with the address on one line in `formatted`
 - `delivery`: `needs_shipping` and `packages`, each with its `id`, `name`, `rates` (`id`, `method_id`, `instance_id`, `label`, `cost`, `tax`) and `chosen_rate`
-- `actions`: what can follow (`update`, `payment_methods`, `place_order`)
 
 > [!NOTE]
 > There's no `result` with a payment outcome here: the checkout isn't an order yet. Only `placeOrder()`, `submit()`, `payForOrder()` and `confirmReturn()` return an order with what the payment did.
@@ -41,9 +40,9 @@ The checkout reads like a receipt (`CheckoutState`):
 
 ```ts
 const methodsResponse = await client.checkout.getPaymentMethods();
-const { payment_methods } = methodsResponse.toObject();
+const paymentMethods = methodsResponse.toObject();
 
-for (const method of payment_methods) {
+for (const method of paymentMethods) {
   method.id;           // 'stripe'
   method.title;        // 'Credit card'
   method.supports;     // { tokenization: true, save_payment: true, refunds: true, subscriptions: true }
@@ -51,7 +50,7 @@ for (const method of payment_methods) {
 }
 ```
 
-`payment_methods` is a list, in the order the store sorts them. `supports` is a set of flags, and `restricted_to_shipping_methods` lists the shipping methods a method is limited to (e.g. Cash on delivery with `local_pickup`).
+The response is the list itself, in the order the store sorts them. `supports` is a set of flags, and `restricted_to_shipping_methods` lists the shipping methods a method is limited to (e.g. Cash on delivery with `local_pickup`).
 
 ## Saved cards
 
@@ -603,7 +602,7 @@ console.log(order.payment.needs_payment); // false once paid
 
 `getOrderReceived()` takes optional `formatted` and `meta_keys` (only these keys in the order's `meta`).
 
-If `payment.needs_payment` is `true` (a failed payment, or a customer who abandoned checkout on a `pending` order and came back), the order's `actions` include `pay`, and `payForOrder()` takes payment for it:
+If `payment.needs_payment` is `true` (a failed payment, or a customer who abandoned checkout on a `pending` order and came back), the order's `allowed_actions` include `pay`, and `payForOrder()` takes payment for it:
 
 ```ts
 const result = await client.checkout.payForOrder(order.id, order.key, {

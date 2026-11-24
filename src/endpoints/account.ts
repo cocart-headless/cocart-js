@@ -55,7 +55,7 @@ function documentQuery(params: object = {}): Record<string, string> | undefined 
 export class Account extends Endpoint {
   protected endpoint = ROUTE_BASE;
 
-  /** The signed-in customer: name, email, addresses, order stats and `actions`. */
+  /** The signed-in customer: name, email, addresses and order stats. */
   async getProfile(params: DocumentParams = {}): Promise<Response<AccountProfile>> {
     try {
       return (await this.client.requestRaw('GET', ROUTE_BASE, documentQuery(params))) as Response<AccountProfile>;
@@ -149,7 +149,7 @@ export class Account extends Endpoint {
     }
   }
 
-  /** The files one of the customer's orders can download: `{ downloads: [...] }`. */
+  /** The files one of the customer's orders can download, as a list. */
   async getOrderDownloads(id: number): Promise<Response<Downloads>> {
     try {
       return (await this.client.requestRaw('GET', `${ROUTE_BASE}/orders/${id}/downloads`)) as Response<Downloads>;
@@ -158,7 +158,7 @@ export class Account extends Endpoint {
     }
   }
 
-  /** The files a guest's order can download, looked up with its billing email: `{ downloads: [...] }`. */
+  /** The files a guest's order can download, looked up with its billing email, as a list. */
   async getGuestOrderDownloads(id: number, email: string): Promise<Response<Downloads>> {
     try {
       return (await this.client.requestRaw('GET', `${ROUTE_BASE}/orders/${id}/downloads`, { email })) as Response<Downloads>;
@@ -167,7 +167,7 @@ export class Account extends Endpoint {
     }
   }
 
-  /** Every file the customer can download: `{ downloads: [...] }`. */
+  /** Every file the customer can download, as a list. */
   async getDownloads(): Promise<Response<Downloads>> {
     try {
       return (await this.client.requestRaw('GET', `${ROUTE_BASE}/downloads`)) as Response<Downloads>;

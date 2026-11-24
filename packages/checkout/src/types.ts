@@ -120,11 +120,11 @@ export interface SavedPaymentMethod {
 /** All component schemas of the CoCart Plus v2 checkout spec. */
 type Schemas = CoCartPlusCheckoutSchemas;
 
-/** `GET /checkout/payment-methods`: `{ payment_methods: [...] }`, in the order the store lists them. */
+/** `GET /checkout/payment-methods`: the payment methods, in the order the store lists them. */
 export type CheckoutPaymentMethodsResponse = Schemas['PaymentMethods'];
 
 /** One payment method: `id`, `title`, `description`, `supports`, `saved_tokens`… */
-export type CheckoutPaymentMethod = CheckoutPaymentMethodsResponse['payment_methods'][number];
+export type CheckoutPaymentMethod = CheckoutPaymentMethodsResponse[number];
 
 /** A saved payment method on `CheckoutPaymentMethod.saved_tokens`: `id`, `label`, `type`, `is_default`, `expires`. */
 export type PaymentToken = CheckoutPaymentMethod['saved_tokens'][number];
@@ -288,13 +288,14 @@ export type AddressDetails = Schemas['AddressDetails'];
 
 /**
  * `GET /order-received/{order_id}`: the order, as a thank-you page shows it (and as my account
- * gives it). `actions` has `pay` while it needs payment, and `downloads` when it has files.
+ * gives it). `allowed_actions` has `pay` while it needs payment, and `downloads` lists its files.
  */
 export type OrderReceived = Schemas['Order'];
 /** The billing address on an order (`customer.billing`), with `formatted` for display. */
 export type OrderAddress = NonNullable<OrderReceived['customer']['billing']>;
 export type OrderLineItem = OrderReceived['items'][number];
-export type OrderLineItemMeta = OrderLineItem['meta_data'][number];
+/** One line to print under an order item (`details`), e.g. `{ label: 'Size', value: 'L' }`. */
+export type OrderLineItemDetail = OrderLineItem['details'][number];
 /** One line of the order's totals, for display: `key`, `label`, `amount`, `detail`. */
 export type OrderTotalLine = OrderReceived['total_lines'][number];
 /** A payment method the order can be paid with while it needs payment (`payment.available_methods`). */

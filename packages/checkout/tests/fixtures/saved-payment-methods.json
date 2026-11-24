@@ -16,83 +16,81 @@
       },
       "response": {
         "status": 200,
-        "body": {
-          "payment_methods": [
-            {
-              "id": "stripe",
-              "title": "Credit card",
-              "description": "Pay with your card.",
-              "order_button_text": null,
-              "has_fields": true,
-              "test_mode": true,
-              "supports": {
-                "tokenization": true,
-                "save_payment": true,
-                "refunds": true,
-                "subscriptions": true
-              },
-              "restricted_to_shipping_methods": [],
-              "saved_tokens": [
-                {
-                  "id": 7,
-                  "label": "Visa ending in 4242",
-                  "type": "CC",
-                  "is_default": true,
-                  "expires": "12/2030"
-                },
-                {
-                  "id": 9,
-                  "label": "Mastercard ending in 4444",
-                  "type": "CC",
-                  "is_default": false,
-                  "expires": "01/2029"
-                }
-              ]
+        "body": [
+          {
+            "id": "stripe",
+            "title": "Credit card",
+            "description": "Pay with your card.",
+            "order_button_text": null,
+            "has_fields": true,
+            "test_mode": true,
+            "supports": {
+              "tokenization": true,
+              "save_payment": true,
+              "refunds": true,
+              "subscriptions": true
             },
-            {
-              "id": "woocommerce_payments",
-              "title": "WooPayments",
-              "description": "",
-              "order_button_text": null,
-              "has_fields": true,
-              "test_mode": true,
-              "supports": {
-                "tokenization": true,
-                "save_payment": true,
-                "refunds": true,
-                "subscriptions": false
+            "restricted_to_shipping_methods": [],
+            "saved_tokens": [
+              {
+                "id": 7,
+                "label": "Visa ending in 4242",
+                "type": "CC",
+                "is_default": true,
+                "expires": "12/2030"
               },
-              "restricted_to_shipping_methods": [],
-              "saved_tokens": [
-                {
-                  "id": 12,
-                  "label": "Amex ending in 0005",
-                  "type": "CC",
-                  "is_default": false,
-                  "expires": ""
-                }
-              ]
+              {
+                "id": 9,
+                "label": "Mastercard ending in 4444",
+                "type": "CC",
+                "is_default": false,
+                "expires": "01/2029"
+              }
+            ]
+          },
+          {
+            "id": "woocommerce_payments",
+            "title": "WooPayments",
+            "description": "",
+            "order_button_text": null,
+            "has_fields": true,
+            "test_mode": true,
+            "supports": {
+              "tokenization": true,
+              "save_payment": true,
+              "refunds": true,
+              "subscriptions": false
             },
-            {
-              "id": "cod",
-              "title": "Cash on delivery",
-              "description": "Pay with cash upon delivery.",
-              "order_button_text": null,
-              "has_fields": false,
-              "test_mode": false,
-              "supports": {
-                "tokenization": false,
-                "save_payment": false,
-                "refunds": false,
-                "subscriptions": false
-              },
-              "restricted_to_shipping_methods": [
-                "local_pickup"
-              ],
-              "saved_tokens": []
-            }
-          ]
-        }
+            "restricted_to_shipping_methods": [],
+            "saved_tokens": [
+              {
+                "id": 12,
+                "label": "Amex ending in 0005",
+                "type": "CC",
+                "is_default": false,
+                "expires": ""
+              }
+            ]
+          },
+          {
+            "id": "cod",
+            "title": "Cash on delivery",
+            "description": "Pay with cash upon delivery.",
+            "order_button_text": null,
+            "has_fields": false,
+            "test_mode": false,
+            "supports": {
+              "tokenization": false,
+              "save_payment": false,
+              "refunds": false,
+              "subscriptions": false
+            },
+            "restricted_to_shipping_methods": [
+              "local_pickup"
+            ],
+            "saved_tokens": []
+          }
+        ]
       }
     }
   ],

@@ -45,7 +45,11 @@
             "title": "Visa ending in 4242",
             "needs_payment": false
           },
-          "actions": {}
+          "allowed_actions": [
+            "suspend",
+            "cancel",
+            "change_payment_method"
+          ]
         }
       }
     }
@@ -76,7 +80,11 @@
         "title": "Visa ending in 4242",
         "needs_payment": false
       },
-      "actions": {}
+      "allowed_actions": [
+        "suspend",
+        "cancel",
+        "change_payment_method"
+      ]
     }
   }
 }

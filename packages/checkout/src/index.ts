@@ -100,7 +100,7 @@ export type {
   // Order received / pay for order
   OrderAddress,
   OrderLineItem,
-  OrderLineItemMeta,
+  OrderLineItemDetail,
   OrderTotalLine,
   AvailablePaymentMethod,
   OrderReceived,

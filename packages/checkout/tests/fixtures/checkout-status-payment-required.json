@@ -36,10 +36,10 @@
               "code": "pending",
               "label": "Pending payment"
             },
-            "totals": {
-              "total": "2300"
-            },
-            "actions": {}
+            "total": "2300",
+            "allowed_actions": [
+              "pay"
+            ]
           }
         }
       }

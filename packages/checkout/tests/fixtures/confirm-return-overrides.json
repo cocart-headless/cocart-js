@@ -61,7 +61,7 @@
             "needs_payment": false,
             "date_paid": null
           },
-          "actions": {}
+          "allowed_actions": []
         }
       }
     }

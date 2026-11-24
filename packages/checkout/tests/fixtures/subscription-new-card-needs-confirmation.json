@@ -58,7 +58,11 @@
             "title": "Credit card",
             "needs_payment": false
           },
-          "actions": {}
+          "allowed_actions": [
+            "suspend",
+            "cancel",
+            "change_payment_method"
+          ]
         }
       }
     }

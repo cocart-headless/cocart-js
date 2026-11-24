@@ -33,7 +33,7 @@ See [Authentication](./authentication.md) for the full guide including JWT auto-
 
 ## How responses look
 
-Every account response is a document that says what it is in `object` (`customer`, `order`, `subscription`…). A request that changes something puts what it did first, in `result`: a `code` to branch on and a `message` for the customer. `actions` lists what can be done next, keyed by action, each with a `label`, `method` and `href`.
+Every account response is a document that says what it is in `object` (`customer`, `order`, `subscription`…). A request that changes something puts what it did first, in `result`: a `code` to branch on and a `message` for the customer. An order or subscription has `allowed_actions`: what the customer may do with it now, as a list of names (e.g. `pay`, `cancel`, `suspend`).
 
 Amounts are minor-unit strings (`"4999"`), as in the cart. Pass `formatted: true` for amounts ready to display (`"$49.99"`), and `meta_keys` to narrow the order or customer `meta` to the keys you need. The documents are typed from the CoCart Plus spec: `AccountProfile` (the customer), `Order`, `OrderList`, `Subscription`, `SubscriptionList` and `Downloads`, with every schema in `CoCartPlusSchemas`.
 
@@ -105,7 +105,7 @@ You can check whether registration is enabled, and whether username/password fie
 
 ### Get Profile
 
-Returns the signed-in customer: name, email, addresses, what they've bought and what they can do next.
+Returns the signed-in customer: name, email, addresses, what they've bought and their most recent orders.
 
 ```ts
 const response = await client.account().getProfile();
@@ -118,7 +118,7 @@ console.log(customer.stats.orders_count);       // 14
 console.log(customer.stats.total_spent);        // '32000' (minor units; formatted: true for '$320.00')
 console.log(customer.billing?.formatted);       // the billing address on one line
 console.log(customer.shipping);                 // null when the store doesn't ship to a separate address
-console.log(customer.related.recent_order);     // the most recent order, or null
+console.log(customer.recent_orders);           // the most recent orders, newest first ([] when none)
 console.log(customer.tax.is_vat_exempt);        // false
 ```
 
@@ -137,8 +137,8 @@ console.log(customer.tax.is_vat_exempt);        // false
 | `stats` | `{ orders_count, total_spent, is_paying_customer }` | What the customer has bought |
 | `billing`, `shipping` | `object \| null` | Addresses, each with `formatted` for display |
 | `tax` | `{ is_vat_exempt, is_outside_base }` | How tax applies |
-| `related.recent_order` | `object \| null` | The most recent order |
-| `actions`, `meta`, `extensions` | `object` | What can be done next, allowed meta, other plugins' data |
+| `recent_orders` | `object[]` | The most recent orders, newest first (5 by default), each `{ id, number, status, date_created, total, href }` |
+| `meta`, `extensions` | `object` | Allowed meta, other plugins' data |
 
 ---
 
@@ -225,8 +225,8 @@ for (const order of orders) {
   console.log(order.status.code);   // 'completed' (use this in code)
   console.log(order.status.label);  // 'Completed' (translated, for display)
   console.log(order.date_created?.label);
-  console.log(order.totals.total);  // '6450'
-  console.log(Object.keys(order.actions)); // e.g. ['view', 'pay', 'cancel']
+  console.log(order.total);         // '6450'
+  console.log(order.allowed_actions); // e.g. ['pay', 'cancel']
 }
 
 console.log(pagination.total_items, pagination.total_pages); // also in X-WP-Total / X-WP-TotalPages
@@ -254,7 +254,7 @@ const response = await client.account().getOrders({ status: 'processing', after:
 
 ### Get a Single Order
 
-Returns the whole order: what was bought, the totals as lines to display, the payment, the customer, the delivery (shipping lines and downloads), notes and what can be done next.
+Returns the whole order: what was bought, the totals as lines to display, the payment, the customer, the delivery (shipping lines), the downloads, notes and what can be done next (`allowed_actions`).
 
 ```ts
 const order = (await client.account().getOrder(1042)).toObject();
@@ -264,7 +264,9 @@ console.log(order.items);                // each line with its product, quantity
 console.log(order.total_lines);          // [{ key, label, amount, detail }] in display order
 console.log(order.payment.title);        // 'Credit card'
 console.log(order.payment.needs_payment); // true while it can still be paid
-console.log(order.delivery.downloads);   // the files this order can download
+console.log(order.delivery.shipping_lines); // [{ title, total, tax }]
+console.log(order.downloads);            // the files this order can download
+console.log(order.allowed_actions);      // e.g. ['pay', 'cancel']
 ```
 
 Someone else's order, or one that doesn't exist, is `404 cocart_order_not_found`.
@@ -288,7 +290,7 @@ const response = await client.account().getGuestOrder(1042, 'jane@example.com');
 Returns every file the customer can download, across all orders.
 
 ```ts
-const { downloads } = (await client.account().getDownloads()).toObject();
+const downloads = (await client.account().getDownloads()).toObject();
 
 for (const file of downloads) {
   console.log(file.name);                 // 'my-ebook-v2.pdf'
@@ -299,7 +301,7 @@ for (const file of downloads) {
 }
 ```
 
-**Response type:** `Downloads` (`{ downloads: AccountDownload[] }`)
+**Response type:** `Downloads` (`AccountDownload[]`)
 
 ---
 
@@ -308,7 +310,7 @@ for (const file of downloads) {
 Returns the files one order can download (`GET /my-account/orders/{id}/downloads`), in the same shape:
 
 ```ts
-const { downloads } = (await client.account().getOrderDownloads(1042)).toObject();
+const downloads = (await client.account().getOrderDownloads(1042)).toObject();
 ```
 
 ### Guest Order Downloads
@@ -316,7 +318,7 @@ const { downloads } = (await client.account().getOrderDownloads(1042)).toObject(
 For guest order look-up pages — no login, but the order ID and billing email must match:
 
 ```ts
-const { downloads } = (await client.account().getGuestOrderDownloads(1042, 'jane@example.com')).toObject();
+const downloads = (await client.account().getGuestOrderDownloads(1042, 'jane@example.com')).toObject();
 ```
 
 ---

@@ -87,7 +87,9 @@
             "needs_payment": true,
             "date_paid": null
           },
-          "actions": {}
+          "allowed_actions": [
+            "pay"
+          ]
         }
       }
     }

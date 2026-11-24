@@ -1904,7 +1904,7 @@ export interface paths {
         };
         /**
          * Get the customer
-         * @description The signed-in customer, like a receipt: names, email, `date_registered`, `stats`, addresses with the one-line `formatted`, `related.recent_order`, `actions` and `extensions`. Needs the customer signed in (JWT or Basic Auth); signed out it is `401 cocart_rest_authentication_required`.
+         * @description The signed-in customer, like a receipt: names, email, `date_registered`, `stats`, addresses with the one-line `formatted`, `recent_orders` and `extensions`. Needs the customer signed in (JWT or Basic Auth); signed out it is `401 cocart_rest_authentication_required`.
          */
         get: {
             parameters: {
@@ -1975,34 +1975,22 @@ export interface paths {
                          *         "is_vat_exempt": false,
                          *         "is_outside_base": false
                          *       },
-                         *       "related": {
-                         *         "recent_order": {
+                         *       "recent_orders": [
+                         *         {
                          *           "id": 2089,
                          *           "number": "2089",
+                         *           "status": {
+                         *             "code": "processing",
+                         *             "label": "Processing"
+                         *           },
                          *           "date_created": {
                          *             "iso": "2026-11-20T20:06:51+00:00",
                          *             "label": "November 20, 2026, 8:06 pm"
                          *           },
+                         *           "total": "1000",
                          *           "href": "https://example-store.com/wp-json/cocart/v2/my-account/orders/2089"
                          *         }
-                         *       },
-                         *       "actions": {
-                         *         "edit": {
-                         *           "label": "Account details",
-                         *           "method": "POST",
-                         *           "href": "https://example-store.com/wp-json/cocart/v2/my-account"
-                         *         },
-                         *         "update_address": {
-                         *           "label": "Addresses",
-                         *           "method": "PUT",
-                         *           "href": "https://example-store.com/wp-json/cocart/v2/my-account/address"
-                         *         },
-                         *         "orders": {
-                         *           "label": "Orders",
-                         *           "method": "GET",
-                         *           "href": "https://example-store.com/wp-json/cocart/v2/my-account/orders"
-                         *         }
-                         *       },
+                         *       ],
                          *       "meta": {},
                          *       "extensions": {
                          *         "email_verification": {
@@ -2134,26 +2122,7 @@ export interface paths {
                          *         "is_vat_exempt": false,
                          *         "is_outside_base": false
                          *       },
-                         *       "related": {
-                         *         "recent_order": null
-                         *       },
-                         *       "actions": {
-                         *         "edit": {
-                         *           "label": "Account details",
-                         *           "method": "POST",
-                         *           "href": "https://example-store.com/wp-json/cocart/v2/my-account"
-                         *         },
-                         *         "update_address": {
-                         *           "label": "Addresses",
-                         *           "method": "PUT",
-                         *           "href": "https://example-store.com/wp-json/cocart/v2/my-account/address"
-                         *         },
-                         *         "orders": {
-                         *           "label": "Orders",
-                         *           "method": "GET",
-                         *           "href": "https://example-store.com/wp-json/cocart/v2/my-account/orders"
-                         *         }
-                         *       },
+                         *       "recent_orders": [],
                          *       "meta": {},
                          *       "extensions": {
                          *         "email_verification": {
@@ -2318,26 +2287,7 @@ export interface paths {
                          *         "is_vat_exempt": false,
                          *         "is_outside_base": true
                          *       },
-                         *       "related": {
-                         *         "recent_order": null
-                         *       },
-                         *       "actions": {
-                         *         "edit": {
-                         *           "label": "Account details",
-                         *           "method": "POST",
-                         *           "href": "https://example-store.com/wp-json/cocart/v2/my-account"
-                         *         },
-                         *         "update_address": {
-                         *           "label": "Addresses",
-                         *           "method": "PUT",
-                         *           "href": "https://example-store.com/wp-json/cocart/v2/my-account/address"
-                         *         },
-                         *         "orders": {
-                         *           "label": "Orders",
-                         *           "method": "GET",
-                         *           "href": "https://example-store.com/wp-json/cocart/v2/my-account/orders"
-                         *         }
-                         *       },
+                         *       "recent_orders": [],
                          *       "meta": {},
                          *       "extensions": {
                          *         "email_verification": {
@@ -2519,7 +2469,7 @@ export interface paths {
         };
         /**
          * Get downloads
-         * @description The files the customer can download, in `{"downloads": [...]}`. Needs the customer signed in (JWT or Basic Auth); signed out it is `401 cocart_rest_authentication_required`.
+         * @description The files the customer can download, as a list. Needs the customer signed in (JWT or Basic Auth); signed out it is `401 cocart_rest_authentication_required`.
          */
         get: {
             parameters: {
@@ -2537,42 +2487,40 @@ export interface paths {
                     };
                     content: {
                         /**
-                         * @example {
-                         *       "downloads": [
-                         *         {
-                         *           "id": "test-file",
-                         *           "name": "Test file",
-                         *           "downloads_remaining": null,
-                         *           "expires": null,
-                         *           "product": {
-                         *             "id": 2066,
-                         *             "name": "Test Product"
-                         *           },
-                         *           "order": {
-                         *             "id": 2067,
-                         *             "number": "2067",
-                         *             "href": "https://example-store.com/wp-json/cocart/v2/my-account/orders/2067"
-                         *           },
-                         *           "href": "https://example-store.com/?download_file=2066&order=wc_order_26hdifFvhM99P&email=buyer%40example.com&key=test-file"
+                         * @example [
+                         *       {
+                         *         "id": "test-file",
+                         *         "name": "Test file",
+                         *         "downloads_remaining": null,
+                         *         "expires": null,
+                         *         "product": {
+                         *           "id": 2066,
+                         *           "name": "Test Product"
                          *         },
-                         *         {
-                         *           "id": "test-file",
-                         *           "name": "Test file",
-                         *           "downloads_remaining": null,
-                         *           "expires": null,
-                         *           "product": {
-                         *             "id": 2066,
-                         *             "name": "Test Product"
-                         *           },
-                         *           "order": {
-                         *             "id": 2067,
-                         *             "number": "2067",
-                         *             "href": "https://example-store.com/wp-json/cocart/v2/my-account/orders/2067"
-                         *           },
-                         *           "href": "https://example-store.com/?download_file=2066&order=wc_order_26hdifFvhM99P&email=buyer%40example.com&key=test-file"
-                         *         }
-                         *       ]
-                         *     }
+                         *         "order": {
+                         *           "id": 2067,
+                         *           "number": "2067",
+                         *           "href": "https://example-store.com/wp-json/cocart/v2/my-account/orders/2067"
+                         *         },
+                         *         "href": "https://example-store.com/?download_file=2066&order=wc_order_26hdifFvhM99P&email=buyer%40example.com&key=test-file"
+                         *       },
+                         *       {
+                         *         "id": "test-file",
+                         *         "name": "Test file",
+                         *         "downloads_remaining": null,
+                         *         "expires": null,
+                         *         "product": {
+                         *           "id": 2066,
+                         *           "name": "Test Product"
+                         *         },
+                         *         "order": {
+                         *           "id": 2067,
+                         *           "number": "2067",
+                         *           "href": "https://example-store.com/wp-json/cocart/v2/my-account/orders/2067"
+                         *         },
+                         *         "href": "https://example-store.com/?download_file=2066&order=wc_order_26hdifFvhM99P&email=buyer%40example.com&key=test-file"
+                         *       }
+                         *     ]
                          */
                         "application/json": components["schemas"]["Downloads"];
                     };
@@ -2614,7 +2562,7 @@ export interface paths {
         };
         /**
          * Get orders
-         * @description The customer's orders, newest first, each a summary of the order with the same paths. Filter by `status`, by date with `after` and `before`, and by `subscription_order_type`. `pagination` gives the page, the totals and links to the pages beside it; the totals are also sent as `X-WP-Total` and `X-WP-TotalPages`. Needs the customer signed in (JWT or Basic Auth); signed out it is `401 cocart_rest_authentication_required`.
+         * @description The customer's orders, newest first, each a summary of the order with the same paths, but a flat `total` in place of `totals`. Filter by `status`, by date with `after` and `before`, and by `subscription_order_type`. `pagination` gives the page, the totals and links to the pages beside it; the totals are also sent as `X-WP-Total` and `X-WP-TotalPages`. Needs the customer signed in (JWT or Basic Auth); signed out it is `401 cocart_rest_authentication_required`.
          */
         get: {
             parameters: {
@@ -2681,16 +2629,8 @@ export interface paths {
                          *             "currency_suffix": ""
                          *           },
                          *           "item_count": 0,
-                         *           "totals": {
-                         *             "total": "0"
-                         *           },
-                         *           "actions": {
-                         *             "view": {
-                         *               "label": "View",
-                         *               "method": "GET",
-                         *               "href": "https://example-store.com/wp-json/cocart/v2/my-account/orders/2427"
-                         *             }
-                         *           },
+                         *           "total": "0",
+                         *           "allowed_actions": [],
                          *           "meta": {},
                          *           "extensions": {
                          *             "subscription_data": {
@@ -2730,18 +2670,9 @@ export interface paths {
                          *                     "trial_end": null,
                          *                     "end": null
                          *                   },
-                         *                   "totals": {
-                         *                     "total": "1999"
-                         *                   },
+                         *                   "total": "1999",
                          *                   "payment": {
                          *                     "auto_renew": true
-                         *                   },
-                         *                   "actions": {
-                         *                     "view": {
-                         *                       "label": "View",
-                         *                       "method": "GET",
-                         *                       "href": "https://example-store.com/wp-json/cocart/v2/my-account/subscriptions/2426"
-                         *                     }
                          *                   },
                          *                   "meta": {},
                          *                   "extensions": {}
@@ -2774,16 +2705,8 @@ export interface paths {
                          *             "currency_suffix": ""
                          *           },
                          *           "item_count": 0,
-                         *           "totals": {
-                         *             "total": "0"
-                         *           },
-                         *           "actions": {
-                         *             "view": {
-                         *               "label": "View",
-                         *               "method": "GET",
-                         *               "href": "https://example-store.com/wp-json/cocart/v2/my-account/orders/2429"
-                         *             }
-                         *           },
+                         *           "total": "0",
+                         *           "allowed_actions": [],
                          *           "meta": {},
                          *           "extensions": {
                          *             "subscription_data": {
@@ -2826,18 +2749,9 @@ export interface paths {
                          *                     "trial_end": null,
                          *                     "end": null
                          *                   },
-                         *                   "totals": {
-                         *                     "total": "1999"
-                         *                   },
+                         *                   "total": "1999",
                          *                   "payment": {
                          *                     "auto_renew": true
-                         *                   },
-                         *                   "actions": {
-                         *                     "view": {
-                         *                       "label": "View",
-                         *                       "method": "GET",
-                         *                       "href": "https://example-store.com/wp-json/cocart/v2/my-account/subscriptions/2428"
-                         *                     }
                          *                   },
                          *                   "meta": {},
                          *                   "extensions": {}
@@ -2870,16 +2784,8 @@ export interface paths {
                          *             "currency_suffix": ""
                          *           },
                          *           "item_count": 0,
-                         *           "totals": {
-                         *             "total": "0"
-                         *           },
-                         *           "actions": {
-                         *             "view": {
-                         *               "label": "View",
-                         *               "method": "GET",
-                         *               "href": "https://example-store.com/wp-json/cocart/v2/my-account/orders/2430"
-                         *             }
-                         *           },
+                         *           "total": "0",
+                         *           "allowed_actions": [],
                          *           "meta": {},
                          *           "extensions": {
                          *             "subscription_data": {
@@ -2922,18 +2828,9 @@ export interface paths {
                          *                     "trial_end": null,
                          *                     "end": null
                          *                   },
-                         *                   "totals": {
-                         *                     "total": "1999"
-                         *                   },
+                         *                   "total": "1999",
                          *                   "payment": {
                          *                     "auto_renew": true
-                         *                   },
-                         *                   "actions": {
-                         *                     "view": {
-                         *                       "label": "View",
-                         *                       "method": "GET",
-                         *                       "href": "https://example-store.com/wp-json/cocart/v2/my-account/subscriptions/2424"
-                         *                     }
                          *                   },
                          *                   "meta": {},
                          *                   "extensions": {}
@@ -3059,7 +2956,7 @@ export interface paths {
                          *           },
                          *           "refunded_quantity": 0,
                          *           "sku": "",
-                         *           "meta_data": [],
+                         *           "details": [],
                          *           "meta": {},
                          *           "purchase_note": "",
                          *           "product": {
@@ -3139,9 +3036,9 @@ export interface paths {
                          *       },
                          *       "delivery": {
                          *         "needs_shipping": false,
-                         *         "shipping_lines": [],
-                         *         "downloads": []
+                         *         "shipping_lines": []
                          *       },
+                         *       "downloads": [],
                          *       "notes": [
                          *         {
                          *           "date": {
@@ -3151,16 +3048,8 @@ export interface paths {
                          *           "note": "Your order is on its way."
                          *         }
                          *       ],
-                         *       "related": {
-                         *         "parent_order": null
-                         *       },
-                         *       "actions": {
-                         *         "view": {
-                         *           "label": "View",
-                         *           "method": "GET",
-                         *           "href": "https://example-store.com/wp-json/cocart/v2/my-account/orders/2045"
-                         *         }
-                         *       },
+                         *       "parent_order": null,
+                         *       "allowed_actions": [],
                          *       "meta": {},
                          *       "extensions": {
                          *         "subscription_data": {
@@ -3307,7 +3196,7 @@ export interface paths {
                          *           },
                          *           "refunded_quantity": 0,
                          *           "sku": "",
-                         *           "meta_data": [],
+                         *           "details": [],
                          *           "meta": {},
                          *           "purchase_note": "",
                          *           "product": {
@@ -3375,20 +3264,12 @@ export interface paths {
                          *       },
                          *       "delivery": {
                          *         "needs_shipping": false,
-                         *         "shipping_lines": [],
-                         *         "downloads": []
+                         *         "shipping_lines": []
                          *       },
+                         *       "downloads": [],
                          *       "notes": [],
-                         *       "related": {
-                         *         "parent_order": null
-                         *       },
-                         *       "actions": {
-                         *         "view": {
-                         *           "label": "View",
-                         *           "method": "GET",
-                         *           "href": "https://example-store.com/wp-json/cocart/v2/my-account/orders/2026"
-                         *         }
-                         *       },
+                         *       "parent_order": null,
+                         *       "allowed_actions": [],
                          *       "meta": {},
                          *       "extensions": {
                          *         "subscription_data": {
@@ -3449,7 +3330,7 @@ export interface paths {
         };
         /**
          * Get subscriptions
-         * @description The customer's subscriptions, each a summary with the same paths as the subscription. Filter by `status`. `pagination` gives the page, the totals and links to the pages beside it; the totals are also sent as `X-WP-Total` and `X-WP-TotalPages`. Needs WooCommerce Subscriptions or Milo Subscriptions. Needs the customer signed in (JWT or Basic Auth); signed out it is `401 cocart_rest_authentication_required`.
+         * @description The customer's subscriptions, each a summary with the same paths as the subscription, but a flat `total` in place of `totals`. Filter by `status`. `pagination` gives the page, the totals and links to the pages beside it; the totals are also sent as `X-WP-Total` and `X-WP-TotalPages`. Needs WooCommerce Subscriptions or Milo Subscriptions. Needs the customer signed in (JWT or Basic Auth); signed out it is `401 cocart_rest_authentication_required`.
          */
         get: {
             parameters: {
@@ -3519,18 +3400,9 @@ export interface paths {
                          *             "trial_end": null,
                          *             "end": null
                          *           },
-                         *           "totals": {
-                         *             "total": "1999"
-                         *           },
+                         *           "total": "1999",
                          *           "payment": {
                          *             "auto_renew": true
-                         *           },
-                         *           "actions": {
-                         *             "view": {
-                         *               "label": "View",
-                         *               "method": "GET",
-                         *               "href": "https://example-store.com/wp-json/cocart/v2/my-account/subscriptions/2449"
-                         *             }
                          *           },
                          *           "meta": {},
                          *           "extensions": {}
@@ -3565,18 +3437,9 @@ export interface paths {
                          *             "trial_end": null,
                          *             "end": null
                          *           },
-                         *           "totals": {
-                         *             "total": "1999"
-                         *           },
+                         *           "total": "1999",
                          *           "payment": {
                          *             "auto_renew": true
-                         *           },
-                         *           "actions": {
-                         *             "view": {
-                         *               "label": "View",
-                         *               "method": "GET",
-                         *               "href": "https://example-store.com/wp-json/cocart/v2/my-account/subscriptions/2451"
-                         *             }
                          *           },
                          *           "meta": {},
                          *           "extensions": {}
@@ -3611,18 +3474,9 @@ export interface paths {
                          *             "trial_end": null,
                          *             "end": null
                          *           },
-                         *           "totals": {
-                         *             "total": "1999"
-                         *           },
+                         *           "total": "1999",
                          *           "payment": {
                          *             "auto_renew": true
-                         *           },
-                         *           "actions": {
-                         *             "view": {
-                         *               "label": "View",
-                         *               "method": "GET",
-                         *               "href": "https://example-store.com/wp-json/cocart/v2/my-account/subscriptions/2453"
-                         *             }
                          *           },
                          *           "meta": {},
                          *           "extensions": {}
@@ -3678,7 +3532,7 @@ export interface paths {
         };
         /**
          * Get a subscription
-         * @description One of the customer's subscriptions, like a receipt: its `schedule`, `payment` with `auto_renew`, `related` orders and the `actions` the customer may take. A guest can see a subscription bought without an account by giving its billing `email`.
+         * @description One of the customer's subscriptions, like a receipt: its `schedule`, `payment` with `auto_renew`, `related` orders and the `allowed_actions` the customer may take. A guest can see a subscription bought without an account by giving its billing `email`.
          */
         get: {
             parameters: {
@@ -3831,9 +3685,7 @@ export interface paths {
                          *               "iso": "2026-11-20T15:07:42-05:00",
                          *               "label": "2026-11-20, 3:07 pm"
                          *             },
-                         *             "totals": {
-                         *               "total": "€0.00"
-                         *             },
+                         *             "total": "€0.00",
                          *             "href": "https://example-store.com/wp-json/cocart/v2/my-account/orders/2464"
                          *           },
                          *           {
@@ -3848,30 +3700,15 @@ export interface paths {
                          *               "iso": "2026-11-20T15:07:42-05:00",
                          *               "label": "2026-11-20, 3:07 pm"
                          *             },
-                         *             "totals": {
-                         *               "total": "€0.00"
-                         *             },
+                         *             "total": "€0.00",
                          *             "href": "https://example-store.com/wp-json/cocart/v2/my-account/orders/2465"
                          *           }
                          *         ]
                          *       },
-                         *       "actions": {
-                         *         "view": {
-                         *           "label": "View",
-                         *           "method": "GET",
-                         *           "href": "https://example-store.com/wp-json/cocart/v2/my-account/subscriptions/2463"
-                         *         },
-                         *         "suspend": {
-                         *           "label": "Suspend",
-                         *           "method": "POST",
-                         *           "href": "https://example-store.com/wp-json/cocart/v2/my-account/subscriptions/2463/suspend"
-                         *         },
-                         *         "cancel": {
-                         *           "label": "Cancel",
-                         *           "method": "POST",
-                         *           "href": "https://example-store.com/wp-json/cocart/v2/my-account/subscriptions/2463/cancel"
-                         *         }
-                         *       },
+                         *       "allowed_actions": [
+                         *         "suspend",
+                         *         "cancel"
+                         *       ],
                          *       "meta": {},
                          *       "extensions": {}
                          *     }
@@ -4076,30 +3913,15 @@ export interface paths {
                          *               "iso": "2026-11-20T20:07:45+00:00",
                          *               "label": "November 20, 2026, 8:07 pm"
                          *             },
-                         *             "totals": {
-                         *               "total": "0"
-                         *             },
+                         *             "total": "0",
                          *             "href": "https://example-store.com/wp-json/cocart/v2/my-account/orders/2515"
                          *           }
                          *         ]
                          *       },
-                         *       "actions": {
-                         *         "view": {
-                         *           "label": "View",
-                         *           "method": "GET",
-                         *           "href": "https://example-store.com/wp-json/cocart/v2/my-account/subscriptions/2514"
-                         *         },
-                         *         "reactivate": {
-                         *           "label": "Reactivate",
-                         *           "method": "POST",
-                         *           "href": "https://example-store.com/wp-json/cocart/v2/my-account/subscriptions/2514/reactivate"
-                         *         },
-                         *         "cancel": {
-                         *           "label": "Cancel",
-                         *           "method": "POST",
-                         *           "href": "https://example-store.com/wp-json/cocart/v2/my-account/subscriptions/2514/cancel"
-                         *         }
-                         *       },
+                         *       "allowed_actions": [
+                         *         "reactivate",
+                         *         "cancel"
+                         *       ],
                          *       "meta": {},
                          *       "extensions": {}
                          *     }
@@ -4314,9 +4136,7 @@ export interface paths {
                          *               "iso": "2026-11-20T20:07:46+00:00",
                          *               "label": "November 20, 2026, 8:07 pm"
                          *             },
-                         *             "totals": {
-                         *               "total": "0"
-                         *             },
+                         *             "total": "0",
                          *             "href": "https://example-store.com/wp-json/cocart/v2/my-account/orders/2529"
                          *           },
                          *           {
@@ -4331,9 +4151,7 @@ export interface paths {
                          *               "iso": "2026-11-20T20:07:46+00:00",
                          *               "label": "November 20, 2026, 8:07 pm"
                          *             },
-                         *             "totals": {
-                         *               "total": "0"
-                         *             },
+                         *             "total": "0",
                          *             "href": "https://example-store.com/wp-json/cocart/v2/my-account/orders/2530"
                          *           },
                          *           {
@@ -4348,25 +4166,14 @@ export interface paths {
                          *               "iso": "2026-11-20T20:07:47+00:00",
                          *               "label": "November 20, 2026, 8:07 pm"
                          *             },
-                         *             "totals": {
-                         *               "total": "0"
-                         *             },
+                         *             "total": "0",
                          *             "href": "https://example-store.com/wp-json/cocart/v2/my-account/orders/2531"
                          *           }
                          *         ]
                          *       },
-                         *       "actions": {
-                         *         "view": {
-                         *           "label": "View",
-                         *           "method": "GET",
-                         *           "href": "https://example-store.com/wp-json/cocart/v2/my-account/subscriptions/2528"
-                         *         },
-                         *         "reactivate": {
-                         *           "label": "Reactivate",
-                         *           "method": "POST",
-                         *           "href": "https://example-store.com/wp-json/cocart/v2/my-account/subscriptions/2528/reactivate"
-                         *         }
-                         *       },
+                         *       "allowed_actions": [
+                         *         "reactivate"
+                         *       ],
                          *       "meta": {},
                          *       "extensions": {}
                          *     }
@@ -4581,30 +4388,15 @@ export interface paths {
                          *               "iso": "2026-11-20T20:07:47+00:00",
                          *               "label": "November 20, 2026, 8:07 pm"
                          *             },
-                         *             "totals": {
-                         *               "total": "0"
-                         *             },
+                         *             "total": "0",
                          *             "href": "https://example-store.com/wp-json/cocart/v2/my-account/orders/2533"
                          *           }
                          *         ]
                          *       },
-                         *       "actions": {
-                         *         "view": {
-                         *           "label": "View",
-                         *           "method": "GET",
-                         *           "href": "https://example-store.com/wp-json/cocart/v2/my-account/subscriptions/2532"
-                         *         },
-                         *         "suspend": {
-                         *           "label": "Suspend",
-                         *           "method": "POST",
-                         *           "href": "https://example-store.com/wp-json/cocart/v2/my-account/subscriptions/2532/suspend"
-                         *         },
-                         *         "cancel": {
-                         *           "label": "Cancel",
-                         *           "method": "POST",
-                         *           "href": "https://example-store.com/wp-json/cocart/v2/my-account/subscriptions/2532/cancel"
-                         *         }
-                         *       },
+                         *       "allowed_actions": [
+                         *         "suspend",
+                         *         "cancel"
+                         *       ],
                          *       "meta": {},
                          *       "extensions": {}
                          *     }
@@ -4821,30 +4613,15 @@ export interface paths {
                          *               "iso": "2026-11-20T20:07:48+00:00",
                          *               "label": "November 20, 2026, 8:07 pm"
                          *             },
-                         *             "totals": {
-                         *               "total": "0"
-                         *             },
+                         *             "total": "0",
                          *             "href": "https://example-store.com/wp-json/cocart/v2/my-account/orders/2557"
                          *           }
                          *         ]
                          *       },
-                         *       "actions": {
-                         *         "view": {
-                         *           "label": "View",
-                         *           "method": "GET",
-                         *           "href": "https://example-store.com/wp-json/cocart/v2/my-account/subscriptions/2556"
-                         *         },
-                         *         "suspend": {
-                         *           "label": "Suspend",
-                         *           "method": "POST",
-                         *           "href": "https://example-store.com/wp-json/cocart/v2/my-account/subscriptions/2556/suspend"
-                         *         },
-                         *         "cancel": {
-                         *           "label": "Cancel",
-                         *           "method": "POST",
-                         *           "href": "https://example-store.com/wp-json/cocart/v2/my-account/subscriptions/2556/cancel"
-                         *         }
-                         *       },
+                         *       "allowed_actions": [
+                         *         "suspend",
+                         *         "cancel"
+                         *       ],
                          *       "meta": {},
                          *       "extensions": {}
                          *     }
@@ -5071,30 +4848,15 @@ export interface paths {
                          *               "iso": "2026-11-20T20:07:49+00:00",
                          *               "label": "November 20, 2026, 8:07 pm"
                          *             },
-                         *             "totals": {
-                         *               "total": "0"
-                         *             },
+                         *             "total": "0",
                          *             "href": "https://example-store.com/wp-json/cocart/v2/my-account/orders/2569"
                          *           }
                          *         ]
                          *       },
-                         *       "actions": {
-                         *         "view": {
-                         *           "label": "View",
-                         *           "method": "GET",
-                         *           "href": "https://example-store.com/wp-json/cocart/v2/my-account/subscriptions/2568"
-                         *         },
-                         *         "suspend": {
-                         *           "label": "Suspend",
-                         *           "method": "POST",
-                         *           "href": "https://example-store.com/wp-json/cocart/v2/my-account/subscriptions/2568/suspend"
-                         *         },
-                         *         "cancel": {
-                         *           "label": "Cancel",
-                         *           "method": "POST",
-                         *           "href": "https://example-store.com/wp-json/cocart/v2/my-account/subscriptions/2568/cancel"
-                         *         }
-                         *       },
+                         *       "allowed_actions": [
+                         *         "suspend",
+                         *         "cancel"
+                         *       ],
                          *       "meta": {},
                          *       "extensions": {}
                          *     }
@@ -5665,34 +5427,22 @@ export interface paths {
                          *         "is_vat_exempt": false,
                          *         "is_outside_base": false
                          *       },
-                         *       "related": {
-                         *         "recent_order": {
+                         *       "recent_orders": [
+                         *         {
                          *           "id": 2148,
                          *           "number": "2148",
+                         *           "status": {
+                         *             "code": "pending",
+                         *             "label": "Pending payment"
+                         *           },
                          *           "date_created": {
                          *             "iso": "2026-11-20T20:07:02+00:00",
                          *             "label": "November 20, 2026, 8:07 pm"
                          *           },
+                         *           "total": "1000",
                          *           "href": "https://example-store.com/wp-json/cocart/v2/my-account/orders/2148"
                          *         }
-                         *       },
-                         *       "actions": {
-                         *         "edit": {
-                         *           "label": "Account details",
-                         *           "method": "POST",
-                         *           "href": "https://example-store.com/wp-json/cocart/v2/my-account"
-                         *         },
-                         *         "update_address": {
-                         *           "label": "Addresses",
-                         *           "method": "PUT",
-                         *           "href": "https://example-store.com/wp-json/cocart/v2/my-account/address"
-                         *         },
-                         *         "orders": {
-                         *           "label": "Orders",
-                         *           "method": "GET",
-                         *           "href": "https://example-store.com/wp-json/cocart/v2/my-account/orders"
-                         *         }
-                         *       },
+                         *       ],
                          *       "meta": {},
                          *       "extensions": {
                          *         "email_verification": {
@@ -5895,16 +5645,7 @@ export interface paths {
                          *         "is_vat_exempt": false,
                          *         "is_outside_base": false
                          *       },
-                         *       "related": {
-                         *         "recent_order": null
-                         *       },
-                         *       "actions": {
-                         *         "login": {
-                         *           "label": "Log in",
-                         *           "method": "POST",
-                         *           "href": "https://example-store.com/wp-json/cocart/v2/login"
-                         *         }
-                         *       },
+                         *       "recent_orders": [],
                          *       "meta": {},
                          *       "extensions": {
                          *         "email_verification": {
@@ -6393,26 +6134,24 @@ export interface paths {
                     };
                     content: {
                         /**
-                         * @example {
-                         *       "downloads": [
-                         *         {
-                         *           "id": "test-file",
-                         *           "name": "Test file",
-                         *           "downloads_remaining": null,
-                         *           "expires": null,
-                         *           "product": {
-                         *             "id": 2064,
-                         *             "name": "Test Product"
-                         *           },
-                         *           "order": {
-                         *             "id": 2065,
-                         *             "number": "2065",
-                         *             "href": "https://example-store.com/wp-json/cocart/v2/my-account/orders/2065"
-                         *           },
-                         *           "href": "https://example-store.com/?download_file=2064&order=wc_order_NB8b2XGZwDk4e&uid=6a6c26195c3682faa816966af789717c3bfa834eee6c599d667d2b3429c27cfd&key=test-file"
-                         *         }
-                         *       ]
-                         *     }
+                         * @example [
+                         *       {
+                         *         "id": "test-file",
+                         *         "name": "Test file",
+                         *         "downloads_remaining": null,
+                         *         "expires": null,
+                         *         "product": {
+                         *           "id": 2064,
+                         *           "name": "Test Product"
+                         *         },
+                         *         "order": {
+                         *           "id": 2065,
+                         *           "number": "2065",
+                         *           "href": "https://example-store.com/wp-json/cocart/v2/my-account/orders/2065"
+                         *         },
+                         *         "href": "https://example-store.com/?download_file=2064&order=wc_order_NB8b2XGZwDk4e&uid=6a6c26195c3682faa816966af789717c3bfa834eee6c599d667d2b3429c27cfd&key=test-file"
+                         *       }
+                         *     ]
                          */
                         "application/json": components["schemas"]["Downloads"];
                     };
@@ -7286,48 +7025,37 @@ export interface components {
                 /** @description Whether the customer is outside the store's base location. */
                 readonly is_outside_base: boolean;
             };
-            /** @description Things related to the customer. */
-            readonly related: {
-                /** @description The customer's most recent order, or null when there is none. */
-                readonly recent_order: {
-                    /** @description Order ID. */
-                    readonly id: number;
-                    /** @description Order number. */
-                    readonly number: string;
-                    /** @description When the order was placed. Null when there is none. */
-                    readonly date_created: {
-                        /**
-                         * Format: date-time
-                         * @description The date in ISO 8601 format, with the site's UTC offset.
-                         */
-                        readonly iso: string;
-                        /** @description The date in the site's date and time format, for display. */
-                        readonly label: string;
-                    } | null;
-                    /**
-                     * Format: uri
-                     * @description Link to the order.
-                     */
-                    readonly href: string;
-                } | null;
-            };
-            /** @description What the customer can do next in My Account, keyed by action. An empty object when there are none. */
-            readonly actions: {
-                [key: string]: {
-                    /** @description Label for display. */
+            /** @description The customer's most recent orders, newest first: 5 by default (`cocart_customer_recent_orders_limit`). An empty list when there are none. */
+            readonly recent_orders: {
+                /** @description Order ID. */
+                readonly id: number;
+                /** @description Order number. */
+                readonly number: string;
+                /** @description Order status. */
+                readonly status: {
+                    /** @description Status code, not translated and without the "wc-" prefix, e.g. on-hold. Use this in code. */
+                    readonly code: string;
+                    /** @description Status label, translated, for display. */
                     readonly label: string;
-                    /**
-                     * @description HTTP method to call the route with.
-                     * @enum {string}
-                     */
-                    readonly method: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
-                    /**
-                     * Format: uri
-                     * @description Route URL.
-                     */
-                    readonly href: string;
                 };
-            };
+                /** @description When the order was placed. Null when there is none. */
+                readonly date_created: {
+                    /**
+                     * Format: date-time
+                     * @description The date in ISO 8601 format, with the site's UTC offset.
+                     */
+                    readonly iso: string;
+                    /** @description The date in the site's date and time format, for display. */
+                    readonly label: string;
+                } | null;
+                /** @description Order total, in the order's currency. In minor units, e.g. "4999", or formatted for display with `formatted=true`. */
+                readonly total: string;
+                /**
+                 * Format: uri
+                 * @description Link to the order.
+                 */
+                readonly href: string;
+            }[];
             /** @description The customer's meta the store allows (`cocart_customer_allowed_meta_keys`). Keyed by meta key, with the first value of each as stored. Only keys the store allows, narrowed by `meta_keys`. An empty object when there are none. */
             readonly meta: {
                 [key: string]: unknown;
@@ -7341,52 +7069,49 @@ export interface components {
                 };
             };
         };
-        /** @description Files the customer can download. */
+        /** @description The files the customer can download. Empty when there are none. */
         Downloads: {
-            /** @description The files the customer can download. Empty when there are none. */
-            readonly downloads: {
-                /** @description The download's ID within its product. */
-                readonly id: string;
-                /** @description The file's name. */
+            /** @description The download's ID within its product. */
+            readonly id: string;
+            /** @description The file's name. */
+            readonly name: string;
+            /** @description How many downloads are left, or null when they are unlimited. */
+            readonly downloads_remaining: number | null;
+            /** @description When the download expires, or null when it never does. Null when there is none. */
+            readonly expires: {
+                /**
+                 * Format: date-time
+                 * @description The date in ISO 8601 format, with the site's UTC offset.
+                 */
+                readonly iso: string;
+                /** @description The date in the site's date and time format, for display. */
+                readonly label: string;
+            } | null;
+            /** @description The product the file comes with. */
+            readonly product: {
+                /** @description Product ID. */
+                readonly id: number;
+                /** @description Product name. */
                 readonly name: string;
-                /** @description How many downloads are left, or null when they are unlimited. */
-                readonly downloads_remaining: number | null;
-                /** @description When the download expires, or null when it never does. Null when there is none. */
-                readonly expires: {
-                    /**
-                     * Format: date-time
-                     * @description The date in ISO 8601 format, with the site's UTC offset.
-                     */
-                    readonly iso: string;
-                    /** @description The date in the site's date and time format, for display. */
-                    readonly label: string;
-                } | null;
-                /** @description The product the file comes with. */
-                readonly product: {
-                    /** @description Product ID. */
-                    readonly id: number;
-                    /** @description Product name. */
-                    readonly name: string;
-                };
-                /** @description The order the file was bought with, or null. Null when there is none. */
-                readonly order: {
-                    /** @description ID. */
-                    readonly id: number;
-                    /** @description Number, for display. */
-                    readonly number: string;
-                    /**
-                     * Format: uri
-                     * @description Route URL.
-                     */
-                    readonly href: string;
-                } | null;
+            };
+            /** @description The order the file was bought with, or null. Null when there is none. */
+            readonly order: {
+                /** @description ID. */
+                readonly id: number;
+                /** @description Number, for display. */
+                readonly number: string;
                 /**
                  * Format: uri
-                 * @description The link that downloads the file.
+                 * @description Route URL.
                  */
                 readonly href: string;
-            }[];
-        };
+            } | null;
+            /**
+             * Format: uri
+             * @description The link that downloads the file.
+             */
+            readonly href: string;
+        }[];
         /** @description What confirming a new email address did. */
         EmailChange: {
             /**
@@ -7512,7 +7237,7 @@ export interface components {
             /** @description Notices for the customer, keyed by type, as the cart gives them. */
             readonly notices: Record<string, never>;
         };
-        /** @description An order, like a receipt. The same document wherever an order is returned; a list row is a summary with the same paths. */
+        /** @description An order, like a receipt. The same document wherever an order is returned; a list row is a summary with the same paths, but a flat `total` in place of `totals`. */
         Order: {
             /**
              * @description The kind of document: "order".
@@ -7588,14 +7313,14 @@ export interface components {
                 readonly refunded_quantity: number;
                 /** @description Product SKU. */
                 readonly sku: string;
-                /** @description Item metadata for display. A list, empty when there is none. */
-                readonly meta_data: {
-                    /** @description Meta label. */
-                    readonly key: string;
-                    /** @description Meta value. */
+                /** @description What to print under the item, e.g. its size or an engraving, in order. An empty list when there is none. */
+                readonly details: {
+                    /** @description Label for display, e.g. "Size". */
+                    readonly label: string;
+                    /** @description Value for display, e.g. "L". */
                     readonly value: string;
                 }[];
-                /** @description The item's meta the store allows (`cocart_order_items_allowed_meta_keys`), for code; `meta_data` is for display. Keyed by meta key, with the first value of each as stored. Only keys the store allows, narrowed by `meta_keys`. An empty object when there are none. */
+                /** @description The item's raw meta the store allows (`cocart_order_items_allowed_meta_keys`), keyed by meta key, for code. Show `details` to the customer. Keyed by meta key, with the first value of each as stored. Only keys the store allows, narrowed by `meta_keys`. An empty object when there are none. */
                 readonly meta: {
                     [key: string]: unknown;
                 };
@@ -7781,12 +7506,6 @@ export interface components {
                 readonly needs_shipping: boolean;
                 /** @description The order's shipping methods. */
                 readonly shipping_lines: {
-                    /** @description Order item ID. */
-                    readonly id: number;
-                    /** @description Shipping method ID, e.g. flat_rate. */
-                    readonly method_id: string;
-                    /** @description Shipping method instance ID. */
-                    readonly instance_id: number;
                     /** @description Shipping method title. */
                     readonly title: string;
                     /** @description Shipping cost, excluding tax. In minor units, e.g. "4999", or formatted for display with `formatted=true`. */
@@ -7794,50 +7513,50 @@ export interface components {
                     /** @description Tax on shipping. In minor units, e.g. "4999", or formatted for display with `formatted=true`. */
                     readonly tax: string;
                 }[];
-                /** @description The files the customer can download from the order. Empty until downloads are permitted. */
-                readonly downloads: {
-                    /** @description The download's ID within its product. */
-                    readonly id: string;
-                    /** @description The file's name. */
+            };
+            /** @description The files the customer can download from the order. Empty until downloads are permitted. */
+            readonly downloads: {
+                /** @description The download's ID within its product. */
+                readonly id: string;
+                /** @description The file's name. */
+                readonly name: string;
+                /** @description How many downloads are left, or null when they are unlimited. */
+                readonly downloads_remaining: number | null;
+                /** @description When the download expires, or null when it never does. Null when there is none. */
+                readonly expires: {
+                    /**
+                     * Format: date-time
+                     * @description The date in ISO 8601 format, with the site's UTC offset.
+                     */
+                    readonly iso: string;
+                    /** @description The date in the site's date and time format, for display. */
+                    readonly label: string;
+                } | null;
+                /** @description The product the file comes with. */
+                readonly product: {
+                    /** @description Product ID. */
+                    readonly id: number;
+                    /** @description Product name. */
                     readonly name: string;
-                    /** @description How many downloads are left, or null when they are unlimited. */
-                    readonly downloads_remaining: number | null;
-                    /** @description When the download expires, or null when it never does. Null when there is none. */
-                    readonly expires: {
-                        /**
-                         * Format: date-time
-                         * @description The date in ISO 8601 format, with the site's UTC offset.
-                         */
-                        readonly iso: string;
-                        /** @description The date in the site's date and time format, for display. */
-                        readonly label: string;
-                    } | null;
-                    /** @description The product the file comes with. */
-                    readonly product: {
-                        /** @description Product ID. */
-                        readonly id: number;
-                        /** @description Product name. */
-                        readonly name: string;
-                    };
-                    /** @description The order the file was bought with, or null. Null when there is none. */
-                    readonly order: {
-                        /** @description ID. */
-                        readonly id: number;
-                        /** @description Number, for display. */
-                        readonly number: string;
-                        /**
-                         * Format: uri
-                         * @description Route URL.
-                         */
-                        readonly href: string;
-                    } | null;
+                };
+                /** @description The order the file was bought with, or null. Null when there is none. */
+                readonly order: {
+                    /** @description ID. */
+                    readonly id: number;
+                    /** @description Number, for display. */
+                    readonly number: string;
                     /**
                      * Format: uri
-                     * @description The link that downloads the file.
+                     * @description Route URL.
                      */
                     readonly href: string;
-                }[];
-            };
+                } | null;
+                /**
+                 * Format: uri
+                 * @description The link that downloads the file.
+                 */
+                readonly href: string;
+            }[];
             /** @description Notes on the order the customer can see. */
             readonly notes: {
                 /** @description When the note was added. Null when there is none. */
@@ -7853,38 +7572,20 @@ export interface components {
                 /** @description Note, as plain text. */
                 readonly note: string;
             }[];
-            /** @description Documents related to the order. */
-            readonly related: {
-                /** @description The parent order. Null when there is none. */
-                readonly parent_order: {
-                    /** @description ID. */
-                    readonly id: number;
-                    /** @description Number, for display. */
-                    readonly number: string;
-                    /**
-                     * Format: uri
-                     * @description Route URL.
-                     */
-                    readonly href: string;
-                } | null;
-            };
-            /** @description What can be done next with the order, keyed by action, e.g. pay, cancel or view. An empty object when there are none. */
-            readonly actions: {
-                [key: string]: {
-                    /** @description Label for display. */
-                    readonly label: string;
-                    /**
-                     * @description HTTP method to call the route with.
-                     * @enum {string}
-                     */
-                    readonly method: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
-                    /**
-                     * Format: uri
-                     * @description Route URL.
-                     */
-                    readonly href: string;
-                };
-            };
+            /** @description The parent order. Null when there is none. */
+            readonly parent_order: {
+                /** @description ID. */
+                readonly id: number;
+                /** @description Number, for display. */
+                readonly number: string;
+                /**
+                 * Format: uri
+                 * @description Route URL.
+                 */
+                readonly href: string;
+            } | null;
+            /** @description What the customer may do with the order now: pay for it (`POST /order-received/{id}/pay`) or cancel it (`POST /my-account/orders/{id}/cancel`). An empty list when there are none. */
+            readonly allowed_actions: ("pay" | "cancel")[];
             /** @description The order's meta the store allows (`cocart_orders_allowed_meta_keys`). Keyed by meta key, with the first value of each as stored. Only keys the store allows, narrowed by `meta_keys`. An empty object when there are none. */
             readonly meta: {
                 [key: string]: unknown;
@@ -7984,32 +7685,12 @@ export interface components {
                                 readonly label: string;
                             } | null;
                         };
-                        /** @description The subscription's total, charged on its schedule. */
-                        readonly totals: {
-                            /** @description Subscription total. In minor units, e.g. "4999", or formatted for display with `formatted=true`. */
-                            readonly total: string;
-                        };
+                        /** @description The subscription's total, charged on its schedule. In minor units, e.g. "4999", or formatted for display with `formatted=true`. */
+                        readonly total: string;
                         /** @description How the subscription is paid. */
                         readonly payment: {
                             /** @description Whether the subscription renews automatically, instead of the customer paying for each renewal. */
                             readonly auto_renew: boolean;
-                        };
-                        /** @description What the customer may do with the subscription now, keyed by action, e.g. suspend, cancel, reactivate, resubscribe, change_payment_method or auto_renew. A summary offers view. An empty object when there are none. */
-                        readonly actions: {
-                            [key: string]: {
-                                /** @description Label for display. */
-                                readonly label: string;
-                                /**
-                                 * @description HTTP method to call the route with.
-                                 * @enum {string}
-                                 */
-                                readonly method: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
-                                /**
-                                 * Format: uri
-                                 * @description Route URL.
-                                 */
-                                readonly href: string;
-                            };
                         };
                         /** @description The subscription's meta the store allows (`cocart_subscriptions_allowed_meta_keys`). Keyed by meta key, with the first value of each as stored. Only keys the store allows, narrowed by `meta_keys`. An empty object when there are none. */
                         readonly meta: {
@@ -8134,28 +7815,10 @@ export interface components {
                 };
                 /** @description Number of items, less the ones refunded. */
                 readonly item_count: number;
-                /** @description The order's total. */
-                readonly totals: {
-                    /** @description Order total. In minor units, e.g. "4999", or formatted for display with `formatted=true`. */
-                    readonly total: string;
-                };
-                /** @description What can be done next with the order, keyed by action, e.g. pay, cancel or view. An empty object when there are none. */
-                readonly actions: {
-                    [key: string]: {
-                        /** @description Label for display. */
-                        readonly label: string;
-                        /**
-                         * @description HTTP method to call the route with.
-                         * @enum {string}
-                         */
-                        readonly method: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
-                        /**
-                         * Format: uri
-                         * @description Route URL.
-                         */
-                        readonly href: string;
-                    };
-                };
+                /** @description Order total. In minor units, e.g. "4999", or formatted for display with `formatted=true`. */
+                readonly total: string;
+                /** @description What the customer may do with the order now: pay for it (`POST /order-received/{id}/pay`) or cancel it (`POST /my-account/orders/{id}/cancel`). An empty list when there are none. */
+                readonly allowed_actions: ("pay" | "cancel")[];
                 /** @description The order's meta the store allows (`cocart_orders_allowed_meta_keys`). Keyed by meta key, with the first value of each as stored. Only keys the store allows, narrowed by `meta_keys`. An empty object when there are none. */
                 readonly meta: {
                     [key: string]: unknown;
@@ -8255,32 +7918,12 @@ export interface components {
                                     readonly label: string;
                                 } | null;
                             };
-                            /** @description The subscription's total, charged on its schedule. */
-                            readonly totals: {
-                                /** @description Subscription total. In minor units, e.g. "4999", or formatted for display with `formatted=true`. */
-                                readonly total: string;
-                            };
+                            /** @description The subscription's total, charged on its schedule. In minor units, e.g. "4999", or formatted for display with `formatted=true`. */
+                            readonly total: string;
                             /** @description How the subscription is paid. */
                             readonly payment: {
                                 /** @description Whether the subscription renews automatically, instead of the customer paying for each renewal. */
                                 readonly auto_renew: boolean;
-                            };
-                            /** @description What the customer may do with the subscription now, keyed by action, e.g. suspend, cancel, reactivate, resubscribe, change_payment_method or auto_renew. A summary offers view. An empty object when there are none. */
-                            readonly actions: {
-                                [key: string]: {
-                                    /** @description Label for display. */
-                                    readonly label: string;
-                                    /**
-                                     * @description HTTP method to call the route with.
-                                     * @enum {string}
-                                     */
-                                    readonly method: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
-                                    /**
-                                     * Format: uri
-                                     * @description Route URL.
-                                     */
-                                    readonly href: string;
-                                };
                             };
                             /** @description The subscription's meta the store allows (`cocart_subscriptions_allowed_meta_keys`). Keyed by meta key, with the first value of each as stored. Only keys the store allows, narrowed by `meta_keys`. An empty object when there are none. */
                             readonly meta: {
@@ -8397,14 +8040,14 @@ export interface components {
                 readonly refunded_quantity: number;
                 /** @description Product SKU. */
                 readonly sku: string;
-                /** @description Item metadata for display. A list, empty when there is none. */
-                readonly meta_data: {
-                    /** @description Meta label. */
-                    readonly key: string;
-                    /** @description Meta value. */
+                /** @description What to print under the item, e.g. its size or an engraving, in order. An empty list when there is none. */
+                readonly details: {
+                    /** @description Label for display, e.g. "Size". */
+                    readonly label: string;
+                    /** @description Value for display, e.g. "L". */
                     readonly value: string;
                 }[];
-                /** @description The item's meta the store allows (`cocart_order_items_allowed_meta_keys`), for code; `meta_data` is for display. Keyed by meta key, with the first value of each as stored. Only keys the store allows, narrowed by `meta_keys`. An empty object when there are none. */
+                /** @description The item's raw meta the store allows (`cocart_order_items_allowed_meta_keys`), keyed by meta key, for code. Show `details` to the customer. Keyed by meta key, with the first value of each as stored. Only keys the store allows, narrowed by `meta_keys`. An empty object when there are none. */
                 readonly meta: {
                     [key: string]: unknown;
                 };
@@ -8590,12 +8233,6 @@ export interface components {
                 readonly needs_shipping: boolean;
                 /** @description The order's shipping methods. */
                 readonly shipping_lines: {
-                    /** @description Order item ID. */
-                    readonly id: number;
-                    /** @description Shipping method ID, e.g. flat_rate. */
-                    readonly method_id: string;
-                    /** @description Shipping method instance ID. */
-                    readonly instance_id: number;
                     /** @description Shipping method title. */
                     readonly title: string;
                     /** @description Shipping cost, excluding tax. In minor units, e.g. "4999", or formatted for display with `formatted=true`. */
@@ -8603,50 +8240,50 @@ export interface components {
                     /** @description Tax on shipping. In minor units, e.g. "4999", or formatted for display with `formatted=true`. */
                     readonly tax: string;
                 }[];
-                /** @description The files the customer can download from the order. Empty until downloads are permitted. */
-                readonly downloads: {
-                    /** @description The download's ID within its product. */
-                    readonly id: string;
-                    /** @description The file's name. */
+            };
+            /** @description The files the customer can download from the order. Empty until downloads are permitted. */
+            readonly downloads: {
+                /** @description The download's ID within its product. */
+                readonly id: string;
+                /** @description The file's name. */
+                readonly name: string;
+                /** @description How many downloads are left, or null when they are unlimited. */
+                readonly downloads_remaining: number | null;
+                /** @description When the download expires, or null when it never does. Null when there is none. */
+                readonly expires: {
+                    /**
+                     * Format: date-time
+                     * @description The date in ISO 8601 format, with the site's UTC offset.
+                     */
+                    readonly iso: string;
+                    /** @description The date in the site's date and time format, for display. */
+                    readonly label: string;
+                } | null;
+                /** @description The product the file comes with. */
+                readonly product: {
+                    /** @description Product ID. */
+                    readonly id: number;
+                    /** @description Product name. */
                     readonly name: string;
-                    /** @description How many downloads are left, or null when they are unlimited. */
-                    readonly downloads_remaining: number | null;
-                    /** @description When the download expires, or null when it never does. Null when there is none. */
-                    readonly expires: {
-                        /**
-                         * Format: date-time
-                         * @description The date in ISO 8601 format, with the site's UTC offset.
-                         */
-                        readonly iso: string;
-                        /** @description The date in the site's date and time format, for display. */
-                        readonly label: string;
-                    } | null;
-                    /** @description The product the file comes with. */
-                    readonly product: {
-                        /** @description Product ID. */
-                        readonly id: number;
-                        /** @description Product name. */
-                        readonly name: string;
-                    };
-                    /** @description The order the file was bought with, or null. Null when there is none. */
-                    readonly order: {
-                        /** @description ID. */
-                        readonly id: number;
-                        /** @description Number, for display. */
-                        readonly number: string;
-                        /**
-                         * Format: uri
-                         * @description Route URL.
-                         */
-                        readonly href: string;
-                    } | null;
+                };
+                /** @description The order the file was bought with, or null. Null when there is none. */
+                readonly order: {
+                    /** @description ID. */
+                    readonly id: number;
+                    /** @description Number, for display. */
+                    readonly number: string;
                     /**
                      * Format: uri
-                     * @description The link that downloads the file.
+                     * @description Route URL.
                      */
                     readonly href: string;
-                }[];
-            };
+                } | null;
+                /**
+                 * Format: uri
+                 * @description The link that downloads the file.
+                 */
+                readonly href: string;
+            }[];
             /** @description Notes on the order the customer can see. */
             readonly notes: {
                 /** @description When the note was added. Null when there is none. */
@@ -8662,38 +8299,20 @@ export interface components {
                 /** @description Note, as plain text. */
                 readonly note: string;
             }[];
-            /** @description Documents related to the order. */
-            readonly related: {
-                /** @description The parent order. Null when there is none. */
-                readonly parent_order: {
-                    /** @description ID. */
-                    readonly id: number;
-                    /** @description Number, for display. */
-                    readonly number: string;
-                    /**
-                     * Format: uri
-                     * @description Route URL.
-                     */
-                    readonly href: string;
-                } | null;
-            };
-            /** @description What can be done next with the order, keyed by action, e.g. pay, cancel or view. An empty object when there are none. */
-            readonly actions: {
-                [key: string]: {
-                    /** @description Label for display. */
-                    readonly label: string;
-                    /**
-                     * @description HTTP method to call the route with.
-                     * @enum {string}
-                     */
-                    readonly method: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
-                    /**
-                     * Format: uri
-                     * @description Route URL.
-                     */
-                    readonly href: string;
-                };
-            };
+            /** @description The parent order. Null when there is none. */
+            readonly parent_order: {
+                /** @description ID. */
+                readonly id: number;
+                /** @description Number, for display. */
+                readonly number: string;
+                /**
+                 * Format: uri
+                 * @description Route URL.
+                 */
+                readonly href: string;
+            } | null;
+            /** @description What the customer may do with the order now: pay for it (`POST /order-received/{id}/pay`) or cancel it (`POST /my-account/orders/{id}/cancel`). An empty list when there are none. */
+            readonly allowed_actions: ("pay" | "cancel")[];
             /** @description The order's meta the store allows (`cocart_orders_allowed_meta_keys`). Keyed by meta key, with the first value of each as stored. Only keys the store allows, narrowed by `meta_keys`. An empty object when there are none. */
             readonly meta: {
                 [key: string]: unknown;
@@ -8793,32 +8412,12 @@ export interface components {
                                 readonly label: string;
                             } | null;
                         };
-                        /** @description The subscription's total, charged on its schedule. */
-                        readonly totals: {
-                            /** @description Subscription total. In minor units, e.g. "4999", or formatted for display with `formatted=true`. */
-                            readonly total: string;
-                        };
+                        /** @description The subscription's total, charged on its schedule. In minor units, e.g. "4999", or formatted for display with `formatted=true`. */
+                        readonly total: string;
                         /** @description How the subscription is paid. */
                         readonly payment: {
                             /** @description Whether the subscription renews automatically, instead of the customer paying for each renewal. */
                             readonly auto_renew: boolean;
-                        };
-                        /** @description What the customer may do with the subscription now, keyed by action, e.g. suspend, cancel, reactivate, resubscribe, change_payment_method or auto_renew. A summary offers view. An empty object when there are none. */
-                        readonly actions: {
-                            [key: string]: {
-                                /** @description Label for display. */
-                                readonly label: string;
-                                /**
-                                 * @description HTTP method to call the route with.
-                                 * @enum {string}
-                                 */
-                                readonly method: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
-                                /**
-                                 * Format: uri
-                                 * @description Route URL.
-                                 */
-                                readonly href: string;
-                            };
                         };
                         /** @description The subscription's meta the store allows (`cocart_subscriptions_allowed_meta_keys`). Keyed by meta key, with the first value of each as stored. Only keys the store allows, narrowed by `meta_keys`. An empty object when there are none. */
                         readonly meta: {
@@ -9364,14 +8963,14 @@ export interface components {
                 readonly refunded_quantity: number;
                 /** @description Product SKU. */
                 readonly sku: string;
-                /** @description Item metadata for display. A list, empty when there is none. */
-                readonly meta_data: {
-                    /** @description Meta label. */
-                    readonly key: string;
-                    /** @description Meta value. */
+                /** @description What to print under the item, e.g. its size or an engraving, in order. An empty list when there is none. */
+                readonly details: {
+                    /** @description Label for display, e.g. "Size". */
+                    readonly label: string;
+                    /** @description Value for display, e.g. "L". */
                     readonly value: string;
                 }[];
-                /** @description The item's meta the store allows (`cocart_order_items_allowed_meta_keys`), for code; `meta_data` is for display. Keyed by meta key, with the first value of each as stored. Only keys the store allows, narrowed by `meta_keys`. An empty object when there are none. */
+                /** @description The item's raw meta the store allows (`cocart_order_items_allowed_meta_keys`), keyed by meta key, for code. Show `details` to the customer. Keyed by meta key, with the first value of each as stored. Only keys the store allows, narrowed by `meta_keys`. An empty object when there are none. */
                 readonly meta: {
                     [key: string]: unknown;
                 };
@@ -9555,11 +9154,8 @@ export interface components {
                         /** @description The date in the site's date and time format, for display. */
                         readonly label: string;
                     } | null;
-                    /** @description The order's total. */
-                    readonly totals: {
-                        /** @description Order total, in the order's currency. In minor units, e.g. "4999", or formatted for display with `formatted=true`. */
-                        readonly total: string;
-                    };
+                    /** @description Order total, in the order's currency. In minor units, e.g. "4999", or formatted for display with `formatted=true`. */
+                    readonly total: string;
                     /**
                      * Format: uri
                      * @description Order route URL.
@@ -9567,23 +9163,8 @@ export interface components {
                     readonly href: string;
                 }[];
             };
-            /** @description What the customer may do with the subscription now, keyed by action, e.g. suspend, cancel, reactivate, resubscribe, change_payment_method or auto_renew. A summary offers view. An empty object when there are none. */
-            readonly actions: {
-                [key: string]: {
-                    /** @description Label for display. */
-                    readonly label: string;
-                    /**
-                     * @description HTTP method to call the route with.
-                     * @enum {string}
-                     */
-                    readonly method: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
-                    /**
-                     * Format: uri
-                     * @description Route URL.
-                     */
-                    readonly href: string;
-                };
-            };
+            /** @description What the customer may do with the subscription now, each the name of the route under the subscription that does it. An empty list when there are none. */
+            readonly allowed_actions: ("suspend" | "reactivate" | "cancel" | "resubscribe" | "change_payment_method" | "auto_renew")[];
             /** @description The subscription's meta the store allows (`cocart_subscriptions_allowed_meta_keys`). Keyed by meta key, with the first value of each as stored. Only keys the store allows, narrowed by `meta_keys`. An empty object when there are none. */
             readonly meta: {
                 [key: string]: unknown;
@@ -9679,32 +9260,12 @@ export interface components {
                         readonly label: string;
                     } | null;
                 };
-                /** @description The subscription's total, charged on its schedule. */
-                readonly totals: {
-                    /** @description Subscription total. In minor units, e.g. "4999", or formatted for display with `formatted=true`. */
-                    readonly total: string;
-                };
+                /** @description The subscription's total, charged on its schedule. In minor units, e.g. "4999", or formatted for display with `formatted=true`. */
+                readonly total: string;
                 /** @description How the subscription is paid. */
                 readonly payment: {
                     /** @description Whether the subscription renews automatically, instead of the customer paying for each renewal. */
                     readonly auto_renew: boolean;
-                };
-                /** @description What the customer may do with the subscription now, keyed by action, e.g. suspend, cancel, reactivate, resubscribe, change_payment_method or auto_renew. A summary offers view. An empty object when there are none. */
-                readonly actions: {
-                    [key: string]: {
-                        /** @description Label for display. */
-                        readonly label: string;
-                        /**
-                         * @description HTTP method to call the route with.
-                         * @enum {string}
-                         */
-                        readonly method: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
-                        /**
-                         * Format: uri
-                         * @description Route URL.
-                         */
-                        readonly href: string;
-                    };
                 };
                 /** @description The subscription's meta the store allows (`cocart_subscriptions_allowed_meta_keys`). Keyed by meta key, with the first value of each as stored. Only keys the store allows, narrowed by `meta_keys`. An empty object when there are none. */
                 readonly meta: {
@@ -9881,14 +9442,14 @@ export interface components {
                 readonly refunded_quantity: number;
                 /** @description Product SKU. */
                 readonly sku: string;
-                /** @description Item metadata for display. A list, empty when there is none. */
-                readonly meta_data: {
-                    /** @description Meta label. */
-                    readonly key: string;
-                    /** @description Meta value. */
+                /** @description What to print under the item, e.g. its size or an engraving, in order. An empty list when there is none. */
+                readonly details: {
+                    /** @description Label for display, e.g. "Size". */
+                    readonly label: string;
+                    /** @description Value for display, e.g. "L". */
                     readonly value: string;
                 }[];
-                /** @description The item's meta the store allows (`cocart_order_items_allowed_meta_keys`), for code; `meta_data` is for display. Keyed by meta key, with the first value of each as stored. Only keys the store allows, narrowed by `meta_keys`. An empty object when there are none. */
+                /** @description The item's raw meta the store allows (`cocart_order_items_allowed_meta_keys`), keyed by meta key, for code. Show `details` to the customer. Keyed by meta key, with the first value of each as stored. Only keys the store allows, narrowed by `meta_keys`. An empty object when there are none. */
                 readonly meta: {
                     [key: string]: unknown;
                 };
@@ -10072,11 +9633,8 @@ export interface components {
                         /** @description The date in the site's date and time format, for display. */
                         readonly label: string;
                     } | null;
-                    /** @description The order's total. */
-                    readonly totals: {
-                        /** @description Order total, in the order's currency. In minor units, e.g. "4999", or formatted for display with `formatted=true`. */
-                        readonly total: string;
-                    };
+                    /** @description Order total, in the order's currency. In minor units, e.g. "4999", or formatted for display with `formatted=true`. */
+                    readonly total: string;
                     /**
                      * Format: uri
                      * @description Order route URL.
@@ -10084,23 +9642,8 @@ export interface components {
                     readonly href: string;
                 }[];
             };
-            /** @description What the customer may do with the subscription now, keyed by action, e.g. suspend, cancel, reactivate, resubscribe, change_payment_method or auto_renew. A summary offers view. An empty object when there are none. */
-            readonly actions?: {
-                [key: string]: {
-                    /** @description Label for display. */
-                    readonly label: string;
-                    /**
-                     * @description HTTP method to call the route with.
-                     * @enum {string}
-                     */
-                    readonly method: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
-                    /**
-                     * Format: uri
-                     * @description Route URL.
-                     */
-                    readonly href: string;
-                };
-            };
+            /** @description What the customer may do with the subscription now, each the name of the route under the subscription that does it. An empty list when there are none. */
+            readonly allowed_actions?: ("suspend" | "reactivate" | "cancel" | "resubscribe" | "change_payment_method" | "auto_renew")[];
             /** @description The subscription's meta the store allows (`cocart_subscriptions_allowed_meta_keys`). Keyed by meta key, with the first value of each as stored. Only keys the store allows, narrowed by `meta_keys`. An empty object when there are none. */
             readonly meta?: {
                 [key: string]: unknown;
@@ -10228,14 +9771,14 @@ export interface components {
                 readonly refunded_quantity: number;
                 /** @description Product SKU. */
                 readonly sku: string;
-                /** @description Item metadata for display. A list, empty when there is none. */
-                readonly meta_data: {
-                    /** @description Meta label. */
-                    readonly key: string;
-                    /** @description Meta value. */
+                /** @description What to print under the item, e.g. its size or an engraving, in order. An empty list when there is none. */
+                readonly details: {
+                    /** @description Label for display, e.g. "Size". */
+                    readonly label: string;
+                    /** @description Value for display, e.g. "L". */
                     readonly value: string;
                 }[];
-                /** @description The item's meta the store allows (`cocart_order_items_allowed_meta_keys`), for code; `meta_data` is for display. Keyed by meta key, with the first value of each as stored. Only keys the store allows, narrowed by `meta_keys`. An empty object when there are none. */
+                /** @description The item's raw meta the store allows (`cocart_order_items_allowed_meta_keys`), keyed by meta key, for code. Show `details` to the customer. Keyed by meta key, with the first value of each as stored. Only keys the store allows, narrowed by `meta_keys`. An empty object when there are none. */
                 readonly meta: {
                     [key: string]: unknown;
                 };
@@ -10419,11 +9962,8 @@ export interface components {
                         /** @description The date in the site's date and time format, for display. */
                         readonly label: string;
                     } | null;
-                    /** @description The order's total. */
-                    readonly totals: {
-                        /** @description Order total, in the order's currency. In minor units, e.g. "4999", or formatted for display with `formatted=true`. */
-                        readonly total: string;
-                    };
+                    /** @description Order total, in the order's currency. In minor units, e.g. "4999", or formatted for display with `formatted=true`. */
+                    readonly total: string;
                     /**
                      * Format: uri
                      * @description Order route URL.
@@ -10431,23 +9971,8 @@ export interface components {
                     readonly href: string;
                 }[];
             };
-            /** @description What the customer may do with the subscription now, keyed by action, e.g. suspend, cancel, reactivate, resubscribe, change_payment_method or auto_renew. A summary offers view. An empty object when there are none. */
-            readonly actions: {
-                [key: string]: {
-                    /** @description Label for display. */
-                    readonly label: string;
-                    /**
-                     * @description HTTP method to call the route with.
-                     * @enum {string}
-                     */
-                    readonly method: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
-                    /**
-                     * Format: uri
-                     * @description Route URL.
-                     */
-                    readonly href: string;
-                };
-            };
+            /** @description What the customer may do with the subscription now, each the name of the route under the subscription that does it. An empty list when there are none. */
+            readonly allowed_actions: ("suspend" | "reactivate" | "cancel" | "resubscribe" | "change_payment_method" | "auto_renew")[];
             /** @description The subscription's meta the store allows (`cocart_subscriptions_allowed_meta_keys`). Keyed by meta key, with the first value of each as stored. Only keys the store allows, narrowed by `meta_keys`. An empty object when there are none. */
             readonly meta: {
                 [key: string]: unknown;

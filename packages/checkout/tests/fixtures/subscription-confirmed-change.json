@@ -52,7 +52,11 @@
             "title": "Visa ending in 3220",
             "needs_payment": false
           },
-          "actions": {}
+          "allowed_actions": [
+            "suspend",
+            "cancel",
+            "change_payment_method"
+          ]
         }
       }
     }
